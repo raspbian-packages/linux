@@ -28,16 +28,7 @@ cflags-y	:= -pipe $(EXTRA) -ffixed-r13 -mfixed-range=f12-f15,f32-f127 \
 		   -falign-functions=32 -frename-registers -fno-optimize-sibling-calls
 KBUILD_CFLAGS_KERNEL := -mconstant-gp
 
-GAS_STATUS	= $(shell $(srctree)/arch/ia64/scripts/check-gas "$(CC)" "$(OBJDUMP)")
-KBUILD_CPPFLAGS += $(shell $(srctree)/arch/ia64/scripts/toolchain-flags "$(CC)" "$(OBJDUMP)" "$(READELF)")
-
-ifeq ($(GAS_STATUS),buggy)
-$(error Sorry, you need a newer version of the assember, one that is built from	\
-	a source-tree that post-dates 18-Dec-2002.  You can find a pre-compiled	\
-	static binary of such an assembler at:					\
-										\
-		ftp://ftp.hpl.hp.com/pub/linux-ia64/gas-030124.tar.gz)
-endif
+KBUILD_CPPFLAGS += -DHAVE_WORKING_TEXT_ALIGN -DHAVE_MODEL_SMALL_ATTRIBUTE -DHAVE_SERIALIZE_DIRECTIVE
 
 quiet_cmd_gzip = GZIP    $@
 cmd_gzip = cat $(real-prereqs) | $(KGZIP) -n -f -9 > $@
@@ -57,7 +48,7 @@ drivers-$(CONFIG_OPROFILE)	+= arch/ia64/oprofile/
 
 PHONY += compressed check
 
-all: compressed unwcheck
+all: compressed
 
 compressed: vmlinux.gz
 
@@ -68,9 +59,6 @@ vmlinux.gz: vmlinux.bin FORCE
 
 vmlinux.bin: vmlinux FORCE
 	$(call if_changed,objcopy)
-
-unwcheck: vmlinux
-	-$(Q)READELF=$(READELF) $(PYTHON) $(srctree)/arch/ia64/scripts/unwcheck.py $<
 
 archclean:
 
@@ -85,7 +73,6 @@ install: vmlinux.gz
 define archhelp
   echo '* compressed	- Build compressed kernel image'
   echo '  install	- Install compressed kernel image'
-  echo '* unwcheck	- Check vmlinux for invalid unwind info'
 endef
 
 archprepare: make_nr_irqs_h
