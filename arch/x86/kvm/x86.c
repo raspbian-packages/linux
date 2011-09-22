@@ -5668,6 +5668,7 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 	int r;
 	bool req_int_win = !irqchip_in_kernel(vcpu->kvm) &&
 		vcpu->run->request_interrupt_window;
+	bool req_immediate_exit = 0;
 
 	if (vcpu->requests) {
 		if (kvm_check_request(KVM_REQ_MMU_RELOAD, vcpu))
@@ -5707,7 +5708,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 			record_steal_time(vcpu);
 		if (kvm_check_request(KVM_REQ_NMI, vcpu))
 			process_nmi(vcpu);
-
+		req_immediate_exit =
+			kvm_check_request(KVM_REQ_IMMEDIATE_EXIT, vcpu);
 	}
 
 	r = kvm_mmu_reload(vcpu);
@@ -5757,6 +5759,9 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
 	}
 
 	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+
+	if (req_immediate_exit)
+		smp_send_reschedule(vcpu->cpu);
 
 	kvm_guest_enter();
 
