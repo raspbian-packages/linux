@@ -1817,7 +1817,7 @@ static struct bus_type mce_subsys = {
 	.dev_name	= "machinecheck",
 };
 
-DEFINE_PER_CPU(struct device, mce_device);
+struct device *mce_device[CONFIG_NR_CPUS];
 
 __cpuinitdata
 void (*threshold_cpu_callback)(unsigned long action, unsigned int cpu);
@@ -1959,19 +1959,27 @@ static struct device_attribute *mce_device_attrs[] = {
 
 static cpumask_var_t mce_device_initialized;
 
+static void mce_device_release(struct device *dev)
+{
+	kfree(dev);
+}
+
 /* Per cpu device init. All of the cpus still share the same ctrl bank: */
 static __cpuinit int mce_device_create(unsigned int cpu)
 {
-	struct device *dev = &per_cpu(mce_device, cpu);
+	struct device *dev;
 	int err;
 	int i, j;
 
 	if (!mce_available(&boot_cpu_data))
 		return -EIO;
 
-	memset(dev, 0, sizeof(struct device));
+	dev = kzalloc(sizeof *dev, GFP_KERNEL);
+	if (!dev)
+		return -ENOMEM;
 	dev->id  = cpu;
 	dev->bus = &mce_subsys;
+	dev->release = &mce_device_release;
 
 	err = device_register(dev);
 	if (err)
@@ -1988,6 +1996,7 @@ static __cpuinit int mce_device_create(unsigned int cpu)
 			goto error2;
 	}
 	cpumask_set_cpu(cpu, mce_device_initialized);
+	mce_device[cpu] = dev;
 
 	return 0;
 error2:
@@ -2004,7 +2013,7 @@ error:
 
 static __cpuinit void mce_device_remove(unsigned int cpu)
 {
-	struct device *dev = &per_cpu(mce_device, cpu);
+	struct device *dev = mce_device[cpu];
 	int i;
 
 	if (!cpumask_test_cpu(cpu, mce_device_initialized))
@@ -2018,6 +2027,7 @@ static __cpuinit void mce_device_remove(unsigned int cpu)
 
 	device_unregister(dev);
 	cpumask_clear_cpu(cpu, mce_device_initialized);
+	mce_device[cpu] = NULL;
 }
 
 /* Make sure there are no machine checks on offlined CPUs. */
