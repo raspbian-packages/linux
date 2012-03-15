@@ -9161,6 +9161,15 @@ static void quirk_ssc_force_disable(struct drm_device *dev)
 }
 
 /*
+ * A machine may need to invert the panel backlight brightness value
+ */
+static void quirk_invert_brightness(struct drm_device *dev)
+{
+	struct drm_i915_private *dev_priv = dev->dev_private;
+	dev_priv->quirks |= QUIRK_INVERT_BRIGHTNESS;
+}
+
+/*
  * Some machines (Dell XPS13) suffer broken backlight controls if
  * BLM_PCH_PWM_ENABLE is set.
  */
