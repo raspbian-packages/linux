@@ -26,6 +26,7 @@
 #include <linux/rwsem.h>
 #include <linux/sys_info.h>
 
+#include <generated/package.h>
 #include <trace/events/sched.h>
 
 /*
@@ -253,10 +254,11 @@ static void hung_task_info(struct task_struct *t, unsigned long timeout,
 		pr_err("INFO: task %s:%d blocked%s for more than %ld seconds.\n",
 		       t->comm, t->pid, t->in_iowait ? " in I/O wait" : "",
 		       (jiffies - t->last_switch_time) / HZ);
-		pr_err("      %s %s %.*s\n",
+		pr_err("      %s %s %.*s%s\n",
 			print_tainted(), init_utsname()->release,
 			(int)strcspn(init_utsname()->version, " "),
-			init_utsname()->version);
+			init_utsname()->version,
+			LINUX_PACKAGE_ID);
 		if (t->flags & PF_POSTCOREDUMP)
 			pr_err("      Blocked by coredump.\n");
 		pr_err("\"echo 0 > /proc/sys/kernel/hung_task_timeout_secs\""
