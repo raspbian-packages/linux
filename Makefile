@@ -1187,7 +1187,8 @@ PHONY += prepare archprepare
 
 archprepare: outputmakefile archheaders archscripts scripts include/config/kernel.release \
 	asm-generic $(version_h) include/generated/utsrelease.h \
-	include/generated/compile.h include/generated/autoconf.h remove-stale-files
+	include/generated/compile.h include/generated/autoconf.h \
+	include/generated/package.h remove-stale-files
 
 prepare0: archprepare
 	$(Q)$(MAKE) $(build)=scripts/mod
@@ -1245,6 +1246,16 @@ define filechk_version.h
 	echo \#define LINUX_VERSION_SUBLEVEL $(SUBLEVEL)
 endef
 
+ifneq ($(DISTRIBUTION_OFFICIAL_BUILD),)
+define filechk_package.h
+	echo \#define LINUX_PACKAGE_ID \" $(DISTRIBUTOR) $(DISTRIBUTION_VERSION)\"
+endef
+else
+define filechk_package.h
+	echo \#define LINUX_PACKAGE_ID \"\"
+endef
+endif
+
 $(version_h): private PATCHLEVEL := $(or $(PATCHLEVEL), 0)
 $(version_h): private SUBLEVEL := $(or $(SUBLEVEL), 0)
 $(version_h): FORCE
@@ -1258,6 +1269,9 @@ filechk_compile.h = $(srctree)/scripts/mkcompile_h \
 
 include/generated/compile.h: FORCE
 	$(call filechk,compile.h)
+
+include/generated/package.h: $(srctree)/Makefile FORCE
+	$(call filechk,package.h)
 
 PHONY += headerdep
 headerdep:
