@@ -1140,7 +1140,9 @@ const struct nla_policy ifla_policy[IFLA_MAX+1] = {
 	[IFLA_VF_PORTS]		= { .type = NLA_NESTED },
 	[IFLA_PORT_SELF]	= { .type = NLA_NESTED },
 	[IFLA_AF_SPEC]		= { .type = NLA_NESTED },
+#ifndef __GENKSYMS__
 	[IFLA_EXT_MASK]		= { .type = NLA_U32 },
+#endif
 };
 EXPORT_SYMBOL(ifla_policy);
 
@@ -2050,7 +2052,9 @@ static int rtnetlink_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 			return -EOPNOTSUPP;
 		calcit = rtnl_get_calcit(family, type);
 		if (calcit)
-			min_dump_alloc = calcit(skb, nlh);
+			min_dump_alloc = calcit(skb);
+		else if (type == RTM_GETLINK)
+			min_dump_alloc = rtnl_calcit(skb, nlh);
 
 		__rtnl_unlock();
 		rtnl = net->rtnl;
@@ -2166,7 +2170,7 @@ void __init rtnetlink_init(void)
 	register_netdevice_notifier(&rtnetlink_dev_notifier);
 
 	rtnl_register(PF_UNSPEC, RTM_GETLINK, rtnl_getlink,
-		      rtnl_dump_ifinfo, rtnl_calcit);
+		      rtnl_dump_ifinfo, NULL);
 	rtnl_register(PF_UNSPEC, RTM_SETLINK, rtnl_setlink, NULL, NULL);
 	rtnl_register(PF_UNSPEC, RTM_NEWLINK, rtnl_newlink, NULL, NULL);
 	rtnl_register(PF_UNSPEC, RTM_DELLINK, rtnl_dellink, NULL, NULL);
