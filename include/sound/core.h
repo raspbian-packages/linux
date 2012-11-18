@@ -134,7 +134,6 @@ struct snd_card {
 	int shutdown;			/* this card is going down */
 	int free_on_last_close;		/* free in context of file_release */
 	wait_queue_head_t shutdown_sleep;
-	atomic_t refcount;		/* refcount for disconnection */
 	struct device *dev;		/* device assigned to this card */
 	struct device *card_dev;	/* cardX object for sysfs */
 
@@ -147,6 +146,9 @@ struct snd_card {
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	struct snd_mixer_oss *mixer_oss;
 	int mixer_oss_change_count;
+#endif
+#ifndef __GENKSYMS__
+	atomic_t refcount;		/* refcount for disconnection */
 #endif
 };
 
