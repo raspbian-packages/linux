@@ -241,8 +241,6 @@ static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 		drv->fw_index--;
 
 	if (drv->fw_index < cfg->ucode_api_min) {
-		IWL_ERR(drv, "no suitable firmware found!\n");
-
 		if (cfg->ucode_api_min == cfg->ucode_api_max) {
 			IWL_ERR(drv, "%s-%d is required\n", fw_name_pre,
 				cfg->ucode_api_max);
