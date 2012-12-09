@@ -337,9 +337,12 @@ static int fw_get_filesystem_firmware(struct device *device,
 	}
 	__putname(path);
 
-	if (!ret) {
-		dev_dbg(device, "firmware: direct-loading firmware %s\n",
-			buf->fw_id);
+	if (ret) {
+		dev_err(device, "firmware: failed to load %s (%d)\n",
+			buf->fw_id, ret);
+	} else {
+		dev_info(device, "firmware: direct-loading firmware %s\n",
+			 buf->fw_id);
 		mutex_lock(&fw_lock);
 		set_bit(FW_STATUS_DONE, &buf->status);
 		complete_all(&buf->completion);
@@ -992,7 +995,8 @@ _request_firmware_prepare(struct firmware **firmware_p, const char *name,
 	}
 
 	if (fw_get_builtin_firmware(firmware, name)) {
-		dev_dbg(device, "firmware: using built-in firmware %s\n", name);
+		dev_info(device, "firmware: using built-in firmware %s\n",
+			 name);
 		return 0; /* assigned */
 	}
 
@@ -1073,7 +1077,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
 	if (nowait) {
 		timeout = usermodehelper_read_lock_wait(timeout);
 		if (!timeout) {
-			dev_dbg(device, "firmware: %s loading timed out\n",
+			dev_err(device, "firmware: %s loading timed out\n",
 				name);
 			ret = -EBUSY;
 			goto out;
