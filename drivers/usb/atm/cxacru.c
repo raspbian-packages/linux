@@ -998,8 +998,6 @@ static int cxacru_find_firmware(struct cxacru_data *instance,
 		return -ENOENT;
 	}
 
-	usb_info(usbatm, "found firmware %s\n", buf);
-
 	return 0;
 }
 
