@@ -38,11 +38,8 @@ int vnt_download_firmware(struct vnt_private *priv)
 	dev_dbg(dev, "---->Download firmware\n");
 
 	ret = request_firmware(&fw, FIRMWARE_NAME, dev);
-	if (ret) {
-		dev_err(dev, "firmware file %s request failed (%d)\n",
-			FIRMWARE_NAME, ret);
+	if (ret)
 		goto end;
-	}
 
 	buffer = kmalloc(FIRMWARE_CHUNK_SIZE, GFP_KERNEL);
 	if (!buffer) {
