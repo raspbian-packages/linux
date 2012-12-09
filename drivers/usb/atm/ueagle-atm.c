@@ -608,10 +608,8 @@ static void uea_upload_pre_firmware(const struct firmware *fw_entry,
 	int ret, size;
 
 	uea_enters(usb);
-	if (!fw_entry) {
-		uea_err(usb, "firmware is not available\n");
+	if (!fw_entry)
 		goto err;
-	}
 
 	pfw = fw_entry->data;
 	size = fw_entry->size;
@@ -708,10 +706,6 @@ static int uea_load_firmware(struct usb_interface *intf, unsigned int ver)
 	ret = request_firmware_nowait(THIS_MODULE, 1, fw_name, &usb->dev,
 					GFP_KERNEL, intf,
 					uea_upload_pre_firmware);
-	if (ret)
-		uea_err(usb, "firmware %s is not available\n", fw_name);
-	else
-		uea_info(usb, "loading firmware %s\n", fw_name);
 
 	uea_leaves(usb);
 	return ret;
@@ -873,12 +867,8 @@ static int request_dsp(struct uea_softc *sc)
 	}
 
 	ret = request_firmware(&sc->dsp_firm, dsp_name, &sc->usb_dev->dev);
-	if (ret < 0) {
-		uea_err(INS_TO_USBDEV(sc),
-		       "requesting firmware %s failed with error %d\n",
-			dsp_name, ret);
+	if (ret)
 		return ret;
-	}
 
 	if (UEA_CHIP_VERSION(sc) == EAGLE_IV)
 		ret = check_dsp_e4(sc->dsp_firm->data, sc->dsp_firm->size);
@@ -1591,12 +1581,8 @@ static int request_cmvs_old(struct uea_softc *sc,
 
 	cmvs_file_name(sc, cmv_name, 1);
 	ret = request_firmware(fw, cmv_name, &sc->usb_dev->dev);
-	if (ret < 0) {
-		uea_err(INS_TO_USBDEV(sc),
-		       "requesting firmware %s failed with error %d\n",
-		       cmv_name, ret);
+	if (ret)
 		return ret;
-	}
 
 	data = (u8 *) (*fw)->data;
 	size = (*fw)->size;
@@ -1633,9 +1619,6 @@ static int request_cmvs(struct uea_softc *sc,
 				"try to get older cmvs\n", cmv_name);
 			return request_cmvs_old(sc, cmvs, fw);
 		}
-		uea_err(INS_TO_USBDEV(sc),
-		       "requesting firmware %s failed with error %d\n",
-		       cmv_name, ret);
 		return ret;
 	}
 
@@ -1918,11 +1901,8 @@ static int load_XILINX_firmware(struct uea_softc *sc)
 	uea_enters(INS_TO_USBDEV(sc));
 
 	ret = request_firmware(&fw_entry, fw_name, &sc->usb_dev->dev);
-	if (ret) {
-		uea_err(INS_TO_USBDEV(sc), "firmware %s is not available\n",
-		       fw_name);
+	if (ret)
 		goto err0;
-	}
 
 	pfw = fw_entry->data;
 	size = fw_entry->size;
