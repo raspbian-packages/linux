@@ -38,6 +38,8 @@
 #include <drm/drm_probe_helper.h>
 #include <linux/mmu_notifier.h>
 #include <linux/suspend.h>
+#include <linux/namei.h>
+#include <linux/path.h>
 
 #include "amdgpu.h"
 #include "amdgpu_irq.h"
@@ -1246,6 +1248,28 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
 
 static const struct drm_driver amdgpu_kms_driver;
 
+/* Test that /lib/firmware/amdgpu is a directory (or symlink to a
+ * directory).  We could try to match the udev search path, but let's
+ * keep it simple.
+ */
+static bool amdgpu_firmware_installed(void)
+{
+#if IS_BUILTIN(CONFIG_DRM_AMDGPU)
+	/* It may be too early to tell.  Assume it's there. */
+	return true;
+#else
+	struct path path;
+
+	if (kern_path("/lib/firmware/amdgpu", LOOKUP_DIRECTORY | LOOKUP_FOLLOW,
+		      &path) == 0) {
+		path_put(&path);
+		return true;
+	}
+
+	return false;
+#endif
+}
+
 static int amdgpu_pci_probe(struct pci_dev *pdev,
 			    const struct pci_device_id *ent)
 {
@@ -1309,6 +1333,11 @@ static int amdgpu_pci_probe(struct pci_dev *pdev,
 		}
 	}
 #endif
+
+	if (!amdgpu_firmware_installed()) {
+		DRM_ERROR("amdgpu requires firmware installed\n");
+		return -ENODEV;
+	}
 
 	/* Get rid of things like offb */
 	ret = drm_aperture_remove_conflicting_pci_framebuffers(pdev, &amdgpu_kms_driver);
