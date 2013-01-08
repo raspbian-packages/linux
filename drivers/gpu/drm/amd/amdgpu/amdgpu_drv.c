@@ -33,6 +33,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/vga_switcheroo.h>
 #include <drm/drm_crtc_helper.h>
+#include <linux/namei.h>
+#include <linux/path.h>
 
 #include "amdgpu.h"
 #include "amdgpu_irq.h"
@@ -793,6 +795,28 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
 
 static struct drm_driver kms_driver;
 
+/* Test that /lib/firmware/amdgpu is a directory (or symlink to a
+ * directory).  We could try to match the udev search path, but let's
+ * keep it simple.
+ */
+static bool amdgpu_firmware_installed(void)
+{
+#if IS_BUILTIN(CONFIG_DRM_AMDGPU)
+	/* It may be too early to tell.  Assume it's there. */
+	return true;
+#else
+	struct path path;
+
+	if (kern_path("/lib/firmware/amdgpu", LOOKUP_DIRECTORY | LOOKUP_FOLLOW,
+		      &path) == 0) {
+		path_put(&path);
+		return true;
+	}
+
+	return false;
+#endif
+}
+
 static int amdgpu_kick_out_firmware_fb(struct pci_dev *pdev)
 {
 	struct apertures_struct *ap;
@@ -830,6 +854,11 @@ static int amdgpu_pci_probe(struct pci_dev *pdev,
 	if ((flags & AMD_EXP_HW_SUPPORT) && !amdgpu_exp_hw_support) {
 		DRM_INFO("This hardware requires experimental hardware support.\n"
 			 "See modparam exp_hw_support\n");
+		return -ENODEV;
+	}
+
+	if (!amdgpu_firmware_installed()) {
+		DRM_ERROR("amdgpu requires firmware installed\n");
 		return -ENODEV;
 	}
 
