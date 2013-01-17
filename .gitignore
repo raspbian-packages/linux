@@ -78,11 +78,6 @@ modules.order
 /rpmbuild/
 
 #
-# Debian directory (make deb-pkg)
-#
-/debian/
-
-#
 # Snap directory (make snap-pkg)
 #
 /snap/
@@ -91,19 +86,6 @@ modules.order
 # tar directory (make tar*-pkg)
 #
 /tar-install/
-
-#
-# We don't want to ignore the following even if they are dot-files
-#
-!.clang-format
-!.cocciconfig
-!.editorconfig
-!.get_maintainer.ignore
-!.gitattributes
-!.gitignore
-!.kunitconfig
-!.mailmap
-!.rustfmt.toml
 
 #
 # Generated include files
@@ -171,3 +153,10 @@ sphinx_*/
 
 # Rust analyzer configuration
 /rust-project.json
+
+#
+# Debian packaging: ignore everything at the top level, since it isn't
+# included in our repository
+#
+/*
+!/debian/
