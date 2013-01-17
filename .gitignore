@@ -61,21 +61,9 @@ modules.builtin
 /*.spec
 
 #
-# Debian directory (make deb-pkg)
-#
-/debian/
-
-#
 # tar directory (make tar*-pkg)
 #
 /tar-install/
-
-#
-# git files that we don't want to ignore even if they are dot-files
-#
-!.gitignore
-!.mailmap
-!.cocciconfig
 
 #
 # Generated include files
@@ -122,3 +110,10 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+#
+# Debian packaging: ignore everything at the top level, since it isn't
+# included in our repository
+#
+/*
+!/debian/
