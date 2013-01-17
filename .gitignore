@@ -87,11 +87,6 @@ modules.order
 /rpmbuild/
 
 #
-# Debian directory (make deb-pkg)
-#
-/debian/
-
-#
 # Snap directory (make snap-pkg)
 #
 /snap/
@@ -106,21 +101,6 @@ modules.order
 #
 /PKGBUILD
 /pacman/
-
-#
-# We don't want to ignore the following even if they are dot-files
-#
-!.clang-format
-!.clippy.toml
-!.cocciconfig
-!.editorconfig
-!.get_maintainer.ignore
-!.gitattributes
-!.gitignore
-!.kunitconfig
-!.mailmap
-!.pylintrc
-!.rustfmt.toml
 
 #
 # Generated include files
@@ -194,3 +174,10 @@ sphinx_*/
 
 # bc language scripts (not LLVM bitcode)
 !kernel/time/timeconst.bc
+
+#
+# Debian packaging: ignore everything at the top level, since it isn't
+# included in our repository
+#
+/*
+!/debian/
