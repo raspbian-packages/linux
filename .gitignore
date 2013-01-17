@@ -73,11 +73,6 @@ modules.order
 /*.spec
 
 #
-# Debian directory (make deb-pkg)
-#
-/debian/
-
-#
 # Snap directory (make snap-pkg)
 #
 /snap/
@@ -86,16 +81,6 @@ modules.order
 # tar directory (make tar*-pkg)
 #
 /tar-install/
-
-#
-# We don't want to ignore the following even if they are dot-files
-#
-!.clang-format
-!.cocciconfig
-!.get_maintainer.ignore
-!.gitattributes
-!.gitignore
-!.mailmap
 
 #
 # Generated include files
@@ -161,3 +146,10 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+#
+# Debian packaging: ignore everything at the top level, since it isn't
+# included in our repository
+#
+/*
+!/debian/
