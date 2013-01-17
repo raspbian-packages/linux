@@ -46,17 +46,6 @@ modules.builtin
 /Module.symvers
 
 #
-# Debian directory (make deb-pkg)
-#
-/debian/
-
-#
-# git files that we don't want to ignore even it they are dot-files
-#
-!.gitignore
-!.mailmap
-
-#
 # Generated include files
 #
 include/config
@@ -84,3 +73,10 @@ GTAGS
 *.orig
 *~
 \#*#
+
+#
+# Debian packaging: ignore everything at the top level, since it isn't
+# included in our repository
+#
+/*
+!/debian/
