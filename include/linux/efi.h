@@ -517,7 +517,9 @@ extern int __init efi_setup_pcdp_console(char *);
 
 #ifdef CONFIG_EFI
 # ifdef CONFIG_X86
-extern int efi_enabled(int facility);
+extern int efi_enabled; /* ABI compat; please use efi_enabled() instead */
+extern int efi_enabled_facility(int facility);
+#define efi_enabled(f) efi_enabled_facility(f)
 # else
 static inline int efi_enabled(int facility)
 {
