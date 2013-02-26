@@ -57,6 +57,9 @@
 
 static efi_char16_t efi_dummy_name[6] = { 'D', 'U', 'M', 'M', 'Y', 0 };
 
+int efi_enabled;
+EXPORT_SYMBOL(efi_enabled);
+
 struct efi __read_mostly efi = {
 	.mps        = EFI_INVALID_TABLE_ADDR,
 	.acpi       = EFI_INVALID_TABLE_ADDR,
@@ -85,11 +88,11 @@ unsigned long x86_efi_facility;
 /*
  * Returns 1 if 'facility' is enabled, 0 otherwise.
  */
-int efi_enabled(int facility)
+int efi_enabled_facility(int facility)
 {
 	return test_bit(facility, &x86_efi_facility) != 0;
 }
-EXPORT_SYMBOL(efi_enabled);
+EXPORT_SYMBOL(efi_enabled_facility);
 
 static bool disable_runtime = false;
 static int __init setup_noefi(char *arg)
@@ -593,6 +596,7 @@ void __init efi_init(void)
 			efi.get_time = phys_efi_get_time;
 			
 			set_bit(EFI_RUNTIME_SERVICES, &x86_efi_facility);
+			efi_enabled = 1;
 		} else
 			printk(KERN_ERR "Could not map the EFI runtime service "
 			       "table!\n");
