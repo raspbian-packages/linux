@@ -455,7 +455,12 @@ struct sk_buff {
 	union {
 		__u32		mark;
 		__u32		dropcount;
+		/* For use by TCP only */
+#ifdef __GENKSYMS__
+		__u32		avail_size;
+#else
 		__u32		reserved_tailroom;
+#endif
 	};
 
 	__u16			vlan_tci;
