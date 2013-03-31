@@ -21,7 +21,9 @@
 #include <linux/rtnetlink.h>
 #include <linux/slab.h>
 
+#ifndef __GENKSYMS__
 #include <net/sock.h>
+#endif
 #include <net/inet_frag.h>
 
 static void inet_frag_secret_rebuild(unsigned long dummy)
