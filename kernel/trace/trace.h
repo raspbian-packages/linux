@@ -272,13 +272,17 @@ struct tracer {
 	/* If you handled the flag setting, return 0 */
 	int			(*set_flag)(u32 old_flags, u32 bit, int set);
 	/* Return 0 if OK with change, else return non-zero */
+#ifndef __GENKSYMS__
 	int			(*flag_changed)(struct tracer *tracer,
 						u32 mask, int set);
+#endif
 	struct tracer		*next;
 	struct tracer_flags	*flags;
 	int			print_max;
 	int			use_max_tr;
+#ifndef __GENKSYMS__
 	bool			enabled;
+#endif
 };
 
 
