@@ -91,7 +91,6 @@ struct pv_lazy_ops {
 	/* Set deferred update mode, used for batching operations. */
 	void (*enter)(void);
 	void (*leave)(void);
-	void (*flush)(void);
 };
 
 struct pv_time_ops {
@@ -348,6 +347,9 @@ struct paravirt_patch_template {
 	struct pv_apic_ops pv_apic_ops;
 	struct pv_mmu_ops pv_mmu_ops;
 	struct pv_lock_ops pv_lock_ops;
+#ifndef __GENKSYMS__
+	void (*pv_mmu_lazy_mode_flush)(void);
+#endif
 };
 
 extern struct pv_info pv_info;
@@ -358,6 +360,7 @@ extern struct pv_irq_ops pv_irq_ops;
 extern struct pv_apic_ops pv_apic_ops;
 extern struct pv_mmu_ops pv_mmu_ops;
 extern struct pv_lock_ops pv_lock_ops;
+extern void (*pv_mmu_lazy_mode_flush)(void);
 
 #define PARAVIRT_PATCH(x)					\
 	(offsetof(struct paravirt_patch_template, x) / sizeof(void *))

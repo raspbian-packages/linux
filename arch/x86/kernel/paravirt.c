@@ -140,6 +140,7 @@ static void *get_call_destination(u8 type)
 #ifdef CONFIG_PARAVIRT_SPINLOCKS
 		.pv_lock_ops = pv_lock_ops,
 #endif
+		.pv_mmu_lazy_mode_flush = pv_mmu_lazy_mode_flush,
 	};
 	return *((void **)&tmpl + type);
 }
@@ -483,11 +484,12 @@ struct pv_mmu_ops pv_mmu_ops = {
 	.lazy_mode = {
 		.enter = paravirt_nop,
 		.leave = paravirt_nop,
-		.flush = paravirt_nop,
 	},
 
 	.set_fixmap = native_set_fixmap,
 };
+
+void (*pv_mmu_lazy_mode_flush)(void) = paravirt_nop;
 
 EXPORT_SYMBOL_GPL(pv_time_ops);
 EXPORT_SYMBOL    (pv_cpu_ops);
