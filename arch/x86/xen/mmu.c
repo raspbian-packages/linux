@@ -2079,7 +2079,6 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
 	.lazy_mode = {
 		.enter = paravirt_enter_lazy_mmu,
 		.leave = xen_leave_lazy_mmu,
-		.flush = paravirt_flush_lazy_mmu,
 	},
 
 	.set_fixmap = xen_set_fixmap,
@@ -2091,6 +2090,7 @@ void __init xen_init_mmu_ops(void)
 	x86_init.paging.pagetable_setup_start = xen_pagetable_setup_start;
 	x86_init.paging.pagetable_setup_done = xen_pagetable_setup_done;
 	pv_mmu_ops = xen_mmu_ops;
+	pv_mmu_lazy_mode_flush = paravirt_flush_lazy_mmu,
 
 	memset(dummy_mapping, 0xff, PAGE_SIZE);
 }
