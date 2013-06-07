@@ -470,7 +470,9 @@ struct transaction_s
 		T_COMMIT,
 		T_COMMIT_DFLUSH,
 		T_COMMIT_JFLUSH,
+#ifndef __GENKSYMS__
 		T_COMMIT_CALLBACK,
+#endif
 		T_FINISHED
 	}			t_state;
 
