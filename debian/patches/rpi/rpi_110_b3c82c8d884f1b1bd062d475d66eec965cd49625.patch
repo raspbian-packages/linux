@@ -1,0 +1,21 @@
+commit b3c82c8d884f1b1bd062d475d66eec965cd49625
+Author: Dom Cobley <dc4@broadcom.com>
+Date:   Wed Feb 15 18:33:00 2012 +0000
+
+    Fix bug where vchiq fails when L2 enabled
+    
+    Signed-off-by: Dom Cobley <dc4@broadcom.com>
+
+Index: linux-3.2.46/drivers/misc/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c	2013-07-26 19:32:00.000000000 +0000
++++ linux-3.2.46/drivers/misc/vc04_services/interface/vchiq_arm/vchiq_2835_arm.c	2013-07-26 19:32:16.000000000 +0000
+@@ -36,7 +36,7 @@
+ #define TOTAL_SLOTS (VCHIQ_SLOT_ZERO_SLOTS + 2 * 32)
+ 
+ #define VCHIQ_DOORBELL_IRQ IRQ_ARM_DOORBELL_0
+-#define VCHIQ_ARM_ADDRESS(x) __virt_to_bus(x)
++#define VCHIQ_ARM_ADDRESS(x) __virt_to_bus((unsigned)x)
+ 
+ #include "vchiq_arm.h"
+ #include "vchiq_2835.h"

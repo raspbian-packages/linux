@@ -1,0 +1,34 @@
+From: Somnath Kotur <somnath.kotur@emulex.com>
+Date: Wed, 2 May 2012 03:41:01 +0000
+Subject: [PATCH 57/58] be2net: Fix EEH error reset before a flash dump
+ completes
+
+commit eeb7fc7bc095546b21188e8e076a59bce73f9ca6 upstream.
+
+An EEH error can cause the FW to trigger a flash debug dump.
+Resetting the card while flash dump is in progress can cause it not to recover.
+Wait for it to finish before letting EEH flow to reset the card.
+
+Signed-off-by: Sathya Perla <Sathya.Perla@emulex.com>
+Signed-off-by: Somnath Kotur <somnath.kotur@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be_main.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:22:06.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:22:07.000000000 +0000
+@@ -3814,6 +3814,11 @@
+ 
+ 	pci_disable_device(pdev);
+ 
++	/* The error could cause the FW to trigger a flash debug dump.
++	 * Resetting the card while flash dump is in progress
++	 * can cause it not to recover; wait for it to finish
++	 */
++	ssleep(30);
+ 	return PCI_ERS_RESULT_NEED_RESET;
+ }
+ 

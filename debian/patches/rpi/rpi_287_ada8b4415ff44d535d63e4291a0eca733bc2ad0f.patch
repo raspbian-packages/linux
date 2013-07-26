@@ -1,0 +1,19 @@
+commit ada8b4415ff44d535d63e4291a0eca733bc2ad0f
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Nov 26 21:40:34 2012 +0000
+
+    Leave missing_status enabled for now.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:37:36.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:37:42.000000000 +0000
+@@ -141,7 +141,7 @@
+ static bool allow_highspeed = 1;
+ static int emmc_clock_freq = BCM2708_EMMC_CLOCK_FREQ;
+ static bool sync_after_dma = 1;
+-static bool missing_status = 0;
++static bool missing_status = 1;
+ static bool spurious_crc_acmd51 = 0;
+ bool enable_llm = 1;
+ 

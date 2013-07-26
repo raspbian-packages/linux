@@ -1,0 +1,19 @@
+commit b3df416a54a7892e80f65d80b0c14dc7514bf26d
+Author: chrisw2 <chrisw2@rpi01>
+Date:   Wed Jul 11 00:19:00 2012 +0100
+
+    Change to add SCSI tape support as loadable modules to kernel config after line 264 add these two lines: CONFIG_CHR_DEV_ST=m CONFIG_CHR_DEV_OSST=m
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:57.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:34:02.000000000 +0000
+@@ -262,6 +262,8 @@
+ CONFIG_SCSI=y
+ # CONFIG_SCSI_PROC_FS is not set
+ CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_ST=m
++CONFIG_CHR_DEV_OSST=m
+ CONFIG_BLK_DEV_SR=m
+ CONFIG_SCSI_MULTI_LUN=y
+ # CONFIG_SCSI_LOWLEVEL is not set

@@ -1,0 +1,43 @@
+commit f1da243c55dd220600f56899b770c25b77d572a6
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Jun 22 12:57:42 2012 +0100
+
+    Use ndelay rather than udelay. Thanks lb
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:32.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:40.000000000 +0000
+@@ -255,14 +255,14 @@
+ 		if (now == last_write_hpt || now == last_write_hpt+1) {
+ 			 /* we can't guarantee any significant time has
+ 			  * passed - we'll have to wait anyway ! */
+-			udelay((ns_2clk+1000-1)/1000);
++			ndelay(ns_2clk);
+ 		} else
+ 		{
+ 			/* we must have waited at least this many ns: */
+ 			unsigned int ns_wait = HPTIME_CLK_NS *
+ 					       (last_write_hpt - now - 1);
+ 			if (ns_wait < ns_2clk)
+-				udelay((ns_2clk-ns_wait+500)/1000);
++				ndelay(ns_2clk - ns_wait);
+ 		}
+ 		last_write_hpt = now;
+ 	}
+@@ -278,13 +278,13 @@
+ 		ier &= ~SDHCI_INT_DATA_TIMEOUT;
+ 		writel(ier, host->ioaddr + SDHCI_SIGNAL_ENABLE);
+ 		timeout_disabled = true;
+-		udelay((ns_2clk+1000-1)/1000);
++		ndelay(ns_2clk);
+ 	} else if (timeout_disabled) {
+ 		ier = readl(host->ioaddr + SDHCI_SIGNAL_ENABLE);
+ 		ier |= SDHCI_INT_DATA_TIMEOUT;
+ 		writel(ier, host->ioaddr + SDHCI_SIGNAL_ENABLE);
+ 		timeout_disabled = false;
+-		udelay((ns_2clk+1000-1)/1000);
++		ndelay(ns_2clk);
+ 	}
+ #endif
+ 	writel(val, host->ioaddr + reg);

@@ -1,0 +1,27 @@
+From: Stefan Hajnoczi <stefanha@gmail.com>
+Date: Sun, 11 Nov 2012 13:24:46 +0100
+Subject: [051/106] staging: line6: wrap comment to 80 chars in variax.c
+
+commit e5603cbd7f6b8d8ec6a59d3ce11c3fa28ef2a733 upstream.
+
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/variax.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/staging/line6/variax.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/variax.c	2013-07-26 19:28:51.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/variax.c	2013-07-26 19:29:04.000000000 +0000
+@@ -160,7 +160,9 @@
+ 	/* current model dump: */
+ 	line6_dump_request_async(&variax->dumpreq, &variax->line6, 0,
+ 				 VARIAX_DUMP_PASS1);
+-	/* passes 2 and 3 are performed implicitly before entering variax_startup6 */
++	/* passes 2 and 3 are performed implicitly before entering
++	 * variax_startup6.
++	 */
+ }
+ 
+ static void variax_startup6(struct usb_line6_variax *variax)

@@ -1,0 +1,44 @@
+commit 00b8a332c633a6ee52994672ea2558d1f8199fa9
+Author: Steve Glendinning <steve.glendinning@shawell.net>
+Date:   Fri Sep 28 00:07:07 2012 +0000
+
+    smsc95xx: sleep before read for lengthy operations
+    
+    During init, the device reset is unexpected to complete immediately,
+    so sleep before testing the condition rather than after it.
+    
+    Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Index: linux-3.2.46/drivers/net/usb/smsc95xx.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:24.000000000 +0000
++++ linux-3.2.46/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:26.000000000 +0000
+@@ -818,12 +818,12 @@
+ 
+ 	timeout = 0;
+ 	do {
++		msleep(10);
+ 		ret = smsc95xx_read_reg(dev, HW_CFG, &read_buf);
+ 		if (ret < 0) {
+ 			netdev_warn(dev->net, "Failed to read HW_CFG: %d\n", ret);
+ 			return ret;
+ 		}
+-		msleep(10);
+ 		timeout++;
+ 	} while ((read_buf & HW_CFG_LRST_) && (timeout < 100));
+ 
+@@ -841,12 +841,12 @@
+ 
+ 	timeout = 0;
+ 	do {
++		msleep(10);
+ 		ret = smsc95xx_read_reg(dev, PM_CTRL, &read_buf);
+ 		if (ret < 0) {
+ 			netdev_warn(dev->net, "Failed to read PM_CTRL: %d\n", ret);
+ 			return ret;
+ 		}
+-		msleep(10);
+ 		timeout++;
+ 	} while ((read_buf & PM_CTL_PHY_RST_) && (timeout < 100));
+ 

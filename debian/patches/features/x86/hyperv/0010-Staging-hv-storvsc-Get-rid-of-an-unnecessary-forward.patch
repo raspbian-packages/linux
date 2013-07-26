@@ -1,0 +1,29 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Tue, 8 Nov 2011 09:01:47 -0800
+Subject: [PATCH 10/77] Staging: hv: storvsc: Get rid of an unnecessary
+ forward declaration
+
+commit a404c1ff5556fe29460c097a34d2abe10ddd6e0a upstream.
+
+Get rid of an unnecessary forward declaration.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/storvsc_drv.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/hv/storvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:06.000000000 +0000
++++ linux-3.2.46/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:08.000000000 +0000
+@@ -236,8 +236,6 @@
+ #define STORVSC_MAX_CHANNELS				1
+ #define STORVSC_MAX_CMD_LEN				16
+ 
+-struct hv_storvsc_request;
+-
+ /* Matches Windows-end */
+ enum storvsc_request_type {
+ 	WRITE_TYPE,

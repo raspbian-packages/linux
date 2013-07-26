@@ -1,0 +1,43 @@
+From: Jason Cooper <jason@lakedaemon.net>
+Date: Mon Feb 27 16:07:14 2012 +0000
+Subject: ARM: kirkwood: convert uart0 to devicetree.
+
+commit 759a45185ac0e4dfaf8bbfcb390ec73aca4b7a34 upstream.
+
+This uart is the primary console for the dreamplug.  Removed
+kirkwood_uart0_init() call from board-dt.c.
+
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+Index: linux-3.2.46/arch/arm/boot/dts/kirkwood-dreamplug.dts
+===================================================================
+--- linux-3.2.46.orig/arch/arm/boot/dts/kirkwood-dreamplug.dts	2013-07-26 19:23:41.000000000 +0000
++++ linux-3.2.46/arch/arm/boot/dts/kirkwood-dreamplug.dts	2013-07-26 19:23:43.000000000 +0000
+@@ -15,4 +15,11 @@
+ 		bootargs = "console=ttyS0,115200n8 earlyprintk";
+ 	};
+ 
++	serial@f1012000 {
++		compatible = "ns16550a";
++		reg = <0xf1012000 0xff>;
++		reg-shift = <2>;
++		interrupts = <33>;
++		clock-frequency = <200000000>;
++	};
+ };
+Index: linux-3.2.46/arch/arm/mach-kirkwood/board-dt.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-kirkwood/board-dt.c	2013-07-26 19:23:41.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-kirkwood/board-dt.c	2013-07-26 19:23:43.000000000 +0000
+@@ -140,8 +140,6 @@
+ 	 */
+ 	kirkwood_mpp_conf(dreamplug_mpp_config);
+ 
+-	kirkwood_uart0_init();
+-
+ 	spi_register_board_info(dreamplug_spi_slave_info,
+ 				ARRAY_SIZE(dreamplug_spi_slave_info));
+ 	kirkwood_spi_init();

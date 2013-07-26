@@ -1,0 +1,41 @@
+commit 5412f282ae16b8872e0da31b576122d5b3440228
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Aug 24 23:21:20 2012 +0100
+
+    Switch of tracing options in kernel. Costs 20% in iperf speed, and 10% in xbmc framerate
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:35:48.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:35:49.000000000 +0000
+@@ -15,6 +15,7 @@
+ CONFIG_BLK_CGROUP=y
+ CONFIG_NAMESPACES=y
+ CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
+ CONFIG_EMBEDDED=y
+ # CONFIG_COMPAT_BRK is not set
+ CONFIG_SLAB=y
+@@ -850,6 +851,7 @@
+ CONFIG_NLS_KOI8_R=m
+ CONFIG_NLS_KOI8_U=m
+ CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_FS=y
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_TIMER_STATS=y
+ # CONFIG_DEBUG_PREEMPT is not set
+@@ -857,13 +859,7 @@
+ CONFIG_BOOT_PRINTK_DELAY=y
+ CONFIG_LATENCYTOP=y
+ CONFIG_SYSCTL_SYSCALL_CHECK=y
+-# CONFIG_EVENT_POWER_TRACING_DEPRECATED is not set
+-CONFIG_IRQSOFF_TRACER=y
+-CONFIG_PREEMPT_TRACER=y
+-CONFIG_SCHED_TRACER=y
+-CONFIG_STACK_TRACER=y
+-CONFIG_BLK_DEV_IO_TRACE=y
+-CONFIG_FUNCTION_PROFILER=y
++# CONFIG_KPROBE_EVENT is not set
+ CONFIG_KGDB=y
+ CONFIG_KGDB_KDB=y
+ CONFIG_KDB_KEYBOARD=y

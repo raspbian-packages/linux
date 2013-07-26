@@ -1,0 +1,29 @@
+commit 369b60fd9ad144b91503c915d4952ee73cc01b91
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Apr 16 12:55:39 2012 +0100
+
+    Fix harmless base/size typo
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/vc_mem.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/vc_mem.c	2013-07-26 19:32:34.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/vc_mem.c	2013-07-26 19:32:41.000000000 +0000
+@@ -208,14 +208,14 @@
+ 		}
+ 	case VC_MEM_IOC_MEM_BASE:
+ 		{
+-			// Get the videocore memory size first
++			// Get the videocore memory base
+ 			vc_mem_get_base();
+ 
+ 			LOG_DBG("%s: VC_MEM_IOC_MEM_BASE=%u", __func__,
+-				mm_vc_mem_size);
++				mm_vc_mem_base);
+ 
+-			if (copy_to_user((void *) arg, &mm_vc_mem_size,
+-					 sizeof (mm_vc_mem_size)) != 0) {
++			if (copy_to_user((void *) arg, &mm_vc_mem_base,
++					 sizeof (mm_vc_mem_base)) != 0) {
+ 				rc = -EFAULT;
+ 			}
+ 			break;

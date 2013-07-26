@@ -1,0 +1,65 @@
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 4 Jan 2012 20:23:36 +0000
+Subject: igb: Add support for byte queue limits.
+
+commit bdbc063129e811264cd6c311d8c2d9b95de01231 upstream.
+
+This adds support for byte queue limits (BQL)
+
+Since this driver collects bytes count in 'bytecount' field, use it also
+in igb_tx_map()
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Alexander Duyck <alexander.h.duyck@intel.com>
+Tested-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/intel/igb/igb.h      |    5 +++++
+ drivers/net/ethernet/intel/igb/igb_main.c |    5 +++++
+ 2 files changed, 10 insertions(+)
+
+Index: linux-3.2.46/drivers/net/ethernet/intel/igb/igb.h
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/intel/igb/igb.h	2013-07-26 18:54:11.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/intel/igb/igb.h	2013-07-26 19:24:45.000000000 +0000
+@@ -447,4 +447,9 @@
+ 	return 0;
+ }
+ 
++static inline struct netdev_queue *txring_txq(const struct igb_ring *tx_ring)
++{
++	return netdev_get_tx_queue(tx_ring->netdev, tx_ring->queue_index);
++}
++
+ #endif /* _IGB_H_ */
+Index: linux-3.2.46/drivers/net/ethernet/intel/igb/igb_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/intel/igb/igb_main.c	2013-07-26 18:54:11.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/intel/igb/igb_main.c	2013-07-26 19:24:45.000000000 +0000
+@@ -3213,6 +3213,7 @@
+ 		buffer_info = &tx_ring->tx_buffer_info[i];
+ 		igb_unmap_and_free_tx_resource(tx_ring, buffer_info);
+ 	}
++	netdev_tx_reset_queue(txring_txq(tx_ring));
+ 
+ 	size = sizeof(struct igb_tx_buffer) * tx_ring->count;
+ 	memset(tx_ring->tx_buffer_info, 0, size);
+@@ -4251,6 +4252,8 @@
+ 		frag++;
+ 	}
+ 
++	netdev_tx_sent_queue(txring_txq(tx_ring), first->bytecount);
++
+ 	/* write last descriptor with RS and EOP bits */
+ 	cmd_type |= cpu_to_le32(size) | cpu_to_le32(IGB_TXD_DCMD);
+ 	tx_desc->read.cmd_type_len = cmd_type;
+@@ -5793,6 +5796,8 @@
+ 		}
+ 	}
+ 
++	netdev_tx_completed_queue(txring_txq(tx_ring),
++				  total_packets, total_bytes);
+ 	i += tx_ring->count;
+ 	tx_ring->next_to_clean = i;
+ 	u64_stats_update_begin(&tx_ring->tx_syncp);

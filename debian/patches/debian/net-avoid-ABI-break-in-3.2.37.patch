@@ -1,0 +1,34 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: net: Avoid ABI break in 3.2.37
+Date: Sun, 27 Jan 2013 01:29:15 +0000
+Forwarded: not-needed
+
+A huge number of source files indirectly include <linux/snmp.h> even
+though nothing outside the TCP stack should make any use for the
+numbers defined there.  To avoid symbol version changes, restore the
+deleted enumerator and hide the added enumerators from genksyms.
+
+---
+Index: linux-3.2.46/include/linux/snmp.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/snmp.h	2013-07-26 18:53:39.000000000 +0000
++++ linux-3.2.46/include/linux/snmp.h	2013-07-26 19:26:06.000000000 +0000
+@@ -210,6 +210,7 @@
+ 	LINUX_MIB_TCPDSACKRECV,			/* TCPDSACKRecv */
+ 	LINUX_MIB_TCPDSACKOFORECV,		/* TCPDSACKOfoRecv */
+ 	LINUX_MIB_TCPABORTONDATA,		/* TCPAbortOnData */
++	LINUX_MIB_TCPABORTONSYN,		/* unused, binary compat */
+ 	LINUX_MIB_TCPABORTONCLOSE,		/* TCPAbortOnClose */
+ 	LINUX_MIB_TCPABORTONMEMORY,		/* TCPAbortOnMemory */
+ 	LINUX_MIB_TCPABORTONTIMEOUT,		/* TCPAbortOnTimeout */
+@@ -232,8 +233,10 @@
+ 	LINUX_MIB_TCPTIMEWAITOVERFLOW,		/* TCPTimeWaitOverflow */
+ 	LINUX_MIB_TCPREQQFULLDOCOOKIES,		/* TCPReqQFullDoCookies */
+ 	LINUX_MIB_TCPREQQFULLDROP,		/* TCPReqQFullDrop */
++#ifndef __GENKSYMS__
+ 	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
+ 	LINUX_MIB_TCPSYNCHALLENGE,		/* TCPSYNChallenge */
++#endif
+ 	__LINUX_MIB_MAX
+ };
+ 

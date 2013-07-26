@@ -1,0 +1,27 @@
+From: Johannes Thumshirn <morbidrsa@googlemail.com>
+Date: Sat, 5 May 2012 16:31:52 +0200
+Subject: [028/106] staging: line6/pcm.c: Removed trailing whitespace
+
+commit 82a74d4a8022fc01b99550e4cd6b90802acd4ef9 upstream.
+
+Removed a line of only whitespace
+
+Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/pcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/staging/line6/pcm.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/pcm.c	2013-07-26 19:28:24.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/pcm.c	2013-07-26 19:28:35.000000000 +0000
+@@ -99,7 +99,7 @@
+ 	unsigned long flags_new = flags_old | channels;
+ 	unsigned long flags_final = flags_old;
+ 	int err = 0;
+-	
++
+ 	line6pcm->prev_fbuf = NULL;
+ 
+ 	if (test_flags(flags_old, flags_new, LINE6_BITS_CAPTURE_BUFFER)) {

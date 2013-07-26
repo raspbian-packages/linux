@@ -1,0 +1,23 @@
+commit 70b125d750757b0ba3c2853268b8f8dbac1a5192
+Author: Grigori Goronzy <greg@blackbox>
+Date:   Mon Jun 11 18:58:40 2012 +0200
+
+    sdhci-bcm2708: assume 50 MHz eMMC clock
+    
+    80 MHz clock isnt't suited well to be dividable to get SD clocks of 25
+    MHz (default mode) or 50 MHz (high speed mode). 50 MHz are perfect to
+    drive the SD interface at ideal frequencies.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:25.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:27.000000000 +0000
+@@ -74,7 +74,7 @@
+ #define BCM2708_SDHCI_SLEEP_TIMEOUT 1000   /* msecs */
+ 
+ /* Mhz clock that the EMMC core is running at. Should match the platform clockman settings */
+-#define BCM2708_EMMC_CLOCK_FREQ 80000000
++#define BCM2708_EMMC_CLOCK_FREQ 50000000
+ 
+ #define POWER_OFF 0
+ #define POWER_LAZY_OFF 1

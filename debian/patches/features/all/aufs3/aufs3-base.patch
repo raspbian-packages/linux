@@ -1,0 +1,70 @@
+aufs3.2 base patch
+
+Index: linux-3.2.46/fs/namei.c
+===================================================================
+--- linux-3.2.46.orig/fs/namei.c	2013-07-26 18:56:42.000000000 +0000
++++ linux-3.2.46/fs/namei.c	2013-07-26 19:16:51.000000000 +0000
+@@ -1755,7 +1755,7 @@
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
+  */
+-static struct dentry *lookup_hash(struct nameidata *nd)
++struct dentry *lookup_hash(struct nameidata *nd)
+ {
+ 	return __lookup_hash(&nd->last, nd->path.dentry, nd);
+ }
+Index: linux-3.2.46/fs/splice.c
+===================================================================
+--- linux-3.2.46.orig/fs/splice.c	2013-07-26 18:56:42.000000000 +0000
++++ linux-3.2.46/fs/splice.c	2013-07-26 19:16:51.000000000 +0000
+@@ -1094,8 +1094,8 @@
+ /*
+  * Attempt to initiate a splice from pipe to file.
+  */
+-static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+-			   loff_t *ppos, size_t len, unsigned int flags)
++long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++		    loff_t *ppos, size_t len, unsigned int flags)
+ {
+ 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *,
+ 				loff_t *, size_t, unsigned int);
+@@ -1122,9 +1122,9 @@
+ /*
+  * Attempt to initiate a splice from a file to a pipe.
+  */
+-static long do_splice_to(struct file *in, loff_t *ppos,
+-			 struct pipe_inode_info *pipe, size_t len,
+-			 unsigned int flags)
++long do_splice_to(struct file *in, loff_t *ppos,
++		  struct pipe_inode_info *pipe, size_t len,
++		  unsigned int flags)
+ {
+ 	ssize_t (*splice_read)(struct file *, loff_t *,
+ 			       struct pipe_inode_info *, size_t, unsigned int);
+Index: linux-3.2.46/include/linux/namei.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/namei.h	2013-07-26 18:56:42.000000000 +0000
++++ linux-3.2.46/include/linux/namei.h	2013-07-26 19:16:52.000000000 +0000
+@@ -85,6 +85,7 @@
+ extern struct file *lookup_instantiate_filp(struct nameidata *nd, struct dentry *dentry,
+ 		int (*open)(struct inode *, struct file *));
+ 
++extern struct dentry *lookup_hash(struct nameidata *nd);
+ extern struct dentry *lookup_one_len(const char *, struct dentry *, int);
+ 
+ extern int follow_down_one(struct path *);
+Index: linux-3.2.46/include/linux/splice.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/splice.h	2013-07-26 18:56:42.000000000 +0000
++++ linux-3.2.46/include/linux/splice.h	2013-07-26 19:16:52.000000000 +0000
+@@ -91,4 +91,10 @@
+ extern void spd_release_page(struct splice_pipe_desc *, unsigned int);
+ 
+ extern const struct pipe_buf_operations page_cache_pipe_buf_ops;
++
++extern long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++			   loff_t *ppos, size_t len, unsigned int flags);
++extern long do_splice_to(struct file *in, loff_t *ppos,
++			 struct pipe_inode_info *pipe, size_t len,
++			 unsigned int flags);
+ #endif

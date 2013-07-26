@@ -1,0 +1,28 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Tue, 8 Nov 2011 09:01:46 -0800
+Subject: [PATCH 09/77] Staging: hv: storvsc: use the macro KBUILD_MODNAME
+
+commit fafb0efc303a916f9902cbadddef3ea125720c1b upstream.
+
+Use the macro KBUILD_MODNAME.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/storvsc_drv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/staging/hv/storvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:05.000000000 +0000
++++ linux-3.2.46/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:06.000000000 +0000
+@@ -1450,7 +1450,7 @@
+ /* The one and only one */
+ 
+ static struct hv_driver storvsc_drv = {
+-	.name = "storvsc",
++	.name = KBUILD_MODNAME,
+ 	.id_table = id_table,
+ 	.probe = storvsc_probe,
+ 	.remove = storvsc_remove,

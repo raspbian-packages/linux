@@ -1,0 +1,19 @@
+commit d34d49ef34fee0adae557b960bee4737220588be
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Jun 16 23:26:28 2012 +0100
+
+    Fix bool/int error
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:29.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:31.000000000 +0000
+@@ -1492,7 +1492,7 @@
+ module_exit(sdhci_drv_exit);
+ 
+ module_param(allow_highspeed, bool, 0444);
+-module_param(emmc_clock_freq, bool, 0444);
++module_param(emmc_clock_freq, int, 0444);
+ 
+ MODULE_DESCRIPTION("Secure Digital Host Controller Interface platform driver");
+ MODULE_AUTHOR("Broadcom <info@broadcom.com>");

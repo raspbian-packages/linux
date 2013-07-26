@@ -1,0 +1,42 @@
+From: Johannes Thumshirn <morbidrsa@googlemail.com>
+Date: Wed, 27 Jun 2012 21:25:55 +0200
+Subject: [031/106] staging: line6: changed interface of
+ line6_transmit_parameter()
+
+commit 2471c0933988eede8040d58cefd6be4fbef9c057 upstream.
+
+Interface of line6_transmit_parameter() adjusted to clarify internal workings
+
+Signed-off-by: Johannes Thumshirn <morbidrsa@googlemail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/driver.c |    2 +-
+ drivers/staging/line6/driver.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/line6/driver.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/driver.c	2013-07-26 19:28:29.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/driver.c	2013-07-26 19:28:38.000000000 +0000
+@@ -526,7 +526,7 @@
+ /*
+ 	Transmit Line6 control parameter.
+ */
+-int line6_transmit_parameter(struct usb_line6 *line6, int param, int value)
++int line6_transmit_parameter(struct usb_line6 *line6, int param, u8 value)
+ {
+ 	int retval;
+ 	unsigned char *buffer;
+Index: linux-3.2.46/drivers/staging/line6/driver.h
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/driver.h	2013-07-26 19:28:11.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/driver.h	2013-07-26 19:28:38.000000000 +0000
+@@ -224,7 +224,7 @@
+ 			      void (*function) (unsigned long),
+ 			      unsigned long data);
+ extern int line6_transmit_parameter(struct usb_line6 *line6, int param,
+-				    int value);
++				    u8 value);
+ extern int line6_version_request_async(struct usb_line6 *line6);
+ extern int line6_write_data(struct usb_line6 *line6, int address, void *data,
+ 			    size_t datalen);

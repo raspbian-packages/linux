@@ -1,0 +1,28 @@
+commit 0c184a6618f4817030af0bbfdc7d55911e2b14ed
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Tue May 8 23:09:44 2012 +0100
+
+    Use dwc_alloc_atomic. Thanks bootc
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.h
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd.h	2013-07-26 19:31:23.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.h	2013-07-26 19:32:56.000000000 +0000
+@@ -628,7 +628,7 @@
+  * @return Returns the memory allocate or NULL on error. */
+ static inline dwc_otg_qh_t *dwc_otg_hcd_qh_alloc(void)
+ {
+-	return (dwc_otg_qh_t *) dwc_alloc(sizeof(dwc_otg_qh_t));
++	return (dwc_otg_qh_t *) dwc_alloc_atomic(sizeof(dwc_otg_qh_t));
+ }
+ 
+ extern dwc_otg_qtd_t *dwc_otg_hcd_qtd_create(dwc_otg_hcd_urb_t * urb);
+@@ -640,7 +640,7 @@
+  * @return Returns the memory allocate or NULL on error. */
+ static inline dwc_otg_qtd_t *dwc_otg_hcd_qtd_alloc(void)
+ {
+-	return (dwc_otg_qtd_t *) dwc_alloc(sizeof(dwc_otg_qtd_t));
++	return (dwc_otg_qtd_t *) dwc_alloc_atomic(sizeof(dwc_otg_qtd_t));
+ }
+ 
+ /** Frees the memory for a QTD structure.  QTD should already be removed from

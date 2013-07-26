@@ -1,0 +1,18 @@
+commit 3cb5f1d392bef25dd965b71ca881f4c50beec59c
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Oct 15 18:54:42 2012 +0100
+
+    Revert "fix build with CONFIG_BCM2708_VCHIQ is disabled"
+    
+    This reverts commit 7aa8d823bd9feb758c2e0755d7d3589481bf6b36.
+
+Index: linux-3.2.46/drivers/misc/Makefile
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/Makefile	2013-07-26 19:37:03.000000000 +0000
++++ linux-3.2.46/drivers/misc/Makefile	2013-07-26 19:37:04.000000000 +0000
+@@ -48,4 +48,4 @@
+ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+ obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
+-obj-$(CONFIG_BCM2708_VCHIQ)	+= vc04_services/
++obj-y				+= vc04_services/

@@ -1,0 +1,26 @@
+commit 4b0ecd93e82e32453b25fec1dc59bcedfd2958fd
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Tue May 15 15:24:40 2012 +0100
+
+    Fix for DWC OTG HCD URB Dequeue has NULL URB panic. Thanks Naren
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c	2013-07-26 19:32:51.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c	2013-07-26 19:33:00.000000000 +0000
+@@ -761,10 +761,12 @@
+ 		dump_urb_info(urb, "urb_dequeue");
+ 	}
+ #endif
+-	dwc_otg_hcd_urb_dequeue(dwc_otg_hcd, (dwc_otg_hcd_urb_t *)urb->hcpriv);
++	if(urb->hcpriv != NULL) {
++		dwc_otg_hcd_urb_dequeue(dwc_otg_hcd, (dwc_otg_hcd_urb_t *)urb->hcpriv);
+ 
+-	dwc_free(urb->hcpriv);
+-	urb->hcpriv = NULL;
++		urb->hcpriv = NULL;
++		dwc_free(urb->hcpriv);
++	}
+ 
+ 	/* Higher layer software sets URB status. */
+ #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30))

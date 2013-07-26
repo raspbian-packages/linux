@@ -1,0 +1,37 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Thu, 1 Dec 2011 04:59:18 -0800
+Subject: [PATCH 23/77] Staging: hv: storvsc: Fix a bug in
+ storvsc_command_completion()
+
+commit a768a76d55c2798bbd86b81f50ef740312d69935 upstream.
+
+Fix a bug in storvsc_command_completion() that leaks memory when scatter/gather
+lists are used on the "write" side.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/storvsc_drv.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/hv/storvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:24.000000000 +0000
++++ linux-3.2.46/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:25.000000000 +0000
+@@ -1129,13 +1129,12 @@
+ 
+ 	vm_srb = &request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+-		if (vm_srb->data_in == READ_TYPE) {
++		if (vm_srb->data_in == READ_TYPE)
+ 			copy_from_bounce_buffer(scsi_sglist(scmnd),
+ 					cmd_request->bounce_sgl,
+ 					scsi_sg_count(scmnd));
+-			destroy_bounce_buffer(cmd_request->bounce_sgl,
++		destroy_bounce_buffer(cmd_request->bounce_sgl,
+ 					cmd_request->bounce_sgl_count);
+-		}
+ 	}
+ 
+ 	/*

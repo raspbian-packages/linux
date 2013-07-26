@@ -1,0 +1,29 @@
+From: Stefan Hajnoczi <stefanha@gmail.com>
+Date: Wed, 14 Nov 2012 08:50:42 +0100
+Subject: [056/106] staging: line6: drop CONTROL from
+ CONFIG_LINE6_USB_DUMP_ANY
+
+commit 19ae77935e45d60bf64144e2d67074a2886db245 upstream.
+
+CONFIG_LINE6_USB_DUMP_CTRL is no longer used by the code and therefore
+no longer plays a role in CONFIG_LINE6_USB_DUMP_ANY.
+
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/driver.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/staging/line6/driver.h
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/driver.h	2013-07-26 19:29:07.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/driver.h	2013-07-26 19:29:11.000000000 +0000
+@@ -20,7 +20,7 @@
+ 
+ #define DRIVER_NAME "line6usb"
+ 
+-#if defined(CONFIG_LINE6_USB_DUMP_CTRL) || defined(CONFIG_LINE6_USB_DUMP_MIDI) || defined(CONFIG_LINE6_USB_DUMP_PCM)
++#if defined(CONFIG_LINE6_USB_DUMP_MIDI) || defined(CONFIG_LINE6_USB_DUMP_PCM)
+ #define CONFIG_LINE6_USB_DUMP_ANY
+ #endif
+ 

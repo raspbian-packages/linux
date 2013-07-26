@@ -1,0 +1,43 @@
+commit 56c44908b2860bb551aaf532c232bcc63d4e584d
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Jul 14 18:38:58 2012 +0100
+
+    Better fix for quitting X hang. Interrupted mailbox reads are not something we can reliably recover from, so down_interruptable is not a safe call.
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/vcio.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/vcio.c	2013-07-26 19:33:01.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/vcio.c	2013-07-26 19:34:05.000000000 +0000
+@@ -119,14 +119,10 @@
+ 	if (mbox->magic != MBOX_MAGIC)
+ 		rc = -EINVAL;
+ 	else {
+-		if (down_interruptible(&mbox->sema[chan]) == 0) {
+-			*data28 = MBOX_DATA28(mbox->msg[chan]);
+-			mbox->msg[chan] = 0;
+-			rc = 0;
+-		} else {
+-			/* The wait was interrupted */
+-			rc = -EINTR;
+-		}
++		down(&mbox->sema[chan]);
++		*data28 = MBOX_DATA28(mbox->msg[chan]);
++		mbox->msg[chan] = 0;
++		rc = 0;
+ 	}
+ 	return rc;
+ }
+Index: linux-3.2.46/drivers/video/bcm2708_fb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/bcm2708_fb.c	2013-07-26 19:34:03.000000000 +0000
++++ linux-3.2.46/drivers/video/bcm2708_fb.c	2013-07-26 19:34:05.000000000 +0000
+@@ -222,9 +222,6 @@
+ 	/* inform vc about new framebuffer */
+ 	bcm_mailbox_write(MBOX_CHAN_FB, fb->dma);
+ 
+-	/* workaround occasional failure to read results. TODO: fix */
+-	msleep(10);
+-
+ 	/* wait for response */
+ 	bcm_mailbox_read(MBOX_CHAN_FB, &val);
+ 

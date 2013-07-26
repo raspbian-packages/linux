@@ -1,0 +1,84 @@
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Thu, 2 Feb 2012 07:18:00 +0000
+Subject: [PATCH 42/77] net/hyperv: Fix the page buffer when an RNDIS message
+ goes beyond page boundary
+
+commit c31c151b1c4a29da4dc92212aa8648fb4f8557b9 upstream.
+
+There is a possible data corruption if an RNDIS message goes beyond page
+boundary in the sending code path. This patch fixes the problem.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/hyperv/netvsc_drv.c   |    8 ++++----
+ drivers/net/hyperv/rndis_filter.c |   13 +++++++++++++
+ include/linux/hyperv.h            |    2 +-
+ 3 files changed, 18 insertions(+), 5 deletions(-)
+
+Index: linux-3.2.46/drivers/net/hyperv/netvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:49.000000000 +0000
++++ linux-3.2.46/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:50.000000000 +0000
+@@ -151,10 +151,10 @@
+ 	int ret;
+ 	unsigned int i, num_pages, npg_data;
+ 
+-	/* Add multipage for skb->data and additional one for RNDIS */
++	/* Add multipages for skb->data and additional 2 for RNDIS */
+ 	npg_data = (((unsigned long)skb->data + skb_headlen(skb) - 1)
+ 		>> PAGE_SHIFT) - ((unsigned long)skb->data >> PAGE_SHIFT) + 1;
+-	num_pages = skb_shinfo(skb)->nr_frags + npg_data + 1;
++	num_pages = skb_shinfo(skb)->nr_frags + npg_data + 2;
+ 
+ 	/* Allocate a netvsc packet based on # of frags. */
+ 	packet = kzalloc(sizeof(struct hv_netvsc_packet) +
+@@ -173,8 +173,8 @@
+ 				sizeof(struct hv_netvsc_packet) +
+ 				    (num_pages * sizeof(struct hv_page_buffer));
+ 
+-	/* Setup the rndis header */
+-	packet->page_buf_cnt = num_pages;
++	/* If the rndis msg goes beyond 1 page, we will add 1 later */
++	packet->page_buf_cnt = num_pages - 1;
+ 
+ 	/* Initialize it from the skb */
+ 	packet->total_data_buflen = skb->len;
+Index: linux-3.2.46/drivers/net/hyperv/rndis_filter.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hyperv/rndis_filter.c	2013-07-26 19:18:48.000000000 +0000
++++ linux-3.2.46/drivers/net/hyperv/rndis_filter.c	2013-07-26 19:18:50.000000000 +0000
+@@ -797,6 +797,19 @@
+ 			(unsigned long)rndisMessage & (PAGE_SIZE-1);
+ 	pkt->page_buf[0].len = rndisMessageSize;
+ 
++	/* Add one page_buf if the rndis msg goes beyond page boundary */
++	if (pkt->page_buf[0].offset + rndisMessageSize > PAGE_SIZE) {
++		int i;
++		for (i = pkt->page_buf_cnt; i > 1; i--)
++			pkt->page_buf[i] = pkt->page_buf[i-1];
++		pkt->page_buf_cnt++;
++		pkt->page_buf[0].len = PAGE_SIZE - pkt->page_buf[0].offset;
++		pkt->page_buf[1].pfn = virt_to_phys((void *)((ulong)
++			rndisMessage + pkt->page_buf[0].len)) >> PAGE_SHIFT;
++		pkt->page_buf[1].offset = 0;
++		pkt->page_buf[1].len = rndisMessageSize - pkt->page_buf[0].len;
++	}
++
+ 	/* Save the packet send completion and context */
+ 	filterPacket->completion = pkt->completion.send.send_completion;
+ 	filterPacket->completion_ctx =
+Index: linux-3.2.46/include/linux/hyperv.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/hyperv.h	2013-07-26 19:18:41.000000000 +0000
++++ linux-3.2.46/include/linux/hyperv.h	2013-07-26 19:18:50.000000000 +0000
+@@ -35,7 +35,7 @@
+ #include <linux/mod_devicetable.h>
+ 
+ 
+-#define MAX_PAGE_BUFFER_COUNT				18
++#define MAX_PAGE_BUFFER_COUNT				19
+ #define MAX_MULTIPAGE_BUFFER_COUNT			32 /* 128K */
+ 
+ #pragma pack(push, 1)

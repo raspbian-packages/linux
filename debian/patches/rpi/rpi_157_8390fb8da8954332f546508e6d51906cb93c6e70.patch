@@ -1,0 +1,22 @@
+commit 8390fb8da8954332f546508e6d51906cb93c6e70
+Author: Grigori Goronzy <greg@blackbox>
+Date:   Mon Jun 4 04:27:48 2012 +0200
+
+    sdhci-bcm2708: speed up DMA sync
+    
+    Experiments show that it doesn't really take that long to sync, so we
+    can reduce the poll interval slightly. Might improve performance a bit.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:05.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:21.000000000 +0000
+@@ -907,7 +907,7 @@
+ 		while (0 != (sdhci_bcm2708_raw_readl(host, SDHCI_PRESENT_STATE) 
+ 			& state_mask) && --timeout > 0)
+ 		{
+-			udelay(100);
++			udelay(30);
+ 			continue;
+ 		}
+ 		if (timeout <= 0)

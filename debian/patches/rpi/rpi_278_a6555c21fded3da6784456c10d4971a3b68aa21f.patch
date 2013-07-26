@@ -1,0 +1,24 @@
+commit a6555c21fded3da6784456c10d4971a3b68aa21f
+Author: Steve Glendinning <steve.glendinning@shawell.net>
+Date:   Fri Sep 28 00:07:10 2012 +0000
+
+    smsc95xx: fix resume when usb device is reset
+    
+    This patch fixes an issue on some systems, where after suspend the
+    link is re-established but the ethernet interface does not resume.
+    
+    Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Index: linux-3.2.46/drivers/net/usb/smsc95xx.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:28.000000000 +0000
++++ linux-3.2.46/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:30.000000000 +0000
+@@ -1337,6 +1337,7 @@
+ 	.probe		= usbnet_probe,
+ 	.suspend	= usbnet_suspend,
+ 	.resume		= usbnet_resume,
++	.reset_resume	= usbnet_resume,
+ 	.disconnect	= usbnet_disconnect,
+ };
+ 

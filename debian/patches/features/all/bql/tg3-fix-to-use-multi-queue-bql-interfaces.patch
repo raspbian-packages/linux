@@ -1,0 +1,49 @@
+From: Tom Herbert <therbert@google.com>
+Date: Mon, 5 Mar 2012 19:53:50 +0000
+Subject: tg3: Fix to use multi queue BQL interfaces
+
+commit 5cb917bc4f3882ecee87064483111023086757d3 upstream.
+
+Fix tg3 to use BQL multi queue related netdev interfaces since the
+device supports multi queue.
+
+Signed-off-by: Tom Herbert <therbert@google.com>
+Reported-by: Christoph Lameter <cl@gentwo.org>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 19:24:33.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 19:24:34.000000000 +0000
+@@ -5421,7 +5421,7 @@
+ 		}
+ 	}
+ 
+-	netdev_completed_queue(tp->dev, pkts_compl, bytes_compl);
++	netdev_tx_completed_queue(txq, pkts_compl, bytes_compl);
+ 
+ 	tnapi->tx_cons = sw_idx;
+ 
+@@ -6867,7 +6867,7 @@
+ 	}
+ 
+ 	skb_tx_timestamp(skb);
+-	netdev_sent_queue(tp->dev, skb->len);
++	netdev_tx_sent_queue(txq, skb->len);
+ 
+ 	/* Packets are ready, update Tx producer idx local and on card. */
+ 	tw32_tx_mbox(tnapi->prodmbox, entry);
+@@ -7348,8 +7348,8 @@
+ 
+ 			dev_kfree_skb_any(skb);
+ 		}
++		netdev_tx_reset_queue(netdev_get_tx_queue(tp->dev, j));
+ 	}
+-	netdev_reset_queue(tp->dev);
+ }
+ 
+ /* Initialize tx/rx rings for packet processing.

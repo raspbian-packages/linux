@@ -1,0 +1,21 @@
+commit eec485b89354fcfd8acb2f6c9943aad5496b467c
+Author: Arne Fitzenreiter <arne.fitzenreiter@ipfire.org>
+Date:   Wed Jun 6 08:06:15 2012 +0200
+
+    bcm2835-ctl: limit maximal volume to 4db.
+    
+    it makes no sense to set 23.04db as maximum volume since around 3db it start to cliping. So with 4db the alsamixer is much better to control. (86% is 0db)
+
+Index: linux-3.2.46/sound/arm/bcm2835-ctl.c
+===================================================================
+--- linux-3.2.46.orig/sound/arm/bcm2835-ctl.c	2013-07-26 19:33:16.000000000 +0000
++++ linux-3.2.46/sound/arm/bcm2835-ctl.c	2013-07-26 19:33:17.000000000 +0000
+@@ -53,7 +53,7 @@
+ 		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+ 		uinfo->count = 1;
+ 		uinfo->value.integer.min = -10240;
+-		uinfo->value.integer.max = 2303;
++		uinfo->value.integer.max = 400;      /* 2303 */
+ 	} else if (kcontrol->private_value == PCM_PLAYBACK_MUTE) {
+ 		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+ 		uinfo->count = 1;

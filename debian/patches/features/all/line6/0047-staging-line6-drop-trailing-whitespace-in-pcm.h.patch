@@ -1,0 +1,25 @@
+From: Stefan Hajnoczi <stefanha@gmail.com>
+Date: Sun, 11 Nov 2012 13:24:42 +0100
+Subject: [047/106] staging: line6: drop trailing whitespace in pcm.h
+
+commit b957e0ceb667fe4f2a18275b5187b2813b983baf upstream.
+
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/pcm.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/staging/line6/pcm.h
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/pcm.h	2013-07-26 19:28:24.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/pcm.h	2013-07-26 19:28:59.000000000 +0000
+@@ -167,7 +167,7 @@
+ #endif
+ 	    LINE6_BIT_PCM_ALSA_CAPTURE_STREAM |
+ 	    LINE6_BIT_PCM_MONITOR_CAPTURE_STREAM,
+-	
++
+ 	LINE6_BITS_STREAM =
+ 	    LINE6_BITS_PLAYBACK_STREAM |
+ 	    LINE6_BITS_CAPTURE_STREAM

@@ -1,0 +1,18 @@
+commit b7f136eba5ca61d42fbdd71e184cfadc4e87f9a3
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Thu Jul 19 16:00:28 2012 +0100
+
+    Add SPI_SPI_DEV module
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:34:02.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:34:08.000000000 +0000
+@@ -388,6 +388,7 @@
+ CONFIG_I2C_BCM2708=m
+ CONFIG_SPI=y
+ CONFIG_SPI_BCM2708=m
++CONFIG_SPI_SPIDEV=m
+ CONFIG_GPIO_SYSFS=y
+ # CONFIG_HWMON is not set
+ CONFIG_WATCHDOG=y

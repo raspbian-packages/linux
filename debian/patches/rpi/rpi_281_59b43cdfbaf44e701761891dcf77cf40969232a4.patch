@@ -1,0 +1,32 @@
+commit 59b43cdfbaf44e701761891dcf77cf40969232a4
+Author: Steve Glendinning <steve.glendinning@shawell.net>
+Date:   Fri Nov 2 00:44:20 2012 +0000
+
+    smsc95xx: fix tx checksum offload for big endian
+    
+    f7b2927 introduced tx checksum offload support for smsc95xx,
+    and enabled it by default. This feature doesn't take
+    endianness into account, so causes most tx to fail on
+    those platforms.
+    
+    This patch fixes the problem fully by adding the missing
+    conversion.
+    
+    An alternate workaround is to disable TX checksum offload
+    on those platforms. The cpu impact of this feature is very low.
+    
+    Signed-off-by: Steve Glendinning <steve.glendinning@shawell.net>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+Index: linux-3.2.46/drivers/net/usb/smsc95xx.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:32.000000000 +0000
++++ linux-3.2.46/drivers/net/usb/smsc95xx.c	2013-07-26 19:37:34.000000000 +0000
+@@ -1399,6 +1399,7 @@
+ 		} else {
+ 			u32 csum_preamble = smsc95xx_calc_csum_preamble(skb);
+ 			skb_push(skb, 4);
++			cpu_to_le32s(&csum_preamble);
+ 			memcpy(skb->data, &csum_preamble, 4);
+ 		}
+ 	}

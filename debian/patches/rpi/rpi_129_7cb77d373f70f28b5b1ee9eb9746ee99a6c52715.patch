@@ -1,0 +1,49 @@
+commit 7cb77d373f70f28b5b1ee9eb9746ee99a6c52715
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Tue Apr 17 00:33:10 2012 +0100
+
+    Don't send data block when emitting silence
+
+Index: linux-3.2.46/sound/arm/bcm2835-vchiq.c
+===================================================================
+--- linux-3.2.46.orig/sound/arm/bcm2835-vchiq.c	2013-07-26 19:32:38.000000000 +0000
++++ linux-3.2.46/sound/arm/bcm2835-vchiq.c	2013-07-26 19:32:44.000000000 +0000
+@@ -761,20 +761,25 @@
+ 		ret = -1;
+ 		goto unlock;
+ 	}
+-	LOG_DBG(" ... send header\n");
++	LOG_DBG(" ... sent header\n");
++	if (!m.u.write.silence) {
++		/* Send the message to the videocore */
++		success = vchi_bulk_queue_transmit(instance->vchi_handle[0],
++						   src, count,
++						   0 *
++						   VCHI_FLAGS_BLOCK_UNTIL_QUEUED
++						   +
++						   1 *
++						   VCHI_FLAGS_BLOCK_UNTIL_DATA_READ,
++						   NULL);
++		if (success != 0) {
++			LOG_ERR
++			    ("%s: failed on vchi_bulk_queue_transmit (status=%d)",
++			     __func__, success);
+ 
+-	/* Send the message to the videocore */
+-	success = vchi_bulk_queue_transmit(instance->vchi_handle[0],
+-					   src, count,
+-					   0 * VCHI_FLAGS_BLOCK_UNTIL_QUEUED +
+-					   1 * VCHI_FLAGS_BLOCK_UNTIL_DATA_READ,
+-					   NULL);
+-	if (success != 0) {
+-		LOG_ERR("%s: failed on vchi_msg_queue (status=%d)",
+-			__func__, success);
+-
+-		ret = -1;
+-		goto unlock;
++			ret = -1;
++			goto unlock;
++		}
+ 	}
+ 	ret = 0;
+ 

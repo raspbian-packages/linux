@@ -1,0 +1,61 @@
+From 9818fbc76520775e4087141bfa23ede010063ea5 Mon Sep 17 00:00:00 2001
+From: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Date: Thu, 12 Jul 2012 03:57:47 +0000
+Subject: [PATCH 10/13] be2net: Enable RSS UDP hashing for Lancer and Skyhawk
+
+commit d3bd3a5eeb087bf6a06e9bdfc589096608f933a0 upstream.
+
+Signed-off-by: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be.h      |    4 ++++
+ drivers/net/ethernet/emulex/benet/be_cmds.c |    7 +++++++
+ drivers/net/ethernet/emulex/benet/be_cmds.h |    2 ++
+ 3 files changed, 13 insertions(+)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be.h
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be.h	2013-07-26 19:22:20.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be.h	2013-07-26 19:22:22.000000000 +0000
+@@ -440,6 +440,10 @@
+ #define lancer_chip(adapter)	((adapter->pdev->device == OC_DEVICE_ID3) || \
+ 				 (adapter->pdev->device == OC_DEVICE_ID4))
+ 
++#define skyhawk_chip(adapter)	(adapter->pdev->device == OC_DEVICE_ID5)
++
++
++
+ extern const struct ethtool_ops be_ethtool_ops;
+ 
+ #define msix_enabled(adapter)		(adapter->num_msix_vec > 0)
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_cmds.c	2013-07-26 19:21:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.c	2013-07-26 19:22:22.000000000 +0000
+@@ -1727,6 +1727,13 @@
+ 	req->if_id = cpu_to_le32(adapter->if_handle);
+ 	req->enable_rss = cpu_to_le16(RSS_ENABLE_TCP_IPV4 | RSS_ENABLE_IPV4 |
+ 				      RSS_ENABLE_TCP_IPV6 | RSS_ENABLE_IPV6);
++
++	if (lancer_chip(adapter) || skyhawk_chip(adapter)) {
++		req->hdr.version = 1;
++		req->enable_rss |= cpu_to_le16(RSS_ENABLE_UDP_IPV4 |
++					       RSS_ENABLE_UDP_IPV6);
++	}
++
+ 	req->cpu_table_size_log2 = cpu_to_le16(fls(table_size) - 1);
+ 	memcpy(req->cpu_table, rsstable, table_size);
+ 	memcpy(req->hash, myhash, sizeof(myhash));
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.h
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_cmds.h	2013-07-26 19:22:15.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.h	2013-07-26 19:22:22.000000000 +0000
+@@ -1085,6 +1085,8 @@
+ #define RSS_ENABLE_TCP_IPV4			0x2
+ #define RSS_ENABLE_IPV6				0x4
+ #define RSS_ENABLE_TCP_IPV6			0x8
++#define RSS_ENABLE_UDP_IPV4			0x10
++#define RSS_ENABLE_UDP_IPV6			0x20
+ 
+ struct be_cmd_req_rss_config {
+ 	struct be_cmd_req_hdr hdr;

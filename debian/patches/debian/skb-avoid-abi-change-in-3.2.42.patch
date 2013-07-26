@@ -1,0 +1,29 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: skb: avoid ABI change in 3.2.42
+Date: Sun, 31 Mar 2013 21:48:35 +0100
+Forwarded: not-needed
+
+commit 16fad69cfe4a 'tcp: fix skb_availroom()' (backported into 3.2.42)
+changes the name and semantics of a field in struct sk_buff.
+
+However, this field is private to the TCP, so hide the change from
+genksyms.
+
+---
+Index: linux-3.2.46/include/linux/skbuff.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/skbuff.h	2013-07-26 18:52:17.000000000 +0000
++++ linux-3.2.46/include/linux/skbuff.h	2013-07-26 19:30:41.000000000 +0000
+@@ -455,7 +455,12 @@
+ 	union {
+ 		__u32		mark;
+ 		__u32		dropcount;
++		/* For use by TCP only */
++#ifdef __GENKSYMS__
++		__u32		avail_size;
++#else
+ 		__u32		reserved_tailroom;
++#endif
+ 	};
+ 
+ 	__u16			vlan_tci;

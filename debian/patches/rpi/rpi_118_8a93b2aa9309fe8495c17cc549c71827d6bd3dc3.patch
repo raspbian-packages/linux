@@ -1,0 +1,30 @@
+commit 8a93b2aa9309fe8495c17cc549c71827d6bd3dc3
+Author: Dom Cobley <dc4@broadcom.com>
+Date:   Tue Mar 20 15:04:40 2012 +0000
+
+    Fix problem with dma that could corrupt sdcard, especially when L2 enabled
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:32:25.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:32:27.000000000 +0000
+@@ -510,7 +510,8 @@
+ 	cb->stride = 0;
+ 
+ 	if (is_last) {
+-		cb->info |= BCM2708_DMA_INT_EN;
++		cb->info |= BCM2708_DMA_INT_EN |
++		     BCM2708_DMA_WAIT_RESP;
+ 		cb->next = 0;
+ 	} else
+ 		cb->next = host->cb_handle +
+@@ -541,7 +542,8 @@
+ 	cb->stride = 0;
+ 
+ 	if (is_last) {
+-		cb->info |= BCM2708_DMA_INT_EN;
++		cb->info |= BCM2708_DMA_INT_EN |
++		     BCM2708_DMA_WAIT_RESP;
+ 		cb->next = 0;
+ 	} else
+ 		cb->next = host->cb_handle +

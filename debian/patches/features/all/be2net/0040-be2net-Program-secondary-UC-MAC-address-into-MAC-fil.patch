@@ -1,0 +1,174 @@
+From: Ajit Khaparde <ajit.khaparde@emulex.com>
+Date: Sun, 18 Mar 2012 06:23:21 +0000
+Subject: [PATCH 40/58] be2net: Program secondary UC MAC address into MAC
+ filter
+
+commit fbc13f018c0043146f8eccc7d6a6c0e66339e2d5 upstream.
+
+Signed-off-by: Ajit Khaparde <ajit.khaparde@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be.h      |    6 ++-
+ drivers/net/ethernet/emulex/benet/be_main.c |   53 ++++++++++++++++++++++++---
+ 2 files changed, 53 insertions(+), 6 deletions(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be.h
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be.h	2013-07-26 19:21:43.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be.h	2013-07-26 19:21:45.000000000 +0000
+@@ -309,6 +309,8 @@
+ 
+ #define BE_FLAGS_LINK_STATUS_INIT		1
+ #define BE_FLAGS_WORKER_SCHEDULED		(1 << 3)
++#define BE_UC_PMAC_COUNT		30
++#define BE_VF_UC_PMAC_COUNT		2
+ 
+ struct be_adapter {
+ 	struct pci_dev *pdev;
+@@ -361,7 +363,7 @@
+ 	/* Ethtool knobs and info */
+ 	char fw_ver[FW_VER_LEN];
+ 	int if_handle;		/* Used to configure filtering */
+-	u32 pmac_id;		/* MAC addr handle used by BE card */
++	u32 *pmac_id;		/* MAC addr handle used by BE card */
+ 	u32 beacon_state;	/* for set_phys_id */
+ 
+ 	bool eeh_err;
+@@ -391,6 +393,8 @@
+ 	u16 pvid;
+ 	u8 wol_cap;
+ 	bool wol;
++	u32 max_pmac_cnt;	/* Max secondary UC MACs programmable */
++	u32 uc_macs;		/* Count of secondary UC MAC programmed */
+ };
+ 
+ #define be_physfn(adapter) (!adapter->is_virtfn)
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:21:43.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:21:45.000000000 +0000
+@@ -235,7 +235,7 @@
+ 	struct sockaddr *addr = p;
+ 	int status = 0;
+ 	u8 current_mac[ETH_ALEN];
+-	u32 pmac_id = adapter->pmac_id;
++	u32 pmac_id = adapter->pmac_id[0];
+ 
+ 	if (!is_valid_ether_addr(addr->sa_data))
+ 		return -EADDRNOTAVAIL;
+@@ -248,7 +248,7 @@
+ 
+ 	if (memcmp(addr->sa_data, current_mac, ETH_ALEN)) {
+ 		status = be_cmd_pmac_add(adapter, (u8 *)addr->sa_data,
+-				adapter->if_handle, &adapter->pmac_id, 0);
++				adapter->if_handle, &adapter->pmac_id[0], 0);
+ 		if (status)
+ 			goto err;
+ 
+@@ -878,6 +878,29 @@
+ 		goto done;
+ 	}
+ 
++	if (netdev_uc_count(netdev) != adapter->uc_macs) {
++		struct netdev_hw_addr *ha;
++		int i = 1; /* First slot is claimed by the Primary MAC */
++
++		for (; adapter->uc_macs > 0; adapter->uc_macs--, i++) {
++			be_cmd_pmac_del(adapter, adapter->if_handle,
++					adapter->pmac_id[i], 0);
++		}
++
++		if (netdev_uc_count(netdev) > adapter->max_pmac_cnt) {
++			be_cmd_rx_filter(adapter, IFF_PROMISC, ON);
++			adapter->promiscuous = true;
++			goto done;
++		}
++
++		netdev_for_each_uc_addr(ha, adapter->netdev) {
++			adapter->uc_macs++; /* First slot is for Primary MAC */
++			be_cmd_pmac_add(adapter, (u8 *)ha->addr,
++					adapter->if_handle,
++					&adapter->pmac_id[adapter->uc_macs], 0);
++		}
++	}
++
+ 	be_cmd_rx_filter(adapter, IFF_MULTICAST, ON);
+ done:
+ 	return;
+@@ -2451,6 +2474,8 @@
+ 
+ static int be_clear(struct be_adapter *adapter)
+ {
++	int i = 1;
++
+ 	if (adapter->flags & BE_FLAGS_WORKER_SCHEDULED) {
+ 		cancel_delayed_work_sync(&adapter->work);
+ 		adapter->flags &= ~BE_FLAGS_WORKER_SCHEDULED;
+@@ -2459,6 +2484,10 @@
+ 	if (sriov_enabled(adapter))
+ 		be_vf_clear(adapter);
+ 
++	for (; adapter->uc_macs > 0; adapter->uc_macs--, i++)
++		be_cmd_pmac_del(adapter, adapter->if_handle,
++			adapter->pmac_id[i], 0);
++
+ 	be_cmd_if_destroy(adapter, adapter->if_handle,  0);
+ 
+ 	be_mcc_queues_destroy(adapter);
+@@ -2470,6 +2499,7 @@
+ 	be_cmd_fw_clean(adapter);
+ 
+ 	be_msix_disable(adapter);
++	kfree(adapter->pmac_id);
+ 	return 0;
+ }
+ 
+@@ -2545,10 +2575,10 @@
+ 				false, adapter->if_handle, pmac_id);
+ 
+ 		if (!status)
+-			adapter->pmac_id = pmac_id;
++			adapter->pmac_id[0] = pmac_id;
+ 	} else {
+ 		status = be_cmd_pmac_add(adapter, mac,
+-				adapter->if_handle, &adapter->pmac_id, 0);
++				adapter->if_handle, &adapter->pmac_id[0], 0);
+ 	}
+ do_none:
+ 	return status;
+@@ -2603,7 +2633,7 @@
+ 	}
+ 	status = be_cmd_if_create(adapter, cap_flags, en_flags,
+ 			netdev->dev_addr, &adapter->if_handle,
+-			&adapter->pmac_id, 0);
++			&adapter->pmac_id[0], 0);
+ 	if (status != 0)
+ 		goto err;
+ 
+@@ -3052,6 +3082,8 @@
+ 	netdev->vlan_features |= NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 |
+ 		NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
+ 
++	netdev->priv_flags |= IFF_UNICAST_FLT;
++
+ 	netdev->flags |= IFF_MULTICAST;
+ 
+ 	netif_set_gso_max_size(netdev, 65535);
+@@ -3257,6 +3289,17 @@
+ 	else
+ 		adapter->max_vlans = BE_NUM_VLANS_SUPPORTED;
+ 
++	if (be_physfn(adapter))
++		adapter->max_pmac_cnt = BE_UC_PMAC_COUNT;
++	else
++		adapter->max_pmac_cnt = BE_VF_UC_PMAC_COUNT;
++
++	/* primary mac needs 1 pmac entry */
++	adapter->pmac_id = kcalloc(adapter->max_pmac_cnt + 1,
++				  sizeof(u32), GFP_KERNEL);
++	if (!adapter->pmac_id)
++		return -ENOMEM;
++
+ 	status = be_cmd_get_cntl_attributes(adapter);
+ 	if (status)
+ 		return status;

@@ -1,0 +1,44 @@
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Date: Tue, 24 Jan 2012 10:21:28 +0000
+Subject: [PATCH 36/77] net/hyperv: fix possible memory leak in
+ do_set_multicast()
+
+commit c11bf1c8baff170fa478adc04964da519d160e62 upstream.
+
+do_set_multicast() may not free the memory malloc in
+netvsc_set_multicast_list().
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/hyperv/netvsc_drv.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: linux-3.2.46/drivers/net/hyperv/netvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:41.000000000 +0000
++++ linux-3.2.46/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:43.000000000 +0000
+@@ -68,11 +68,11 @@
+ 
+ 	nvdev = hv_get_drvdata(ndevctx->device_ctx);
+ 	if (nvdev == NULL)
+-		return;
++		goto out;
+ 
+ 	rdev = nvdev->extension;
+ 	if (rdev == NULL)
+-		return;
++		goto out;
+ 
+ 	if (net->flags & IFF_PROMISC)
+ 		rndis_filter_set_packet_filter(rdev,
+@@ -83,6 +83,7 @@
+ 			NDIS_PACKET_TYPE_ALL_MULTICAST |
+ 			NDIS_PACKET_TYPE_DIRECTED);
+ 
++out:
+ 	kfree(w);
+ }
+ 

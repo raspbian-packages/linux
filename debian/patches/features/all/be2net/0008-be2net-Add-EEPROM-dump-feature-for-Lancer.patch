@@ -1,0 +1,67 @@
+From: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Date: Wed, 16 Nov 2011 02:03:07 +0000
+Subject: [PATCH 08/58] be2net: Add EEPROM dump feature for Lancer
+
+commit af5875bdfed02a10a0c76bbd547753fea7979244 upstream.
+
+Implemented eeprom dump using ethtool feature for Lancer.
+
+Signed-off-by: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be_cmds.h    |    2 ++
+ drivers/net/ethernet/emulex/benet/be_ethtool.c |   21 ++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.h
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_cmds.h	2013-07-26 19:20:59.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.h	2013-07-26 19:21:00.000000000 +0000
+@@ -1167,6 +1167,8 @@
+ #define LANCER_READ_FILE_EOF_MASK		0x80000000
+ 
+ #define LANCER_FW_DUMP_FILE			"/dbg/dump.bin"
++#define LANCER_VPD_PF_FILE			"/vpd/ntr_pf.vpd"
++#define LANCER_VPD_VF_FILE			"/vpd/ntr_vf.vpd"
+ 
+ struct lancer_cmd_req_read_object {
+ 	struct be_cmd_req_hdr hdr;
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_ethtool.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_ethtool.c	2013-07-26 19:20:59.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_ethtool.c	2013-07-26 19:21:00.000000000 +0000
+@@ -723,7 +723,17 @@
+ static int
+ be_get_eeprom_len(struct net_device *netdev)
+ {
+-	return BE_READ_SEEPROM_LEN;
++	struct be_adapter *adapter = netdev_priv(netdev);
++	if (lancer_chip(adapter)) {
++		if (be_physfn(adapter))
++			return lancer_cmd_get_file_len(adapter,
++					LANCER_VPD_PF_FILE);
++		else
++			return lancer_cmd_get_file_len(adapter,
++					LANCER_VPD_VF_FILE);
++	} else {
++		return BE_READ_SEEPROM_LEN;
++	}
+ }
+ 
+ static int
+@@ -738,6 +748,15 @@
+ 	if (!eeprom->len)
+ 		return -EINVAL;
+ 
++	if (lancer_chip(adapter)) {
++		if (be_physfn(adapter))
++			return lancer_cmd_read_file(adapter, LANCER_VPD_PF_FILE,
++					eeprom->len, data);
++		else
++			return lancer_cmd_read_file(adapter, LANCER_VPD_VF_FILE,
++					eeprom->len, data);
++	}
++
+ 	eeprom->magic = BE_VENDOR_ID | (adapter->pdev->device<<16);
+ 
+ 	memset(&eeprom_cmd, 0, sizeof(struct be_dma_mem));

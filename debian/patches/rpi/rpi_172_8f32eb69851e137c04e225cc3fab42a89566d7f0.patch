@@ -1,0 +1,46 @@
+commit 8f32eb69851e137c04e225cc3fab42a89566d7f0
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Jun 22 18:48:00 2012 +0100
+
+    Add NFSD. Add some dvb options. Add CONFIG_LOCALVERSION for cutdown
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:33:18.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:33:41.000000000 +0000
+@@ -1,4 +1,5 @@
+ CONFIG_EXPERIMENTAL=y
++CONFIG_LOCALVERSION="-cutdown"
+ # CONFIG_LOCALVERSION_AUTO is not set
+ CONFIG_SYSVIPC=y
+ CONFIG_POSIX_MQUEUE=y
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:36.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:41.000000000 +0000
+@@ -386,6 +386,8 @@
+ # CONFIG_MFD_SUPPORT is not set
+ CONFIG_MEDIA_SUPPORT=m
+ CONFIG_VIDEO_DEV=m
++CONFIG_DVB_CORE=m
++CONFIG_MEDIA_ATTACH=y
+ CONFIG_USB_VIDEO_CLASS=m
+ CONFIG_USB_M5602=m
+ CONFIG_USB_STV06XX=m
+@@ -440,6 +442,8 @@
+ CONFIG_RADIO_SI470X=y
+ CONFIG_USB_SI470X=m
+ CONFIG_USB_MR800=m
++CONFIG_SMS_SIANO_MDTV=m
++CONFIG_SMS_USB_DRV=m
+ CONFIG_FB=y
+ CONFIG_FB_BCM2708=y
+ CONFIG_FRAMEBUFFER_CONSOLE=y
+@@ -672,6 +676,7 @@
+ CONFIG_NFS_V4=y
+ CONFIG_ROOT_NFS=y
+ CONFIG_NFS_FSCACHE=y
++CONFIG_NFSD=m
+ CONFIG_CIFS=m
+ CONFIG_CIFS_WEAK_PW_HASH=y
+ CONFIG_CIFS_XATTR=y

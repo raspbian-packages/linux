@@ -1,0 +1,19 @@
+commit afe58ac9e71636ff2f46e231c9d5fcd615ef933d
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Aug 24 23:25:13 2012 +0100
+
+    Turn on microframe_schedule by default. Can still be disabled on command line
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_driver.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_driver.c	2013-07-26 19:35:46.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_driver.c	2013-07-26 19:35:51.000000000 +0000
+@@ -60,7 +60,7 @@
+ #define DWC_DRIVER_VERSION	"3.00a 10-AUG-2012"
+ #define DWC_DRIVER_DESC		"HS OTG USB Controller driver"
+ 
+-bool microframe_schedule;
++bool microframe_schedule=true;
+ 
+ static const char dwc_driver_name[] = "dwc_otg";
+ 

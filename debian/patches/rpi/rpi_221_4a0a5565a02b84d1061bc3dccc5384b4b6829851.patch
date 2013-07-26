@@ -1,0 +1,38 @@
+commit 4a0a5565a02b84d1061bc3dccc5384b4b6829851
+Author: Simon Arlott <sa.me.uk>
+Date:   Sat Jun 9 16:48:15 2012 +0100
+
+    amba-pl011: Don't send a character during startup
+    
+    This causes a corrupted character to be sent and
+    there's no explanation for why it is required.
+    
+    If it worked correctly it would send an extra 0x00
+    which isn't appropriate either.
+    
+    Signed-off-by: Simon Arlott <sa.me.uk>
+
+Index: linux-3.2.46/drivers/tty/serial/amba-pl011.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/serial/amba-pl011.c	2013-05-30 13:35:16.000000000 +0000
++++ linux-3.2.46/drivers/tty/serial/amba-pl011.c	2013-07-26 19:35:39.000000000 +0000
+@@ -1394,6 +1394,11 @@
+ 	writew(uap->vendor->ifls, uap->port.membase + UART011_IFLS);
+ 
+ 	/*
++	 * The write to UART01x_DR causes a corrupted character to be sent
++	 * - why is it required?
++	 */
++#if 0
++	/*
+ 	 * Provoke TX FIFO interrupt into asserting.
+ 	 */
+ 	cr = UART01x_CR_UARTEN | UART011_CR_TXE | UART011_CR_LBE;
+@@ -1414,6 +1419,7 @@
+ 	writew(0, uap->port.membase + UART01x_DR);
+ 	while (readw(uap->port.membase + UART01x_FR) & UART01x_FR_BUSY)
+ 		barrier();
++#endif
+ 
+ 	cr = UART01x_CR_UARTEN | UART011_CR_RXE | UART011_CR_TXE;
+ 	writew(cr, uap->port.membase + UART011_CR);

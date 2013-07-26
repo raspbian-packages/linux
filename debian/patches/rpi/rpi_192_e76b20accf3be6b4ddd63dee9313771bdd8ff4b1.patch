@@ -1,0 +1,21 @@
+commit e76b20accf3be6b4ddd63dee9313771bdd8ff4b1
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Tue Jul 24 11:11:03 2012 +0100
+
+    Fix var.width/var.height. They actually mean display size. See #65
+
+Index: linux-3.2.46/drivers/video/bcm2708_fb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/bcm2708_fb.c	2013-07-26 19:34:05.000000000 +0000
++++ linux-3.2.46/drivers/video/bcm2708_fb.c	2013-07-26 19:34:09.000000000 +0000
+@@ -374,8 +374,8 @@
+ 	fb->fb.var.vmode = FB_VMODE_NONINTERLACED;
+ 	fb->fb.var.activate = FB_ACTIVATE_NOW;
+ 	fb->fb.var.nonstd = 0;
+-	fb->fb.var.height = fbwidth;
+-	fb->fb.var.width = fbheight;
++	fb->fb.var.height = -1;		/* height of picture in mm    */
++	fb->fb.var.width = -1;		/* width of picture in mm    */
+ 	fb->fb.var.accel_flags = 0;
+ 
+ 	fb->fb.monspecs.hfmin = 0;

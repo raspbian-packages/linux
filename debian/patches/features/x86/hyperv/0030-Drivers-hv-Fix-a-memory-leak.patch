@@ -1,0 +1,28 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Mon, 12 Dec 2011 09:29:16 -0800
+Subject: [PATCH 30/77] Drivers: hv: Fix a memory leak
+
+commit 8b8ee6753154dd6cfe397e0d29fe7f90a8adb50b upstream.
+
+There was a memory leak in a failure path in vmbus_process_offer().
+Fix it.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/hv/channel_mgmt.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-3.2.46/drivers/hv/channel_mgmt.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hv/channel_mgmt.c	2013-07-26 18:56:09.000000000 +0000
++++ linux-3.2.46/drivers/hv/channel_mgmt.c	2013-07-26 19:18:34.000000000 +0000
+@@ -287,6 +287,7 @@
+ 		spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
+ 		list_del(&newchannel->listentry);
+ 		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
++		kfree(newchannel->device_obj);
+ 
+ 		free_channel(newchannel);
+ 	} else {

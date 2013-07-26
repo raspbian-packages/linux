@@ -1,0 +1,45 @@
+commit 04e71eb30083d387cdaabb046bedb3174999f7cd
+Author: Dom Cobley <dc4@broadcom.com>
+Date:   Tue Jul 31 16:42:03 2012 +0100
+
+    Sync with bootc's file
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/power.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/power.c	2013-07-26 19:33:08.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/power.c	2013-07-26 19:34:27.000000000 +0000
+@@ -14,7 +14,6 @@
+ #include <linux/module.h>
+ #include <linux/semaphore.h>
+ #include <linux/bug.h>
+-#include <linux/delay.h>
+ #include <mach/power.h>
+ #include <mach/vcio.h>
+ #include <mach/arm_power.h>
+@@ -97,6 +96,7 @@
+ 				bcm_mailbox_write(MBOX_CHAN_POWER,
+ 						  global_request << 4);
+ 
++				/* Wait for a response during power-up */
+ 				if (global_request & ~g_state.global_request) {
+ 					rc = bcm_mailbox_read(MBOX_CHAN_POWER,
+ 							      &actual);
+@@ -111,14 +111,14 @@
+ 
+ 				if (rc == 0) {
+ 					if (actual != global_request) {
+-						printk(KERN_INFO
+-						     "%s: Fail: prev global %x, new global %x, actual %x request %x, others_request %x\n",
++						printk(KERN_ERR
++						     "%s: prev global %x, new global %x, actual %x, request %x, others_request %x\n",
+ 						     __func__,
+ 						     g_state.global_request,
+ 						     global_request, actual, request, others_request);
+ 						/* A failure */
+-					//	BUG_ON((others_request & actual)
+-					//	       != others_request);
++						BUG_ON((others_request & actual)
++						       != others_request);
+ 						request &= actual;
+ 						rc = -EIO;
+ 					}

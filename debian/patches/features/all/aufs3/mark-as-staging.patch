@@ -1,0 +1,17 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: [PATCH] aufs: mark as staging
+
+I really don't want to support this.
+
+Index: linux-3.2.46/fs/aufs/module.c
+===================================================================
+--- linux-3.2.46.orig/fs/aufs/module.c	2013-07-26 19:16:57.000000000 +0000
++++ linux-3.2.46/fs/aufs/module.c	2013-07-26 19:17:03.000000000 +0000
+@@ -97,6 +97,7 @@
+ MODULE_DESCRIPTION(AUFS_NAME
+ 	" -- Advanced multi layered unification filesystem");
+ MODULE_VERSION(AUFS_VERSION);
++MODULE_INFO(staging, "Y");
+ 
+ /* this module parameter has no meaning when SYSFS is disabled */
+ int sysaufs_brs = 1;

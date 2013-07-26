@@ -1,0 +1,91 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Mon, 12 Dec 2011 09:29:17 -0800
+Subject: [PATCH 31/77] Drivers: hv: Make the vmbus driver unloadable
+
+commit 93e5bd06a95343c701361fa009cdc5a653d6ec8e upstream.
+
+It turns out that the vmbus driver can be made unloadable. Make it
+unloadable.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/hv/channel_mgmt.c |   11 +++++++++++
+ drivers/hv/hv.c           |    3 +++
+ drivers/hv/hyperv_vmbus.h |    1 +
+ drivers/hv/vmbus_drv.c    |   11 +++++++++++
+ 4 files changed, 26 insertions(+)
+
+Index: linux-3.2.46/drivers/hv/channel_mgmt.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hv/channel_mgmt.c	2013-07-26 19:18:34.000000000 +0000
++++ linux-3.2.46/drivers/hv/channel_mgmt.c	2013-07-26 19:18:35.000000000 +0000
+@@ -223,6 +223,17 @@
+ 	vmbus_device_unregister(channel->device_obj);
+ }
+ 
++void vmbus_free_channels(void)
++{
++	struct vmbus_channel *channel;
++
++	list_for_each_entry(channel, &vmbus_connection.chn_list, listentry) {
++		vmbus_device_unregister(channel->device_obj);
++		kfree(channel->device_obj);
++		free_channel(channel);
++	}
++}
++
+ /*
+  * vmbus_process_offer - Process the offer by creating a channel/device
+  * associated with this offer
+Index: linux-3.2.46/drivers/hv/hv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hv/hv.c	2013-07-26 18:56:09.000000000 +0000
++++ linux-3.2.46/drivers/hv/hv.c	2013-07-26 19:18:35.000000000 +0000
+@@ -237,6 +237,9 @@
+ {
+ 	union hv_x64_msr_hypercall_contents hypercall_msr;
+ 
++	/* Reset our OS id */
++	wrmsrl(HV_X64_MSR_GUEST_OS_ID, 0);
++
+ 	kfree(hv_context.signal_event_buffer);
+ 	hv_context.signal_event_buffer = NULL;
+ 	hv_context.signal_event_param = NULL;
+Index: linux-3.2.46/drivers/hv/hyperv_vmbus.h
+===================================================================
+--- linux-3.2.46.orig/drivers/hv/hyperv_vmbus.h	2013-07-26 18:56:09.000000000 +0000
++++ linux-3.2.46/drivers/hv/hyperv_vmbus.h	2013-07-26 19:18:35.000000000 +0000
+@@ -611,6 +611,7 @@
+ 
+ struct vmbus_channel *relid2channel(u32 relid);
+ 
++void vmbus_free_channels(void);
+ 
+ /* Connection interface */
+ 
+Index: linux-3.2.46/drivers/hv/vmbus_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hv/vmbus_drv.c	2013-07-26 19:18:14.000000000 +0000
++++ linux-3.2.46/drivers/hv/vmbus_drv.c	2013-07-26 19:18:35.000000000 +0000
+@@ -792,8 +792,19 @@
+ 	return ret;
+ }
+ 
++static void __exit vmbus_exit(void)
++{
++
++	free_irq(irq, hv_acpi_dev);
++	vmbus_free_channels();
++	bus_unregister(&hv_bus);
++	hv_cleanup();
++	acpi_bus_unregister_driver(&vmbus_acpi_driver);
++}
++
+ 
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(HV_DRV_VERSION);
+ 
+ subsys_initcall(hv_acpi_init);
++module_exit(vmbus_exit);

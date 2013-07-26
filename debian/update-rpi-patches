@@ -1,0 +1,85 @@
+#!/bin/bash -ev
+set -x
+set -e
+debdir=`pwd`
+upstream_tag=v3.2.41
+rpi_branch=rpi-3.2.27
+patch_dir=${debdir}/debian/patches
+rpi_patches=${patch_dir}/rpi
+
+export QUILT_PATCHES=debian/patches
+quilt pop -a || [ $? == 2 ]
+
+ # add rempote repositories, and update (needs a around 500M)
+rm -rf linuxgit
+git clone -o linux-stable --reference ../linuxgit git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linuxgit
+cd linuxgit
+git remote add rpi https://github.com/raspberrypi/linux.git
+git remote update
+
+ # create branch from tag and switch to it
+git checkout -b target-version ${upstream_tag}
+
+# record commits used to base patches on
+git show ${upstream_tag} > ../debian/upstream-tag-used-to-generate-rpi-patches
+git show rpi/${rpi_branch} > ../debian/rpi-branch
+
+# merge the changes from the rpi branch
+git merge --no-edit rpi/${rpi_branch}
+
+# get a list of commits not present upstream
+git_commits=$(git cherry ${upstream_tag} | awk '/^\+/{print $2}')
+
+# generate one patch per commit, including comments, with an ordered sequence
+# to preserve patch ordering.
+i=100
+mkdir -p ${rpi_patches}
+rm ${rpi_patches}/*
+for c in $git_commits ; do
+    git show ${c} > ${rpi_patches}/rpi_${i}_${c}.patch
+    i=$((${i}+1))
+done
+
+git diff ${upstream_tag} > ../merged.diff
+export QUILT_PATCHES=../debian/patches
+
+# split quilt series and remove pi patches
+cd ..
+chmod 755 debian/splitseries.php
+debian/splitseries.php
+cd linuxgit
+
+# create new quilt series, use just the new series for now for testing
+ls ${rpi_patches} | sed s_^_rpi/_ > ${patch_dir}/series.fromgit
+cp ${patch_dir}/series.fromgit ${patch_dir}/series
+
+git reset --hard ${upstream_tag}
+cd ..
+
+rm -rf linuxtest linuxclean
+
+rsync -a --exclude .git linuxgit/ linuxtest/
+cp -al linuxgit linuxclean
+rm -rf linuxclean/.git
+
+cd linuxtest
+export QUILT_PATCHES=../debian/patches
+quilt push -a
+cd ..
+
+diff -urN linuxclean linuxtest | filterdiff -p1 -x '.pc/*' > patched.diff || [ $? == 1 ]
+interdiff -p1 merged.diff patched.diff > mergecheck.diff
+
+#reassemble full quilt  series
+cat ${patch_dir}/series.prefix ${patch_dir}/series.fromgit ${patch_dir}/series.suffix > ${patch_dir}/series
+
+
+
+export QUILT_PATCHES=debian/patches
+while quilt push; do quilt refresh; done
+
+rm -rf linuxgit linuxclean linuxtest
+rm merged.diff patched.diff
+rm debian/patches/series.*
+
+echo finished sucessfully

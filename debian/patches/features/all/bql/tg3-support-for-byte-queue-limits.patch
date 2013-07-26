@@ -1,0 +1,62 @@
+From: Tom Herbert <therbert@google.com>
+Date: Mon, 28 Nov 2011 16:33:30 +0000
+Subject: tg3: Support for byte queue limits
+
+commit 298376d3e8f00147548c426959ce79efc47b669a upstream.
+
+Changes to tg3 to use byte queue limits.
+
+Signed-off-by: Tom Herbert <therbert@google.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/broadcom/tg3.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+Index: linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 18:54:15.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 19:24:33.000000000 +0000
+@@ -5359,6 +5359,7 @@
+ 	u32 sw_idx = tnapi->tx_cons;
+ 	struct netdev_queue *txq;
+ 	int index = tnapi - tp->napi;
++	unsigned int pkts_compl = 0, bytes_compl = 0;
+ 
+ 	if (tg3_flag(tp, ENABLE_TSS))
+ 		index--;
+@@ -5409,6 +5410,9 @@
+ 			sw_idx = NEXT_TX(sw_idx);
+ 		}
+ 
++		pkts_compl++;
++		bytes_compl += skb->len;
++
+ 		dev_kfree_skb(skb);
+ 
+ 		if (unlikely(tx_bug)) {
+@@ -5417,6 +5421,8 @@
+ 		}
+ 	}
+ 
++	netdev_completed_queue(tp->dev, pkts_compl, bytes_compl);
++
+ 	tnapi->tx_cons = sw_idx;
+ 
+ 	/* Need to make the tx_cons update visible to tg3_start_xmit()
+@@ -6861,6 +6867,7 @@
+ 	}
+ 
+ 	skb_tx_timestamp(skb);
++	netdev_sent_queue(tp->dev, skb->len);
+ 
+ 	/* Packets are ready, update Tx producer idx local and on card. */
+ 	tw32_tx_mbox(tnapi->prodmbox, entry);
+@@ -7342,6 +7349,7 @@
+ 			dev_kfree_skb_any(skb);
+ 		}
+ 	}
++	netdev_reset_queue(tp->dev);
+ }
+ 
+ /* Initialize tx/rx rings for packet processing.

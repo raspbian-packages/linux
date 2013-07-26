@@ -1,0 +1,19 @@
+commit c5d6cb6ab072e555d8747056a1d44156cded3b31
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Thu Apr 12 12:16:31 2012 +0100
+
+    add temporary workaround for fbset crashes
+
+Index: linux-3.2.46/drivers/video/bcm2708_fb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/bcm2708_fb.c	2013-07-26 19:32:32.000000000 +0000
++++ linux-3.2.46/drivers/video/bcm2708_fb.c	2013-07-26 19:32:40.000000000 +0000
+@@ -215,6 +215,8 @@
+ 	/* inform vc about new framebuffer */
+ 	bcm_mailbox_write(MBOX_CHAN_FB, fb->dma);
+ 
++	/* workaround occasional failure to read results. TODO: replace fb driver with vchiq version */
++	msleep(10);
+ 	/* wait for response */
+ 	bcm_mailbox_read(MBOX_CHAN_FB, &val);
+ 

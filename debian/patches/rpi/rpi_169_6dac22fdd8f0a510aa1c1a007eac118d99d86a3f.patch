@@ -1,0 +1,70 @@
+commit 6dac22fdd8f0a510aa1c1a007eac118d99d86a3f
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Thu Jun 21 01:31:08 2012 +0100
+
+    Remove silence method, and use atomic flags for kmalloc
+
+Index: linux-3.2.46/sound/arm/bcm2835-pcm.c
+===================================================================
+--- linux-3.2.46.orig/sound/arm/bcm2835-pcm.c	2013-07-26 19:32:38.000000000 +0000
++++ linux-3.2.46/sound/arm/bcm2835-pcm.c	2013-07-26 19:33:37.000000000 +0000
+@@ -345,29 +345,6 @@
+ 	return ret;
+ }
+ 
+-static int snd_bcm2835_pcm_silence(struct snd_pcm_substream *substream,
+-				   int channel, snd_pcm_uframes_t post,
+-				   snd_pcm_uframes_t count)
+-{
+-	int ret;
+-	struct snd_pcm_runtime *runtime = substream->runtime;
+-	bcm2835_alsa_stream_t *alsa_stream = runtime->private_data;
+-
+-	audio_info(" .. IN\n");
+-	audio_debug("silence....... (%d) hwptr=%d appl=%d pos=%d\n",
+-		      frames_to_bytes(runtime, count), frames_to_bytes(runtime,
+-								       runtime->
+-								       status->
+-								       hw_ptr),
+-		      frames_to_bytes(runtime, runtime->control->appl_ptr),
+-		      alsa_stream->pos);
+-	ret =
+-	    bcm2835_audio_write(alsa_stream, frames_to_bytes(runtime, count),
+-				NULL);
+-	audio_info(" .. OUT\n");
+-	return ret;
+-}
+-
+ static int snd_bcm2835_pcm_lib_ioctl(struct snd_pcm_substream *substream,
+ 				     unsigned int cmd, void *arg)
+ {
+@@ -388,7 +365,6 @@
+ 	.trigger = snd_bcm2835_pcm_trigger,
+ 	.pointer = snd_bcm2835_pcm_pointer,
+ 	.copy = snd_bcm2835_pcm_copy,
+-	.silence = snd_bcm2835_pcm_silence,
+ };
+ 
+ /* create a pcm device */
+Index: linux-3.2.46/sound/arm/bcm2835-vchiq.c
+===================================================================
+--- linux-3.2.46.orig/sound/arm/bcm2835-vchiq.c	2013-07-26 19:32:44.000000000 +0000
++++ linux-3.2.46/sound/arm/bcm2835-vchiq.c	2013-07-26 19:33:37.000000000 +0000
+@@ -102,7 +102,7 @@
+ 	int ret = -1;
+ 	LOG_DBG(" .. IN\n");
+ 	if (alsa_stream->my_wq) {
+-		my_work_t *work = kmalloc(sizeof(my_work_t), GFP_KERNEL);
++		my_work_t *work = kmalloc(sizeof(my_work_t), GFP_ATOMIC);
+ 		/* Queue some work (item 1) */
+ 		if (work) {
+ 			INIT_WORK((struct work_struct *)work, my_wq_function);
+@@ -123,7 +123,7 @@
+ 	int ret = -1;
+ 	LOG_DBG(" .. IN\n");
+ 	if (alsa_stream->my_wq) {
+-		my_work_t *work = kmalloc(sizeof(my_work_t), GFP_KERNEL);
++		my_work_t *work = kmalloc(sizeof(my_work_t), GFP_ATOMIC);
+ 		/* Queue some work (item 1) */
+ 		if (work) {
+ 			INIT_WORK((struct work_struct *)work, my_wq_function);

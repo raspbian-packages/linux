@@ -1,0 +1,19 @@
+commit 21e287c2206a7a43c1546c8bb5abf0a7ced3dd5e
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Thu May 17 14:45:40 2012 +0100
+
+    Invert sense of sdcard access trigger (OK LED), so it is on when accessing
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/bcm2708.c	2013-07-26 19:32:48.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/bcm2708.c	2013-07-26 19:33:07.000000000 +0000
+@@ -614,7 +614,7 @@
+ 	       .gpio = 16,
+ 	       .name = "led0",
+ 	       .default_trigger = "mmc0",
+-	       .active_low = 0,
++	       .active_low = 1,
+ 	       },
+ };
+ 

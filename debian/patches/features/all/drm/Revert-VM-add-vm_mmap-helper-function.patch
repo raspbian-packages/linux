@@ -1,0 +1,97 @@
+From 97d4bb2582eba9bbb9d0a283f5be6fa358421914 Mon Sep 17 00:00:00 2001
+From: Julien Cristau <jcristau@debian.org>
+Date: Wed, 22 Aug 2012 18:56:22 +0200
+Subject: [PATCH 2/7] Revert "VM: add "vm_mmap()" helper function"
+
+This reverts commit 6be5ceb02e98eaf6cfc4f8b12a896d04023f340d.
+
+Conflicts:
+	include/linux/mm.h
+---
+ drivers/gpu/drm/drm_bufs.c              |   12 ++++++++----
+ drivers/gpu/drm/exynos/exynos_drm_gem.c |    4 +++-
+ drivers/gpu/drm/i810/i810_dma.c         |    1 -
+ drivers/gpu/drm/i915/i915_gem.c         |    4 +++-
+ 4 files changed, 14 insertions(+), 7 deletions(-)
+
+Index: linux-3.2.46/drivers/gpu/drm/drm_bufs.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/drm_bufs.c	2013-07-26 19:26:21.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/drm_bufs.c	2013-07-26 19:26:56.000000000 +0000
+@@ -1510,8 +1510,8 @@
+  * \param arg pointer to a drm_buf_map structure.
+  * \return zero on success or a negative number on failure.
+  *
+- * Maps the AGP, SG or PCI buffer region with vm_mmap(), and copies information
+- * about each buffer into user space. For PCI buffers, it calls vm_mmap() with
++ * Maps the AGP, SG or PCI buffer region with do_mmap(), and copies information
++ * about each buffer into user space. For PCI buffers, it calls do_mmap() with
+  * offset equal to 0, which drm_mmap() interpretes as PCI buffers and calls
+  * drm_mmap_dma().
+  */
+@@ -1553,14 +1553,18 @@
+ 				retcode = -EINVAL;
+ 				goto done;
+ 			}
+-			virtual = vm_mmap(file_priv->filp, 0, map->size,
++			down_write(&current->mm->mmap_sem);
++			virtual = do_mmap(file_priv->filp, 0, map->size,
+ 					  PROT_READ | PROT_WRITE,
+ 					  MAP_SHARED,
+ 					  token);
++			up_write(&current->mm->mmap_sem);
+ 		} else {
+-			virtual = vm_mmap(file_priv->filp, 0, dma->byte_count,
++			down_write(&current->mm->mmap_sem);
++			virtual = do_mmap(file_priv->filp, 0, dma->byte_count,
+ 					  PROT_READ | PROT_WRITE,
+ 					  MAP_SHARED, 0);
++			up_write(&current->mm->mmap_sem);
+ 		}
+ 		if (virtual > -1024UL) {
+ 			/* Real error */
+Index: linux-3.2.46/drivers/gpu/drm/exynos/exynos_drm_gem.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/exynos/exynos_drm_gem.c	2013-07-26 19:26:22.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/exynos/exynos_drm_gem.c	2013-07-26 19:26:56.000000000 +0000
+@@ -573,8 +573,10 @@
+ 	obj->filp->f_op = &exynos_drm_gem_fops;
+ 	obj->filp->private_data = obj;
+ 
+-	addr = vm_mmap(obj->filp, 0, args->size,
++	down_write(&current->mm->mmap_sem);
++	addr = do_mmap(obj->filp, 0, args->size,
+ 			PROT_READ | PROT_WRITE, MAP_SHARED, 0);
++	up_write(&current->mm->mmap_sem);
+ 
+ 	drm_gem_object_unreference_unlocked(obj);
+ 
+Index: linux-3.2.46/drivers/gpu/drm/i810/i810_dma.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/i810/i810_dma.c	2013-07-26 19:26:22.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/i810/i810_dma.c	2013-07-26 19:26:57.000000000 +0000
+@@ -129,7 +129,6 @@
+ 	if (buf_priv->currently_mapped == I810_BUF_MAPPED)
+ 		return -EINVAL;
+ 
+-	/* This is all entirely broken */
+ 	down_write(&current->mm->mmap_sem);
+ 	old_fops = file_priv->filp->f_op;
+ 	file_priv->filp->f_op = &i810_buffer_fops;
+Index: linux-3.2.46/drivers/gpu/drm/i915/i915_gem.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/i915/i915_gem.c	2013-07-26 19:26:22.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/i915/i915_gem.c	2013-07-26 19:26:57.000000000 +0000
+@@ -1088,9 +1088,11 @@
+ 	if (obj == NULL)
+ 		return -ENOENT;
+ 
+-	addr = vm_mmap(obj->filp, 0, args->size,
++	down_write(&current->mm->mmap_sem);
++	addr = do_mmap(obj->filp, 0, args->size,
+ 		       PROT_READ | PROT_WRITE, MAP_SHARED,
+ 		       args->offset);
++	up_write(&current->mm->mmap_sem);
+ 	drm_gem_object_unreference_unlocked(obj);
+ 	if (IS_ERR((void *)addr))
+ 		return addr;

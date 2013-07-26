@@ -1,0 +1,174 @@
+From: Stefan Hajnoczi <stefanha@gmail.com>
+Date: Sun, 11 Nov 2012 13:52:24 +0100
+Subject: [052/106] staging: line6: replace DEBUG_MESSAGES() with dev_dbg()
+
+commit e00d33cb5de0c68ed95513d3b4f42f9e3697f8ee upstream.
+
+The dyndbg feature allows dev_dbg() calls to be enabled/disabled at
+runtime and is therefore more convenient than static debug log messages.
+Use dev_dbg() instead of the line6-specific DEBUG_MESSAGES() macro.
+
+Signed-off-by: Stefan Hajnoczi <stefanha@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/line6/driver.c |    6 ++---
+ drivers/staging/line6/pod.c    |   57 +++++++++++++++-------------------------
+ drivers/staging/line6/variax.c |   12 ++++-----
+ 3 files changed, 28 insertions(+), 47 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/line6/driver.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/driver.c	2013-07-26 19:28:53.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/driver.c	2013-07-26 19:29:06.000000000 +0000
+@@ -412,10 +412,8 @@
+ 
+ 	if (done < urb->actual_length) {
+ 		line6_midibuf_ignore(mb, done);
+-		DEBUG_MESSAGES(dev_err
+-			       (line6->ifcdev,
+-				"%d %d buffer overflow - message skipped\n",
+-				done, urb->actual_length));
++		dev_dbg(line6->ifcdev, "%d %d buffer overflow - message skipped\n",
++			done, urb->actual_length);
+ 	}
+ 
+ 	for (;;) {
+Index: linux-3.2.46/drivers/staging/line6/pod.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/pod.c	2013-07-26 19:28:49.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/pod.c	2013-07-26 19:29:06.000000000 +0000
+@@ -252,25 +252,19 @@
+ 						break;
+ 
+ 					default:
+-						DEBUG_MESSAGES(dev_err
+-							       (pod->
+-								line6.ifcdev,
+-								"unknown dump code %02X\n",
+-								pod->
+-								dumpreq.in_progress));
++						dev_dbg(pod->line6.ifcdev,
++							"unknown dump code %02X\n",
++							pod->dumpreq.in_progress);
+ 					}
+ 
+ 					line6_dump_finished(&pod->dumpreq);
+ 					pod_startup3(pod);
+ 				} else
+-					DEBUG_MESSAGES(dev_err
+-						       (pod->line6.ifcdev,
+-							"wrong size of channel dump message (%d instead of %d)\n",
+-							pod->
+-							line6.message_length,
+-							(int)
+-							sizeof(pod->prog_data) +
+-							7));
++					dev_dbg(pod->line6.ifcdev,
++						"wrong size of channel dump message (%d instead of %d)\n",
++						pod->line6.message_length,
++						(int)sizeof(pod->prog_data) +
++						7);
+ 
+ 				break;
+ 
+@@ -302,11 +296,9 @@
+ #undef PROCESS_SYSTEM_PARAM
+ 
+ 					default:
+-						DEBUG_MESSAGES(dev_err
+-							       (pod->
+-								line6.ifcdev,
+-								"unknown tuner/system response %02X\n",
+-								buf[6]));
++						dev_dbg(pod->line6.ifcdev,
++							"unknown tuner/system response %02X\n",
++							buf[6]);
+ 					}
+ 
+ 					break;
+@@ -321,25 +313,21 @@
+ 				break;
+ 
+ 			case POD_SYSEX_CLIP:
+-				DEBUG_MESSAGES(dev_err
+-					       (pod->line6.ifcdev,
+-						"audio clipped\n"));
++				dev_dbg(pod->line6.ifcdev, "audio clipped\n");
+ 				pod->clipping.value = 1;
+ 				wake_up(&pod->clipping.wait);
+ 				break;
+ 
+ 			case POD_SYSEX_STORE:
+-				DEBUG_MESSAGES(dev_err
+-					       (pod->line6.ifcdev,
+-						"message %02X not yet implemented\n",
+-						buf[5]));
++				dev_dbg(pod->line6.ifcdev,
++					"message %02X not yet implemented\n",
++					buf[5]);
+ 				break;
+ 
+ 			default:
+-				DEBUG_MESSAGES(dev_err
+-					       (pod->line6.ifcdev,
+-						"unknown sysex message %02X\n",
+-						buf[5]));
++				dev_dbg(pod->line6.ifcdev,
++					"unknown sysex message %02X\n",
++					buf[5]);
+ 			}
+ 		} else
+ 		    if (memcmp
+@@ -352,9 +340,7 @@
+ 			    buf[10];
+ 			pod_startup4(pod);
+ 		} else
+-			DEBUG_MESSAGES(dev_err
+-				       (pod->line6.ifcdev,
+-					"unknown sysex header\n"));
++			dev_dbg(pod->line6.ifcdev, "unknown sysex header\n");
+ 
+ 		break;
+ 
+@@ -362,9 +348,8 @@
+ 		break;
+ 
+ 	default:
+-		DEBUG_MESSAGES(dev_err
+-			       (pod->line6.ifcdev,
+-				"POD: unknown message %02X\n", buf[0]));
++		dev_dbg(pod->line6.ifcdev, "POD: unknown message %02X\n",
++			buf[0]);
+ 	}
+ }
+ 
+Index: linux-3.2.46/drivers/staging/line6/variax.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/line6/variax.c	2013-07-26 19:29:04.000000000 +0000
++++ linux-3.2.46/drivers/staging/line6/variax.c	2013-07-26 19:29:06.000000000 +0000
+@@ -262,10 +262,9 @@
+ 					     2, VARIAX_DUMP_PASS3);
+ 				}
+ 			} else {
+-				DEBUG_MESSAGES(dev_err
+-					       (variax->line6.ifcdev,
+-						"illegal length %d of model data\n",
+-						variax->line6.message_length));
++				dev_dbg(variax->line6.ifcdev,
++					"illegal length %d of model data\n",
++					variax->line6.message_length);
+ 				line6_dump_finished(&variax->dumpreq);
+ 			}
+ 		} else if (memcmp(buf + 1, variax_request_bank + 1,
+@@ -295,9 +294,8 @@
+ 		break;
+ 
+ 	default:
+-		DEBUG_MESSAGES(dev_err
+-			       (variax->line6.ifcdev,
+-				"Variax: unknown message %02X\n", buf[0]));
++		dev_dbg(variax->line6.ifcdev,
++			"Variax: unknown message %02X\n", buf[0]);
+ 	}
+ }
+ 

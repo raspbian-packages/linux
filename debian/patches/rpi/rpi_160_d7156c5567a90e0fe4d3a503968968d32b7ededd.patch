@@ -1,0 +1,45 @@
+commit d7156c5567a90e0fe4d3a503968968d32b7ededd
+Author: Grigori Goronzy <greg@blackbox>
+Date:   Mon Jun 11 18:57:13 2012 +0200
+
+    sdhci-bcm2708: add allow_highspeed parameter
+    
+    Add a parameter to disable high-speed mode for the few cards that
+    still might have problems. High-speed mode is enabled by default.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:24.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:25.000000000 +0000
+@@ -135,6 +135,8 @@
+ 	return (unsigned long)((hptime() - t) * HPTIME_CLK_NS);
+ }
+ 
++static bool allow_highspeed = 1;
++
+ #if 0
+ static void hptime_test(void)
+ {
+@@ -1381,7 +1383,8 @@
+ 	    host_priv->dma_chan, host_priv->dma_chan_base,
+ 	    host_priv->dma_irq);
+ 
+-	host->mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
++    if (allow_highspeed)
++        host->mmc->caps |= MMC_CAP_SD_HIGHSPEED | MMC_CAP_MMC_HIGHSPEED;
+ #endif
+ 
+ 	ret = sdhci_add_host(host);
+@@ -1487,8 +1490,12 @@
+ module_init(sdhci_drv_init);
+ module_exit(sdhci_drv_exit);
+ 
++module_param(allow_highspeed, bool, 0444);
++
+ MODULE_DESCRIPTION("Secure Digital Host Controller Interface platform driver");
+ MODULE_AUTHOR("Broadcom <info@broadcom.com>");
+ MODULE_LICENSE("GPL v2");
+ MODULE_ALIAS("platform:"DRIVER_NAME);
+ 
++MODULE_PARM_DESC(allow_highspeed, "Allow high speed transfers modes");
++

@@ -1,0 +1,43 @@
+commit 22cb6e26206c3e0e7bfb8e2adf86e9b10f9187a6
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Oct 5 22:44:47 2012 +0100
+
+    Support dummy vc-mem ioctl used by vcdbg
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/include/mach/vc_mem.h
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/include/mach/vc_mem.h	2013-07-26 19:32:37.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/include/mach/vc_mem.h	2013-07-26 19:37:00.000000000 +0000
+@@ -22,6 +22,7 @@
+ #define VC_MEM_IOC_MEM_PHYS_ADDR    _IOR( VC_MEM_IOC_MAGIC, 0, unsigned long )
+ #define VC_MEM_IOC_MEM_SIZE         _IOR( VC_MEM_IOC_MAGIC, 1, unsigned int )
+ #define VC_MEM_IOC_MEM_BASE         _IOR( VC_MEM_IOC_MAGIC, 2, unsigned int )
++#define VC_MEM_IOC_MEM_LOAD         _IOR( VC_MEM_IOC_MAGIC, 3, unsigned int )
+ 
+ #if defined( __KERNEL__ )
+ #define VC_MEM_TO_ARM_ADDR_MASK 0x3FFFFFFF
+Index: linux-3.2.46/arch/arm/mach-bcm2708/vc_mem.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/vc_mem.c	2013-07-26 19:36:49.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/vc_mem.c	2013-07-26 19:37:00.000000000 +0000
+@@ -208,6 +208,20 @@
+ 			}
+ 			break;
+ 		}
++	case VC_MEM_IOC_MEM_LOAD:
++		{
++			// Get the videocore memory base
++			vc_mem_get_base();
++
++			LOG_DBG("%s: VC_MEM_IOC_MEM_LOAD=%u", __func__,
++				mm_vc_mem_base);
++
++			if (copy_to_user((void *) arg, &mm_vc_mem_base,
++					 sizeof (mm_vc_mem_base)) != 0) {
++				rc = -EFAULT;
++			}
++			break;
++		}
+ 	default:
+ 		{
+ 			return -ENOTTY;

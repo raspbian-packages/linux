@@ -1,0 +1,37 @@
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Wed, 7 Mar 2012 10:02:00 +0000
+Subject: [PATCH 68/77] net/hyperv: Use the built-in macro KBUILD_MODNAME for
+ this driver
+
+commit d31b20fcc89efa8c5d3f5ea2720e08a286b69a36 upstream.
+
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Olaf Hering <olaf@aepfle.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/hyperv/netvsc_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-3.2.46/drivers/net/hyperv/netvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:56.000000000 +0000
++++ linux-3.2.46/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:19:24.000000000 +0000
+@@ -310,7 +310,7 @@
+ static void netvsc_get_drvinfo(struct net_device *net,
+ 			       struct ethtool_drvinfo *info)
+ {
+-	strcpy(info->driver, "hv_netvsc");
++	strcpy(info->driver, KBUILD_MODNAME);
+ 	strcpy(info->version, HV_DRV_VERSION);
+ 	strcpy(info->fw_version, "N/A");
+ }
+@@ -482,7 +482,7 @@
+ 
+ /* The one and only one */
+ static struct  hv_driver netvsc_drv = {
+-	.name = "netvsc",
++	.name = KBUILD_MODNAME,
+ 	.id_table = id_table,
+ 	.probe = netvsc_probe,
+ 	.remove = netvsc_remove,

@@ -1,0 +1,47 @@
+commit da305c719abe61fb7e7a1ac8a6a3ae1b8633bf89
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Mar 17 23:05:37 2012 +0000
+
+    Disable debug code in dwc_otg driver unless CONFIG_USB_DEBUG is set
+
+Index: linux-3.2.46/drivers/usb/host/dwc_common_port/Makefile
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_common_port/Makefile	2013-07-26 19:31:19.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_common_port/Makefile	2013-07-26 19:32:22.000000000 +0000
+@@ -6,7 +6,9 @@
+ 
+ #CPPFLAGS	+= -DDEBUG_MEMORY
+ 
++ifeq ($(CONFIG_USB_DEBUG),y)
+ CPPFLAGS	+= -DDEBUG
++endif
+ CPPFLAGS	+= -DDWC_LINUX
+ 
+ obj-$(CONFIG_USB_DWCOTG)	+= dwc_common_port_lib.o
+Index: linux-3.2.46/drivers/usb/host/dwc_common_port/dwc_os.h
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_common_port/dwc_os.h	2013-07-26 19:31:20.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_common_port/dwc_os.h	2013-07-26 19:32:22.000000000 +0000
+@@ -216,6 +216,7 @@
+ #endif
+ #else
+ #define __DWC_DEBUG printk
++#include <linux/kernel.h>
+ #endif
+ 
+ /**
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/Makefile
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/Makefile	2013-07-26 19:31:20.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/Makefile	2013-07-26 19:32:22.000000000 +0000
+@@ -9,7 +9,9 @@
+ 	BUS_INTERFACE = -DPLATFORM_INTERFACE=1
+ endif
+ 
+-CPPFLAGS	+= -DDEBUG 
++ifeq ($(CONFIG_USB_DEBUG),y)
++CPPFLAGS	+= -DDEBUG
++endif
+ 
+ # Use one of the following flags to compile the software in host-only or
+ # device-only mode.
