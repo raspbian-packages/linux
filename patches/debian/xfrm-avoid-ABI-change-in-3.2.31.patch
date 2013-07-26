@@ -1,0 +1,96 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: xfrm: Avoid ABI change in 3.2.31
+Forwarded: not-needed
+
+Commit 3b59df46a449ec9975146d71318c4777ad086744 ('xfrm: Workaround
+incompatibility of ESN and async crypto') added a new operation
+'recheck' to struct xfrm_replay.  There is only one instance which
+needs this to be different than 'check'.  So instead of adding the
+operation, check whether we're using that instance and call the
+recheck implementation directly.
+
+Index: linux-3.2.46/include/net/xfrm.h
+===================================================================
+--- linux-3.2.46.orig/include/net/xfrm.h	2013-07-26 18:54:04.000000000 +0000
++++ linux-3.2.46/include/net/xfrm.h	2013-07-26 19:25:04.000000000 +0000
+@@ -269,9 +269,6 @@
+ 	int	(*check)(struct xfrm_state *x,
+ 			 struct sk_buff *skb,
+ 			 __be32 net_seq);
+-	int	(*recheck)(struct xfrm_state *x,
+-			   struct sk_buff *skb,
+-			   __be32 net_seq);
+ 	void	(*notify)(struct xfrm_state *x, int event);
+ 	int	(*overflow)(struct xfrm_state *x, struct sk_buff *skb);
+ };
+Index: linux-3.2.46/net/xfrm/xfrm_input.c
+===================================================================
+--- linux-3.2.46.orig/net/xfrm/xfrm_input.c	2013-07-26 18:54:04.000000000 +0000
++++ linux-3.2.46/net/xfrm/xfrm_input.c	2013-07-26 19:25:04.000000000 +0000
+@@ -102,6 +102,19 @@
+ }
+ EXPORT_SYMBOL(xfrm_prepare_input);
+ 
++extern struct xfrm_replay xfrm_replay_esn;
++extern int xfrm_replay_recheck_esn(struct xfrm_state *x,
++				   struct sk_buff *skb, __be32 net_seq);
++
++static int
++xfrm_recheck(struct xfrm_state *x, struct sk_buff *skb, __be32 net_seq)
++{
++	if (x->repl == &xfrm_replay_esn)
++		return xfrm_replay_recheck_esn(x, skb, net_seq);
++	else
++		return x->repl->check(x, skb, net_seq);
++}
++
+ int xfrm_input(struct sk_buff *skb, int nexthdr, __be32 spi, int encap_type)
+ {
+ 	struct net *net = dev_net(skb->dev);
+@@ -212,7 +225,7 @@
+ 		/* only the first xfrm gets the encap type */
+ 		encap_type = 0;
+ 
+-		if (async && x->repl->recheck(x, skb, seq)) {
++		if (async && xfrm_recheck(x, skb, seq)) {
+ 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
+ 			goto drop_unlock;
+ 		}
+Index: linux-3.2.46/net/xfrm/xfrm_replay.c
+===================================================================
+--- linux-3.2.46.orig/net/xfrm/xfrm_replay.c	2013-07-26 18:54:04.000000000 +0000
++++ linux-3.2.46/net/xfrm/xfrm_replay.c	2013-07-26 19:25:04.000000000 +0000
+@@ -420,7 +420,7 @@
+ 	return -EINVAL;
+ }
+ 
+-static int xfrm_replay_recheck_esn(struct xfrm_state *x,
++int xfrm_replay_recheck_esn(struct xfrm_state *x,
+ 				   struct sk_buff *skb, __be32 net_seq)
+ {
+ 	if (unlikely(XFRM_SKB_CB(skb)->seq.input.hi !=
+@@ -491,7 +491,6 @@
+ static struct xfrm_replay xfrm_replay_legacy = {
+ 	.advance	= xfrm_replay_advance,
+ 	.check		= xfrm_replay_check,
+-	.recheck	= xfrm_replay_check,
+ 	.notify		= xfrm_replay_notify,
+ 	.overflow	= xfrm_replay_overflow,
+ };
+@@ -499,15 +498,13 @@
+ static struct xfrm_replay xfrm_replay_bmp = {
+ 	.advance	= xfrm_replay_advance_bmp,
+ 	.check		= xfrm_replay_check_bmp,
+-	.recheck	= xfrm_replay_check_bmp,
+ 	.notify		= xfrm_replay_notify_bmp,
+ 	.overflow	= xfrm_replay_overflow_bmp,
+ };
+ 
+-static struct xfrm_replay xfrm_replay_esn = {
++struct xfrm_replay xfrm_replay_esn = {
+ 	.advance	= xfrm_replay_advance_esn,
+ 	.check		= xfrm_replay_check_esn,
+-	.recheck	= xfrm_replay_recheck_esn,
+ 	.notify		= xfrm_replay_notify_bmp,
+ 	.overflow	= xfrm_replay_overflow_esn,
+ };

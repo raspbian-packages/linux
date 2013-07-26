@@ -1,0 +1,30 @@
+From cdabe042d89c1fc8cb8cf7aaaf0d902b1bab5549 Mon Sep 17 00:00:00 2001
+From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+Date: Wed, 13 Jun 2012 19:51:43 +0000
+Subject: [PATCH 04/13] be2net: reduce gso_max_size setting to account for
+ ethernet header.
+
+commit b7e5887e0e414bde0a2f311ae3fbea5611562e29 upstream.
+
+The maximum size of packet that can be handled by controller including ethernet
+header is 65535. Reducing gso_max_size accordingly.
+
+Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:22:12.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:22:14.000000000 +0000
+@@ -3212,7 +3212,7 @@
+ 
+ 	netdev->flags |= IFF_MULTICAST;
+ 
+-	netif_set_gso_max_size(netdev, 65535);
++	netif_set_gso_max_size(netdev, 65535 - ETH_HLEN);
+ 
+ 	netdev->netdev_ops = &be_netdev_ops;
+ 

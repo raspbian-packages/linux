@@ -1,0 +1,18 @@
+commit 7880df43b92e1a99acf14ac421b4a233a1a687ec
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Aug 13 20:16:58 2012 +0100
+
+    Enable CONFIG_CRYPTO_XTS
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:34:12.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:34:37.000000000 +0000
+@@ -876,6 +876,7 @@
+ CONFIG_CRYPTO_AUTHENC=m
+ CONFIG_CRYPTO_SEQIV=m
+ CONFIG_CRYPTO_CBC=y
++CONFIG_CRYPTO_XTS=m
+ CONFIG_CRYPTO_HMAC=y
+ CONFIG_CRYPTO_XCBC=m
+ CONFIG_CRYPTO_MD5=y

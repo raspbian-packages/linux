@@ -1,0 +1,31 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Wed, 30 Nov 2011 08:52:23 -0800
+Subject: [PATCH 27/77] HID: hv_mouse: Properly add the hid device
+
+commit 74c4fb058083b47571a4f76dcfce95085f2d8098 upstream.
+
+We need to properly add the hid device to correctly initialize the sysfs state.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Fuzhou Chen <fuzhouch@microsoft.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/hid-hyperv.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux-3.2.46/drivers/hid/hid-hyperv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hid/hid-hyperv.c	2013-07-26 19:17:57.000000000 +0000
++++ linux-3.2.46/drivers/hid/hid-hyperv.c	2013-07-26 19:18:30.000000000 +0000
+@@ -506,6 +506,10 @@
+ 
+ 	sprintf(hid_dev->name, "%s", "Microsoft Vmbus HID-compliant Mouse");
+ 
++	ret = hid_add_device(hid_dev);
++	if (ret)
++		goto probe_err1;
++
+ 	ret = hid_parse_report(hid_dev, input_dev->report_desc,
+ 				input_dev->report_desc_size);
+ 

@@ -1,0 +1,42 @@
+From: Xiaotian Feng <xtfeng@gmail.com>
+Date: Thu, 12 Jan 2012 17:17:08 -0800
+Subject: proc: fix null pointer deref in proc_pid_permission()
+
+commit a2ef990ab5a6705a356d146dd773a3b359787497 upstream.
+
+get_proc_task() can fail to search the task and return NULL,
+put_task_struct() will then bomb the kernel with following oops:
+
+  BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+  IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
+  PGD 112075067 PUD 112814067 PMD 0
+  Oops: 0002 [#1] PREEMPT SMP
+
+This is a regression introduced by commit 0499680a ("procfs: add hidepid=
+and gid= mount options").  The kernel should return -ESRCH if
+get_proc_task() failed.
+
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Stephen Wilson <wilsons@start.ca>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ fs/proc/base.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-3.2.46/fs/proc/base.c
+===================================================================
+--- linux-3.2.46.orig/fs/proc/base.c	2013-07-26 19:22:47.000000000 +0000
++++ linux-3.2.46/fs/proc/base.c	2013-07-26 19:22:48.000000000 +0000
+@@ -597,6 +597,8 @@
+ 	bool has_perms;
+ 
+ 	task = get_proc_task(inode);
++	if (!task)
++		return -ESRCH;
+ 	has_perms = has_pid_permissions(pid, task, 1);
+ 	put_task_struct(task);
+ 

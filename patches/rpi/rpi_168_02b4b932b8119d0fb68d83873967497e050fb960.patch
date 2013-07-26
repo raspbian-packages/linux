@@ -1,0 +1,27 @@
+commit 02b4b932b8119d0fb68d83873967497e050fb960
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sun Jun 17 15:52:33 2012 +0100
+
+    Add hfs/hfsplus modules
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:33.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:36.000000000 +0000
+@@ -660,6 +660,8 @@
+ CONFIG_TMPFS=y
+ CONFIG_TMPFS_POSIX_ACL=y
+ CONFIG_CONFIGFS_FS=y
++CONFIG_HFS_FS=m
++CONFIG_HFSPLUS_FS=m
+ CONFIG_SQUASHFS=m
+ CONFIG_SQUASHFS_XATTR=y
+ CONFIG_SQUASHFS_LZO=y
+@@ -717,7 +719,6 @@
+ CONFIG_NLS_ISO8859_15=m
+ CONFIG_NLS_KOI8_R=m
+ CONFIG_NLS_KOI8_U=m
+-CONFIG_NLS_UTF8=m
+ CONFIG_PRINTK_TIME=y
+ CONFIG_DETECT_HUNG_TASK=y
+ CONFIG_TIMER_STATS=y

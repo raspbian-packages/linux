@@ -1,0 +1,25 @@
+From 969e4dd0b5c715b239c765b870f2abf81c57e878 Mon Sep 17 00:00:00 2001
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sun, 30 May 2010 22:47:01 +0100
+Subject: [PATCH 2/2] cgroups: Document the Debian memory resource controller
+ config change
+
+---
+ Documentation/cgroups/memory.txt |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+Index: linux-3.2.46/Documentation/cgroups/memory.txt
+===================================================================
+--- linux-3.2.46.orig/Documentation/cgroups/memory.txt	2013-07-26 18:56:32.000000000 +0000
++++ linux-3.2.46/Documentation/cgroups/memory.txt	2013-07-26 19:17:24.000000000 +0000
+@@ -47,6 +47,10 @@
+  Kernel memory and Hugepages are not under control yet. We just manage
+  pages on LRU. To add more controls, we have to take care of performance.
+ 
++NOTE: In Debian kernel packages, the memory resource controller is
++included but disabled by default.  Use the kernel parameter
++'cgroup_enable=memory' to enable it.
++
+ Brief summary of control files.
+ 
+  tasks				 # attach a task(thread) and show list of threads

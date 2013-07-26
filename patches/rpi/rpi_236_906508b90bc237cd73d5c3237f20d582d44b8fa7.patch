@@ -1,0 +1,16 @@
+commit 906508b90bc237cd73d5c3237f20d582d44b8fa7
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Sep 1 00:31:47 2012 +0100
+
+    Fix typo
+
+Index: linux-3.2.51/arch/arm/Kconfig
+===================================================================
+--- linux-3.2.51.orig/arch/arm/Kconfig	2013-10-17 19:24:27.000000000 +0000
++++ linux-3.2.51/arch/arm/Kconfig	2013-10-17 19:35:15.000000000 +0000
+@@ -1,4 +1,4 @@
+-iconfig ARM
++config ARM
+ 	bool
+ 	default y
+ 	select HAVE_DMA_API_DEBUG

@@ -1,0 +1,55 @@
+commit 2c671b98f0d33b8416a55c50f8057a4067484bb0
+Author: ddv2005 <ddv@abinet.com>
+Date:   Sun Aug 5 10:42:12 2012 -0400
+
+    Fix spinlock recursion in sdhci-bcm2708.c
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:34:31.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:34:34.000000000 +0000
+@@ -656,7 +656,7 @@
+ 
+ 	BUG_ON(NULL == host);
+ 
+-	spin_lock_irqsave(&host->lock, flags);
++//	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	if (host_priv->dma_wanted) {
+ 		if (NULL == data) {
+@@ -736,7 +736,7 @@
+ #endif
+ 	}
+ 
+-	spin_unlock_irqrestore(&host->lock, flags);
++//	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
+ 
+@@ -753,7 +753,7 @@
+ 
+ 	BUG_ON(NULL == host);
+ 
+-	spin_lock_irqsave(&host->lock, flags);
++//	spin_lock_irqsave(&host->lock, flags);
+ 	data = host->data;
+ 
+ #ifdef CHECK_DMA_USE
+@@ -778,7 +778,7 @@
+ 
+ 	if (NULL == data) {
+ 		DBG("PDMA unused completion - status 0x%X\n", dma_cs);
+-		spin_unlock_irqrestore(&host->lock, flags);
++//		spin_unlock_irqrestore(&host->lock, flags);
+ 		return;
+ 	}
+ 	sg = data->sg;
+@@ -871,7 +871,7 @@
+ 						SDHCI_INT_SPACE_AVAIL);
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&host->lock, flags);
++//	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
+ static irqreturn_t sdhci_bcm2708_dma_irq(int irq, void *dev_id)

@@ -1,0 +1,61 @@
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date: Tue, 28 Feb 2012 00:39:39 +0100
+Subject: [PATCH 3/7] i2c: export bit-banging algo functions
+
+commit b0209b39951868069710c1e39ca14add9fa77ada upstream.
+
+i915 has a hw i2c controller (gmbus) but for a bunch of stupid reasons
+we need to be able to fall back to the bit-banging algo on gpio pins.
+
+The current code sets up a 2nd i2c controller for the same i2c bus using
+the bit-banging algo. This has a bunch of issues, the major one being
+that userspace can directly access this fallback i2c adaptor behind
+the drivers back.
+
+But we need to frob a few registers before and after using fallback
+gpio bit-banging, so this horribly fails.
+
+The new plan is to only set up one i2c adaptor and transparently fall
+back to bit-banging by directly calling the xfer function of the bit-
+banging algo in the i2c core.
+
+To make that possible, export the 2 i2c algo functions.
+
+v2: As suggested by Jean Delvare, simply export the i2c_bit_algo
+vtable instead of the individual functions.
+
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/i2c/algos/i2c-algo-bit.c |    3 ++-
+ include/linux/i2c-algo-bit.h     |    1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/i2c/algos/i2c-algo-bit.c
+===================================================================
+--- linux-3.2.46.orig/drivers/i2c/algos/i2c-algo-bit.c	2013-07-26 18:53:36.000000000 +0000
++++ linux-3.2.46/drivers/i2c/algos/i2c-algo-bit.c	2013-07-26 19:26:17.000000000 +0000
+@@ -616,10 +616,11 @@
+ 
+ /* -----exported algorithm data: -------------------------------------	*/
+ 
+-static const struct i2c_algorithm i2c_bit_algo = {
++const struct i2c_algorithm i2c_bit_algo = {
+ 	.master_xfer	= bit_xfer,
+ 	.functionality	= bit_func,
+ };
++EXPORT_SYMBOL(i2c_bit_algo);
+ 
+ /*
+  * registering functions to load algorithms at runtime
+Index: linux-3.2.46/include/linux/i2c-algo-bit.h
+===================================================================
+--- linux-3.2.46.orig/include/linux/i2c-algo-bit.h	2013-07-26 18:53:36.000000000 +0000
++++ linux-3.2.46/include/linux/i2c-algo-bit.h	2013-07-26 19:26:17.000000000 +0000
+@@ -49,5 +49,6 @@
+ 
+ int i2c_bit_add_bus(struct i2c_adapter *);
+ int i2c_bit_add_numbered_bus(struct i2c_adapter *);
++extern const struct i2c_algorithm i2c_bit_algo;
+ 
+ #endif /* _LINUX_I2C_ALGO_BIT_H */

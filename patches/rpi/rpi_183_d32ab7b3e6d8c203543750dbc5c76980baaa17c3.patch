@@ -1,0 +1,40 @@
+commit d32ab7b3e6d8c203543750dbc5c76980baaa17c3
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Jul 9 12:19:26 2012 +0100
+
+    Enable I2C and SPI modules in full config
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:33:54.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:33:57.000000000 +0000
+@@ -550,12 +550,3 @@
+ # CONFIG_CRYPTO_HW is not set
+ CONFIG_CRC_ITU_T=y
+ CONFIG_LIBCRC32C=y
+-CONFIG_I2C=y
+-CONFIG_I2C_BOARDINFO=y
+-CONFIG_I2C_COMPAT=y
+-CONFIG_I2C_CHARDEV=m
+-CONFIG_I2C_HELPER_AUTO=y
+-CONFIG_I2C_BCM2708=m
+-CONFIG_SPI=y
+-CONFIG_SPI_MASTER=y
+-CONFIG_SPI_BCM2708=m
+\ No newline at end of file
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:44.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:57.000000000 +0000
+@@ -381,6 +381,11 @@
+ CONFIG_TTY_PRINTK=y
+ # CONFIG_HW_RANDOM is not set
+ CONFIG_RAW_DRIVER=y
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=m
++CONFIG_I2C_BCM2708=m
++CONFIG_SPI=y
++CONFIG_SPI_BCM2708=m
+ CONFIG_GPIO_SYSFS=y
+ # CONFIG_HWMON is not set
+ CONFIG_WATCHDOG=y

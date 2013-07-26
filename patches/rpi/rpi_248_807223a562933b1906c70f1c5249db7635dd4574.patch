@@ -1,0 +1,23 @@
+commit 807223a562933b1906c70f1c5249db7635dd4574
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Sep 17 22:57:29 2012 +0100
+
+    Switch to powersave governor. We'll enable ondemand in the distribution
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:36:36.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:36:39.000000000 +0000
+@@ -48,9 +48,10 @@
+ CONFIG_KEXEC=y
+ CONFIG_CPU_FREQ=y
+ CONFIG_CPU_FREQ_STAT=m
+-CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+-CONFIG_CPU_FREQ_GOV_POWERSAVE=y
++CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE=y
++CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+ CONFIG_CPU_FREQ_GOV_USERSPACE=y
++CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+ CONFIG_CPU_IDLE=y
+ CONFIG_VFP=y

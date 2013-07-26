@@ -1,0 +1,96 @@
+From: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Date: Wed, 16 Nov 2011 02:02:23 +0000
+Subject: [PATCH 06/58] be2net: Fix TX queue create for Lancer
+
+commit 293c4a7d9b95d0beeb5df03c14bd35bc21f9e6f2 upstream.
+
+Lancer uses V1 version of TXQ create. This command needs interface
+id for TX queue creation. Rearrange code such that tx queue create
+is after interface create. As TXQ create is now called after MCC
+ring create use MCC instead of MBOX.
+
+Signed-off-by: Padmanabh Ratnakar <padmanabh.ratnakar@emulex.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/emulex/benet/be_cmds.c |   15 ++++++++++-----
+ drivers/net/ethernet/emulex/benet/be_main.c |   12 ++++++++----
+ 2 files changed, 18 insertions(+), 9 deletions(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_cmds.c	2013-07-26 19:20:56.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_cmds.c	2013-07-26 19:20:58.000000000 +0000
+@@ -916,10 +916,14 @@
+ 	void *ctxt;
+ 	int status;
+ 
+-	if (mutex_lock_interruptible(&adapter->mbox_lock))
+-		return -1;
++	spin_lock_bh(&adapter->mcc_lock);
++
++	wrb = wrb_from_mccq(adapter);
++	if (!wrb) {
++		status = -EBUSY;
++		goto err;
++	}
+ 
+-	wrb = wrb_from_mbox(adapter);
+ 	req = embedded_payload(wrb);
+ 	ctxt = &req->context;
+ 
+@@ -945,14 +949,15 @@
+ 
+ 	be_cmd_page_addrs_prepare(req->pages, ARRAY_SIZE(req->pages), q_mem);
+ 
+-	status = be_mbox_notify_wait(adapter);
++	status = be_mcc_notify_wait(adapter);
+ 	if (!status) {
+ 		struct be_cmd_resp_eth_tx_create *resp = embedded_payload(wrb);
+ 		txq->id = le16_to_cpu(resp->cid);
+ 		txq->created = true;
+ 	}
+ 
+-	mutex_unlock(&adapter->mbox_lock);
++err:
++	spin_unlock_bh(&adapter->mcc_lock);
+ 
+ 	return status;
+ }
+Index: linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:20:56.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/emulex/benet/be_main.c	2013-07-26 19:20:58.000000000 +0000
+@@ -1690,9 +1690,6 @@
+ 		if (be_queue_alloc(adapter, q, TX_Q_LEN,
+ 			sizeof(struct be_eth_wrb)))
+ 			goto err;
+-
+-		if (be_cmd_txq_create(adapter, q, cq))
+-			goto err;
+ 	}
+ 	return 0;
+ 
+@@ -2573,8 +2570,9 @@
+ 	struct net_device *netdev = adapter->netdev;
+ 	u32 cap_flags, en_flags;
+ 	u32 tx_fc, rx_fc;
+-	int status;
++	int status, i;
+ 	u8 mac[ETH_ALEN];
++	struct be_tx_obj *txo;
+ 
+ 	be_setup_init(adapter);
+ 
+@@ -2614,6 +2612,12 @@
+ 	if (status != 0)
+ 		goto err;
+ 
++	 for_all_tx_queues(adapter, txo, i) {
++		status = be_cmd_txq_create(adapter, &txo->q, &txo->cq);
++		if (status)
++			goto err;
++	}
++
+ 	/* For BEx, the VF's permanent mac queried from card is incorrect.
+ 	 * Query the mac configued by the PF using if_handle
+ 	 */

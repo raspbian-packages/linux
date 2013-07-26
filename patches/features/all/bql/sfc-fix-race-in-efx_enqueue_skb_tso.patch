@@ -1,0 +1,33 @@
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Wed, 30 Nov 2011 17:12:27 -0500
+Subject: sfc: fix race in efx_enqueue_skb_tso()
+
+commit 449fa023bca5b53bd924d91a27ffd34807fdeb80 upstream.
+
+As soon as skb is pushed to hardware, it can be completed and freed, so
+we should not dereference skb anymore.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/ethernet/sfc/tx.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-3.2.46/drivers/net/ethernet/sfc/tx.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/sfc/tx.c	2013-07-26 19:24:39.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/sfc/tx.c	2013-07-26 19:24:41.000000000 +0000
+@@ -1192,11 +1192,11 @@
+ 			goto mem_err;
+ 	}
+ 
++	netdev_tx_sent_queue(tx_queue->core_txq, skb->len);
++
+ 	/* Pass off to hardware */
+ 	efx_nic_push_buffers(tx_queue);
+ 
+-	netdev_tx_sent_queue(tx_queue->core_txq, skb->len);
+-
+ 	tx_queue->tso_bursts++;
+ 	return NETDEV_TX_OK;
+ 

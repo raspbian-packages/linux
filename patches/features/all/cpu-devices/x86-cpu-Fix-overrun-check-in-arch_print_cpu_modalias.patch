@@ -1,0 +1,29 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sat, 11 Feb 2012 22:56:59 +0000
+Subject: x86/cpu: Fix overrun check in arch_print_cpu_modalias()
+
+commit 70142a9dd154f54f7409871ead86f7d77f2c6576 upstream.
+
+snprintf() does not return a negative value when truncating.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Thomas Renninger <trenn@suse.de>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/x86/kernel/cpu/match.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/arch/x86/kernel/cpu/match.c
+===================================================================
+--- linux-3.2.46.orig/arch/x86/kernel/cpu/match.c	2013-07-26 19:23:10.000000000 +0000
++++ linux-3.2.46/arch/x86/kernel/cpu/match.c	2013-07-26 19:23:26.000000000 +0000
+@@ -67,7 +67,7 @@
+ 	for (i = 0; i < NCAPINTS*32; i++) {
+ 		if (boot_cpu_has(i)) {
+ 			n = snprintf(buf, size, ",%04X", i);
+-			if (n < 0) {
++			if (n >= size) {
+ 				WARN(1, "x86 features overflow page\n");
+ 				break;
+ 			}

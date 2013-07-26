@@ -1,0 +1,12 @@
+Index: linux-3.2.46/arch/sh/Makefile
+===================================================================
+--- linux-3.2.46.orig/arch/sh/Makefile	2013-07-26 18:56:36.000000000 +0000
++++ linux-3.2.46/arch/sh/Makefile	2013-07-26 19:17:12.000000000 +0000
+@@ -75,7 +75,6 @@
+ 
+ # Give the various platforms the opportunity to set default image types
+ defaultimage-$(CONFIG_SUPERH32)			:= zImage
+-defaultimage-$(CONFIG_SH_SH7785LCR)		:= uImage
+ defaultimage-$(CONFIG_SH_RSK)			:= uImage
+ defaultimage-$(CONFIG_SH_URQUELL)		:= uImage
+ defaultimage-$(CONFIG_SH_MIGOR)			:= uImage

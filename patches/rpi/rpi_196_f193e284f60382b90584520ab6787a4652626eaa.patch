@@ -1,0 +1,40 @@
+commit f193e284f60382b90584520ab6787a4652626eaa
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Jul 27 12:03:28 2012 +0100
+
+    Revert "Possible fix for USB packets going missing. Thank gsh"
+    
+    This reverts commit 7e7695894e9e86490558b92af0d8bebdfaadcfed.
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c	2013-07-26 19:34:13.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c	2013-07-26 19:34:14.000000000 +0000
+@@ -282,21 +282,12 @@
+ 		qh = DWC_LIST_ENTRY(qh_entry, dwc_otg_qh_t, qh_list_entry);
+ 		qh_entry = qh_entry->next;
+ 		if (dwc_frame_num_le(qh->sched_frame, hcd->frame_number)) {
+-
+-			if(qh->do_split && qh->sched_frame != hcd->frame_number)
+-			{
+-				// If we're late we may have missed the beginning of the frame
+-				qh->sched_frame += qh->interval;
+-			}
+-			else
+-			{
+-				/*
+-				* Move QH to the ready list to be executed next
+-				* (micro)frame.
+-				*/
+-				DWC_LIST_MOVE_HEAD(&hcd->periodic_sched_ready,
+-						&qh->qh_list_entry);
+-			}
++			/*
++			 * Move QH to the ready list to be executed next
++			 * (micro)frame.
++			 */
++			DWC_LIST_MOVE_HEAD(&hcd->periodic_sched_ready,
++					   &qh->qh_list_entry);
+ 		}
+ 	}
+ 	tr_type = dwc_otg_hcd_select_transactions(hcd);

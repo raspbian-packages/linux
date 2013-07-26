@@ -1,0 +1,18 @@
+commit 7a681f9eb4fa7484956ea347e2c35f12d151aba4
+Author: Chris Boot <bootc@bootc.net>
+Date:   Tue May 8 14:50:35 2012 +0100
+
+    vcos: add linux/kernel.h include
+
+Index: linux-3.2.46/drivers/misc/vc04_services/interface/vcos/linuxkernel/vcos_platform_types.h
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/vc04_services/interface/vcos/linuxkernel/vcos_platform_types.h	2013-07-26 19:32:07.000000000 +0000
++++ linux-3.2.46/drivers/misc/vc04_services/interface/vcos/linuxkernel/vcos_platform_types.h	2013-07-26 19:34:23.000000000 +0000
+@@ -26,6 +26,7 @@
+ #include <stddef.h>
+ #include <linux/types.h>
+ #include <linux/bug.h>
++#include <linux/kernel.h>
+ 
+ #define VCOSPRE_ extern
+ #define VCOSPOST_

@@ -1,0 +1,90 @@
+From: Jason Gerecke <killertofu@gmail.com>
+Date: Tue, 3 Apr 2012 15:48:35 -0700
+Subject: Input: wacom - add Intuos5 Touch Ring/ExpressKey support
+
+commit f860e581fd473250c6dcbd3e13d576b6197e4694 upstream.
+
+Intuos5 uses a new report type for Touch Ring and ExpressKey data.
+Note that data from the capacitive sensors present on the ExpressKeys
+will be ignored until a proper way is found to expose it.
+
+Signed-off-by: Jason Gerecke <killertofu@gmail.com>
+Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
+Reviewed-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+ drivers/input/tablet/wacom_wac.c |   33 +++++++++++++++++++++++++++++++--
+ drivers/input/tablet/wacom_wac.h |    1 +
+ 2 files changed, 32 insertions(+), 2 deletions(-)
+
+Index: linux-3.2.46/drivers/input/tablet/wacom_wac.c
+===================================================================
+--- linux-3.2.46.orig/drivers/input/tablet/wacom_wac.c	2013-07-26 19:20:32.000000000 +0000
++++ linux-3.2.46/drivers/input/tablet/wacom_wac.c	2013-07-26 19:20:33.000000000 +0000
+@@ -484,7 +484,8 @@
+ 	int idx = 0, result;
+ 
+ 	if (data[0] != WACOM_REPORT_PENABLED && data[0] != WACOM_REPORT_INTUOSREAD
+-		&& data[0] != WACOM_REPORT_INTUOSWRITE && data[0] != WACOM_REPORT_INTUOSPAD) {
++		&& data[0] != WACOM_REPORT_INTUOSWRITE && data[0] != WACOM_REPORT_INTUOSPAD
++		&& data[0] != WACOM_REPORT_INTUOS5PAD) {
+ 		dbg("wacom_intuos_irq: received unknown report #%d", data[0]);
+                 return 0;
+ 	}
+@@ -494,7 +495,7 @@
+ 		idx = data[1] & 0x01;
+ 
+ 	/* pad packets. Works as a second tool and is always in prox */
+-	if (data[0] == WACOM_REPORT_INTUOSPAD) {
++	if (data[0] == WACOM_REPORT_INTUOSPAD || data[0] == WACOM_REPORT_INTUOS5PAD) {
+ 		if (features->type >= INTUOS4S && features->type <= INTUOS4L) {
+ 			input_report_key(input, BTN_0, (data[2] & 0x01));
+ 			input_report_key(input, BTN_1, (data[3] & 0x01));
+@@ -567,6 +568,34 @@
+ 				input_report_key(input, wacom->tool[1], 1);
+ 				input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
+ 			} else {
++				input_report_key(input, wacom->tool[1], 0);
++				input_report_abs(input, ABS_MISC, 0);
++			}
++		} else if (features->type >= INTUOS5S && features->type <= INTUOS5L) {
++			int i;
++
++			/* Touch ring mode switch has no capacitive sensor */
++			input_report_key(input, BTN_0, (data[3] & 0x01));
++
++			/*
++			 * ExpressKeys on Intuos5 have a capacitive sensor in
++			 * addition to the mechanical switch. Switch data is
++			 * stored in data[4], capacitive data in data[5].
++			 */
++			for (i = 0; i < 8; i++)
++				input_report_key(input, BTN_1 + i, data[4] & (1 << i));
++
++			if (data[2] & 0x80) {
++				input_report_abs(input, ABS_WHEEL, (data[2] & 0x7f));
++			} else {
++				/* Out of proximity, clear wheel value. */
++				input_report_abs(input, ABS_WHEEL, 0);
++			}
++
++			if (data[2] | (data[3] & 0x01) | data[4]) {
++				input_report_key(input, wacom->tool[1], 1);
++				input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
++			} else {
+ 				input_report_key(input, wacom->tool[1], 0);
+ 				input_report_abs(input, ABS_MISC, 0);
+ 			}
+Index: linux-3.2.46/drivers/input/tablet/wacom_wac.h
+===================================================================
+--- linux-3.2.46.orig/drivers/input/tablet/wacom_wac.h	2013-07-26 19:20:32.000000000 +0000
++++ linux-3.2.46/drivers/input/tablet/wacom_wac.h	2013-07-26 19:20:33.000000000 +0000
+@@ -38,6 +38,7 @@
+ #define WACOM_REPORT_INTUOSREAD		5
+ #define WACOM_REPORT_INTUOSWRITE	6
+ #define WACOM_REPORT_INTUOSPAD		12
++#define WACOM_REPORT_INTUOS5PAD		3
+ #define WACOM_REPORT_TPC1FG		6
+ #define WACOM_REPORT_TPC2FG		13
+ #define WACOM_REPORT_TPCHID		15

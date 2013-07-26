@@ -1,0 +1,19 @@
+commit 70428950df6af8fb89531dd970d0bca03a36fc1b
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Aug 31 12:53:51 2012 +0100
+
+    Enable low latency mode by default in sdcard driver. Can be disabled with sdhci-bcm2708.enable_llm=0
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:35:53.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:35:57.000000000 +0000
+@@ -140,7 +140,7 @@
+ static int emmc_clock_freq = BCM2708_EMMC_CLOCK_FREQ;
+ static bool sync_after_dma = 1;
+ static bool missing_status = 1;
+-bool enable_llm = 0;
++bool enable_llm = 1;
+ 
+ #if 0
+ static void hptime_test(void)

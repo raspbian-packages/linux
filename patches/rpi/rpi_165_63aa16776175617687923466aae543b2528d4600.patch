@@ -1,0 +1,19 @@
+commit 63aa16776175617687923466aae543b2528d4600
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Jun 16 23:46:08 2012 +0100
+
+    Fix bool/int error, part 2
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:31.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:32.000000000 +0000
+@@ -136,7 +136,7 @@
+ }
+ 
+ static bool allow_highspeed = 1;
+-static bool emmc_clock_freq = BCM2708_EMMC_CLOCK_FREQ;
++static int emmc_clock_freq = BCM2708_EMMC_CLOCK_FREQ;
+ 
+ #if 0
+ static void hptime_test(void)

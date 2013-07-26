@@ -1,0 +1,3444 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: firmware: Remove redundant log messages from drivers
+Date: Sun, 09 Dec 2012 16:40:31 +0000
+
+Now that firmware_class logs every success and failure consistently,
+many other log messages can be removed from drivers.
+
+This will probably need to be split up into multiple patches prior to
+upstream submission.
+
+Index: linux-3.2.46/arch/arm/mach-netx/xc.c
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-netx/xc.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-netx/xc.c	2013-07-26 19:25:21.000000000 +0000
+@@ -127,10 +127,8 @@
+ 
+ 	ret = request_firmware(&fw, name, x->dev);
+ 
+-	if (ret < 0) {
+-		dev_err(x->dev, "request_firmware failed\n");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	head = (struct fw_header *)fw->data;
+ 	if (head->magic != 0x4e657458) {
+Index: linux-3.2.46/arch/cris/arch-v32/drivers/iop_fw_load.c
+===================================================================
+--- linux-3.2.46.orig/arch/cris/arch-v32/drivers/iop_fw_load.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/arch/cris/arch-v32/drivers/iop_fw_load.c	2013-07-26 19:25:21.000000000 +0000
+@@ -74,12 +74,7 @@
+ 				  fw_name,
+ 				  &iop_spu_device[spu_inst]);
+ 	if (retval != 0)
+-	{
+-		printk(KERN_ERR
+-		       "iop_load_spu: Failed to load firmware \"%s\"\n",
+-		       fw_name);
+ 		return retval;
+-	}
+ 	data = (u32 *) fw_entry->data;
+ 
+ 	/* acquire ownership of memory controller */
+@@ -137,12 +132,7 @@
+ 	/* get firmware */
+ 	retval = request_firmware(&fw_entry, fw_name, &iop_mpu_device);
+ 	if (retval != 0)
+-	{
+-		printk(KERN_ERR
+-		       "iop_load_spu: Failed to load firmware \"%s\"\n",
+-		       fw_name);
+ 		return retval;
+-	}
+ 	data = (u32 *) fw_entry->data;
+ 
+ 	/* disable MPU */
+Index: linux-3.2.46/arch/x86/kernel/microcode_amd.c
+===================================================================
+--- linux-3.2.46.orig/arch/x86/kernel/microcode_amd.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/arch/x86/kernel/microcode_amd.c	2013-07-26 19:25:21.000000000 +0000
+@@ -330,10 +330,8 @@
+ 	if (c->x86 >= 0x15)
+ 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 
+-	if (request_firmware(&fw, (const char *)fw_name, device)) {
+-		pr_err("failed to load file %s\n", fw_name);
++	if (request_firmware(&fw, (const char *)fw_name, device))
+ 		goto out;
+-	}
+ 
+ 	ret = UCODE_ERROR;
+ 	if (*(u32 *)fw->data != UCODE_MAGIC) {
+Index: linux-3.2.46/drivers/atm/ambassador.c
+===================================================================
+--- linux-3.2.46.orig/drivers/atm/ambassador.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/atm/ambassador.c	2013-07-26 19:25:21.000000000 +0000
+@@ -1926,10 +1926,8 @@
+   int res;
+ 
+   res = request_ihex_firmware(&fw, "atmsar11.fw", &dev->pci_dev->dev);
+-  if (res) {
+-    PRINTK (KERN_ERR, "Cannot load microcode data");
++  if (res)
+     return res;
+-  }
+ 
+   /* First record contains just the start address */
+   rec = (const struct ihex_binrec *)fw->data;
+Index: linux-3.2.46/drivers/atm/fore200e.c
+===================================================================
+--- linux-3.2.46.orig/drivers/atm/fore200e.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/atm/fore200e.c	2013-07-26 19:25:21.000000000 +0000
+@@ -2519,10 +2519,9 @@
+ 	return err;
+ 
+     sprintf(buf, "%s%s", fore200e->bus->proc_name, FW_EXT);
+-    if ((err = request_firmware(&firmware, buf, device)) < 0) {
+-	printk(FORE200E "problem loading firmware image %s\n", fore200e->bus->model_name);
++    err = request_firmware(&firmware, buf, device);
++    if (err)
+ 	return err;
+-    }
+ 
+     fw_data = (__le32 *) firmware->data;
+     fw_size = firmware->size / sizeof(u32);
+Index: linux-3.2.46/drivers/bluetooth/ath3k.c
+===================================================================
+--- linux-3.2.46.orig/drivers/bluetooth/ath3k.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/bluetooth/ath3k.c	2013-07-26 19:25:21.000000000 +0000
+@@ -324,10 +324,8 @@
+ 		fw_version.rom_version);
+ 
+ 	ret = request_firmware(&firmware, filename, &udev->dev);
+-	if (ret < 0) {
+-		BT_ERR("Patch file not found %s", filename);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	pt_version.rom_version = *(int *)(firmware->data + firmware->size - 8);
+ 	pt_version.build_version = *(int *)
+@@ -386,10 +384,8 @@
+ 		fw_version.rom_version, clk_value, ".dfu");
+ 
+ 	ret = request_firmware(&firmware, filename, &udev->dev);
+-	if (ret < 0) {
+-		BT_ERR("Configuration file not found %s", filename);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	ret = ath3k_load_fwfile(udev, firmware);
+ 	release_firmware(firmware);
+Index: linux-3.2.46/drivers/bluetooth/bcm203x.c
+===================================================================
+--- linux-3.2.46.orig/drivers/bluetooth/bcm203x.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/bluetooth/bcm203x.c	2013-07-26 19:25:21.000000000 +0000
+@@ -194,7 +194,6 @@
+ 	}
+ 
+ 	if (request_firmware(&firmware, "BCM2033-MD.hex", &udev->dev) < 0) {
+-		BT_ERR("Mini driver request failed");
+ 		usb_free_urb(data->urb);
+ 		kfree(data);
+ 		return -EIO;
+@@ -221,7 +220,6 @@
+ 	release_firmware(firmware);
+ 
+ 	if (request_firmware(&firmware, "BCM2033-FW.bin", &udev->dev) < 0) {
+-		BT_ERR("Firmware request failed");
+ 		usb_free_urb(data->urb);
+ 		kfree(data->buffer);
+ 		kfree(data);
+Index: linux-3.2.46/drivers/bluetooth/bfusb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/bluetooth/bfusb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/bluetooth/bfusb.c	2013-07-26 19:25:21.000000000 +0000
+@@ -681,10 +681,8 @@
+ 	skb_queue_head_init(&data->pending_q);
+ 	skb_queue_head_init(&data->completed_q);
+ 
+-	if (request_firmware(&firmware, "bfubase.frm", &udev->dev) < 0) {
+-		BT_ERR("Firmware request failed");
++	if (request_firmware(&firmware, "bfubase.frm", &udev->dev))
+ 		goto error;
+-	}
+ 
+ 	BT_DBG("firmware data %p size %zu", firmware->data, firmware->size);
+ 
+Index: linux-3.2.46/drivers/bluetooth/bt3c_cs.c
+===================================================================
+--- linux-3.2.46.orig/drivers/bluetooth/bt3c_cs.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/bluetooth/bt3c_cs.c	2013-07-26 19:25:21.000000000 +0000
+@@ -594,10 +594,8 @@
+ 
+ 	/* Load firmware */
+ 	err = request_firmware(&firmware, "BT3CPCC.bin", &info->p_dev->dev);
+-	if (err < 0) {
+-		BT_ERR("Firmware request failed");
++	if (err)
+ 		goto error;
+-	}
+ 
+ 	err = bt3c_load_firmware(info, firmware->data, firmware->size);
+ 
+Index: linux-3.2.46/drivers/bluetooth/btmrvl_sdio.c
+===================================================================
+--- linux-3.2.46.orig/drivers/bluetooth/btmrvl_sdio.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/bluetooth/btmrvl_sdio.c	2013-07-26 19:25:21.000000000 +0000
+@@ -258,8 +258,6 @@
+ 	ret = request_firmware(&fw_helper, card->helper,
+ 						&card->func->dev);
+ 	if ((ret < 0) || !fw_helper) {
+-		BT_ERR("request_firmware(helper) failed, error code = %d",
+-									ret);
+ 		ret = -ENOENT;
+ 		goto done;
+ 	}
+@@ -360,8 +358,6 @@
+ 	ret = request_firmware(&fw_firmware, card->firmware,
+ 							&card->func->dev);
+ 	if ((ret < 0) || !fw_firmware) {
+-		BT_ERR("request_firmware(firmware) failed, error code = %d",
+-									ret);
+ 		ret = -ENOENT;
+ 		goto done;
+ 	}
+Index: linux-3.2.46/drivers/char/dsp56k.c
+===================================================================
+--- linux-3.2.46.orig/drivers/char/dsp56k.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/char/dsp56k.c	2013-07-26 19:25:21.000000000 +0000
+@@ -140,11 +140,8 @@
+ 	}
+ 	err = request_firmware(&fw, fw_name, &pdev->dev);
+ 	platform_device_unregister(pdev);
+-	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fw_name, err);
++	if (err)
+ 		return err;
+-	}
+ 	if (fw->size % 3) {
+ 		printk(KERN_ERR "Bogus length %d in image \"%s\"\n",
+ 		       fw->size, fw_name);
+Index: linux-3.2.46/drivers/dma/imx-sdma.c
+===================================================================
+--- linux-3.2.46.orig/drivers/dma/imx-sdma.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/dma/imx-sdma.c	2013-07-26 19:25:21.000000000 +0000
+@@ -1152,10 +1152,8 @@
+ 	const struct sdma_script_start_addrs *addr;
+ 	unsigned short *ram_code;
+ 
+-	if (!fw) {
+-		dev_err(sdma->dev, "firmware not found\n");
++	if (!fw)
+ 		return;
+-	}
+ 
+ 	if (fw->size < sizeof(*header))
+ 		goto err_firmware;
+Index: linux-3.2.46/drivers/gpu/drm/mga/mga_warp.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/mga/mga_warp.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/mga/mga_warp.c	2013-07-26 19:25:21.000000000 +0000
+@@ -80,11 +80,8 @@
+ 	}
+ 	rc = request_ihex_firmware(&fw, firmware_name, &pdev->dev);
+ 	platform_device_unregister(pdev);
+-	if (rc) {
+-		DRM_ERROR("mga: Failed to load microcode \"%s\"\n",
+-			  firmware_name);
++	if (rc)
+ 		return rc;
+-	}
+ 
+ 	size = 0;
+ 	where = 0;
+Index: linux-3.2.46/drivers/gpu/drm/nouveau/nvc0_graph.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/nouveau/nvc0_graph.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/nouveau/nvc0_graph.c	2013-07-26 19:25:21.000000000 +0000
+@@ -740,10 +740,8 @@
+ 	if (ret) {
+ 		snprintf(f, sizeof(f), "nouveau/%s", fwname);
+ 		ret = request_firmware(&fw, f, &dev->pdev->dev);
+-		if (ret) {
+-			NV_ERROR(dev, "failed to load %s\n", fwname);
++		if (ret)
+ 			return ret;
+-		}
+ 	}
+ 
+ 	fuc->size = fw->size;
+Index: linux-3.2.46/drivers/gpu/drm/r128/r128_cce.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/r128/r128_cce.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/r128/r128_cce.c	2013-07-26 19:25:21.000000000 +0000
+@@ -155,11 +155,8 @@
+ 	}
+ 	rc = request_firmware(&fw, FIRMWARE_NAME, &pdev->dev);
+ 	platform_device_unregister(pdev);
+-	if (rc) {
+-		printk(KERN_ERR "r128_cce: Failed to load firmware \"%s\"\n",
+-		       FIRMWARE_NAME);
++	if (rc)
+ 		return rc;
+-	}
+ 
+ 	if (fw->size != 256 * 8) {
+ 		printk(KERN_ERR
+Index: linux-3.2.46/drivers/gpu/drm/radeon/ni.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/radeon/ni.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/radeon/ni.c	2013-07-26 19:25:21.000000000 +0000
+@@ -379,10 +379,6 @@
+ 	platform_device_unregister(pdev);
+ 
+ 	if (err) {
+-		if (err != -EINVAL)
+-			printk(KERN_ERR
+-			       "ni_cp: Failed to load firmware \"%s\"\n",
+-			       fw_name);
+ 		release_firmware(rdev->pfp_fw);
+ 		rdev->pfp_fw = NULL;
+ 		release_firmware(rdev->me_fw);
+Index: linux-3.2.46/drivers/gpu/drm/radeon/r100.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/radeon/r100.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/radeon/r100.c	2013-07-26 19:25:21.000000000 +0000
+@@ -994,10 +994,7 @@
+ 
+ 	err = request_firmware(&rdev->me_fw, fw_name, &pdev->dev);
+ 	platform_device_unregister(pdev);
+-	if (err) {
+-		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
+-		       fw_name);
+-	} else if (rdev->me_fw->size % 8) {
++	if (err == 0 && rdev->me_fw->size % 8) {
+ 		printk(KERN_ERR
+ 		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
+ 		       rdev->me_fw->size, fw_name);
+Index: linux-3.2.46/drivers/gpu/drm/radeon/r600.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/radeon/r600.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/radeon/r600.c	2013-07-26 19:25:21.000000000 +0000
+@@ -2087,10 +2087,6 @@
+ 	platform_device_unregister(pdev);
+ 
+ 	if (err) {
+-		if (err != -EINVAL)
+-			printk(KERN_ERR
+-			       "r600_cp: Failed to load firmware \"%s\"\n",
+-			       fw_name);
+ 		release_firmware(rdev->pfp_fw);
+ 		rdev->pfp_fw = NULL;
+ 		release_firmware(rdev->me_fw);
+Index: linux-3.2.46/drivers/gpu/drm/radeon/r600_cp.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/radeon/r600_cp.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/radeon/r600_cp.c	2013-07-26 19:25:21.000000000 +0000
+@@ -375,10 +375,6 @@
+ 	platform_device_unregister(pdev);
+ 
+ 	if (err) {
+-		if (err != -EINVAL)
+-			printk(KERN_ERR
+-			       "r600_cp: Failed to load firmware \"%s\"\n",
+-			       fw_name);
+ 		release_firmware(dev_priv->pfp_fw);
+ 		dev_priv->pfp_fw = NULL;
+ 		release_firmware(dev_priv->me_fw);
+Index: linux-3.2.46/drivers/gpu/drm/radeon/radeon_cp.c
+===================================================================
+--- linux-3.2.46.orig/drivers/gpu/drm/radeon/radeon_cp.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/gpu/drm/radeon/radeon_cp.c	2013-07-26 19:25:21.000000000 +0000
+@@ -544,10 +544,7 @@
+ 
+ 	err = request_firmware(&dev_priv->me_fw, fw_name, &pdev->dev);
+ 	platform_device_unregister(pdev);
+-	if (err) {
+-		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
+-		       fw_name);
+-	} else if (dev_priv->me_fw->size % 8) {
++	if (err == 0 && dev_priv->me_fw->size % 8) {
+ 		printk(KERN_ERR
+ 		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
+ 		       dev_priv->me_fw->size, fw_name);
+Index: linux-3.2.46/drivers/infiniband/hw/qib/qib_sd7220.c
+===================================================================
+--- linux-3.2.46.orig/drivers/infiniband/hw/qib/qib_sd7220.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/infiniband/hw/qib/qib_sd7220.c	2013-07-26 19:25:21.000000000 +0000
+@@ -403,10 +403,8 @@
+ 	}
+ 
+ 	ret = request_firmware(&fw, SD7220_FW_NAME, &dd->pcidev->dev);
+-	if (ret) {
+-		qib_dev_err(dd, "Failed to load IB SERDES image\n");
++	if (ret)
+ 		goto done;
+-	}
+ 
+ 	/* Substitute our deduced value for was_reset */
+ 	ret = qib_ibsd_ucode_loaded(dd->pport, fw);
+Index: linux-3.2.46/drivers/input/touchscreen/atmel_mxt_ts.c
+===================================================================
+--- linux-3.2.46.orig/drivers/input/touchscreen/atmel_mxt_ts.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/input/touchscreen/atmel_mxt_ts.c	2013-07-26 19:25:21.000000000 +0000
+@@ -954,10 +954,8 @@
+ 	int ret;
+ 
+ 	ret = request_firmware(&fw, fn, dev);
+-	if (ret) {
+-		dev_err(dev, "Unable to open firmware %s\n", fn);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	/* Change to the bootloader mode */
+ 	mxt_write_object(data, MXT_GEN_COMMAND_T6,
+Index: linux-3.2.46/drivers/isdn/hardware/mISDN/speedfax.c
+===================================================================
+--- linux-3.2.46.orig/drivers/isdn/hardware/mISDN/speedfax.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/isdn/hardware/mISDN/speedfax.c	2013-07-26 19:25:21.000000000 +0000
+@@ -389,11 +389,8 @@
+ 	card->isar.owner = THIS_MODULE;
+ 
+ 	err = request_firmware(&firmware, "isdn/ISAR.BIN", &card->pdev->dev);
+-	if (err < 0) {
+-		pr_info("%s: firmware request failed %d\n",
+-			card->name, err);
++	if (err)
+ 		goto error_fw;
+-	}
+ 	if (debug & DEBUG_HW)
+ 		pr_notice("%s: got firmware %zu bytes\n",
+ 			card->name, firmware->size);
+Index: linux-3.2.46/drivers/media/common/tuners/tuner-xc2028.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/common/tuners/tuner-xc2028.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/common/tuners/tuner-xc2028.c	2013-07-26 19:25:22.000000000 +0000
+@@ -278,16 +278,8 @@
+ 
+ 	tuner_dbg("Reading firmware %s\n", fname);
+ 	rc = request_firmware(&fw, fname, priv->i2c_props.adap->dev.parent);
+-	if (rc < 0) {
+-		if (rc == -ENOENT)
+-			tuner_err("Error: firmware %s not found.\n",
+-				   fname);
+-		else
+-			tuner_err("Error %d while requesting firmware %s \n",
+-				   rc, fname);
+-
++	if (rc)
+ 		return rc;
+-	}
+ 	p = fw->data;
+ 	endp = p + fw->size;
+ 
+Index: linux-3.2.46/drivers/media/dvb/dvb-usb/dib0700_devices.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/dvb-usb/dib0700_devices.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/dvb-usb/dib0700_devices.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1852,12 +1852,9 @@
+ 
+ 	dib9000_i2c_enumeration(&adap->dev->i2c_adap, 1, 0x10, 0x80);
+ 
+-	if (request_firmware(&state->frontend_firmware, "dib9090.fw", &adap->dev->udev->dev)) {
+-		deb_info("%s: Upload failed. (file not found?)\n", __func__);
++	if (request_firmware(&state->frontend_firmware, "dib9090.fw", &adap->dev->udev->dev))
+ 		return -ENODEV;
+-	} else {
+-		deb_info("%s: firmware read %Zu bytes.\n", __func__, state->frontend_firmware->size);
+-	}
++	deb_info("%s: firmware read %Zu bytes.\n", __func__, state->frontend_firmware->size);
+ 	stk9090m_config.microcode_B_fe_size = state->frontend_firmware->size;
+ 	stk9090m_config.microcode_B_fe_buffer = state->frontend_firmware->data;
+ 
+@@ -1918,12 +1915,9 @@
+ 	msleep(20);
+ 	dib0700_set_gpio(adap->dev, GPIO0, GPIO_OUT, 1);
+ 
+-	if (request_firmware(&state->frontend_firmware, "dib9090.fw", &adap->dev->udev->dev)) {
+-		deb_info("%s: Upload failed. (file not found?)\n", __func__);
++	if (request_firmware(&state->frontend_firmware, "dib9090.fw", &adap->dev->udev->dev))
+ 		return -EIO;
+-	} else {
+-		deb_info("%s: firmware read %Zu bytes.\n", __func__, state->frontend_firmware->size);
+-	}
++	deb_info("%s: firmware read %Zu bytes.\n", __func__, state->frontend_firmware->size);
+ 	nim9090md_config[0].microcode_B_fe_size = state->frontend_firmware->size;
+ 	nim9090md_config[0].microcode_B_fe_buffer = state->frontend_firmware->data;
+ 	nim9090md_config[1].microcode_B_fe_size = state->frontend_firmware->size;
+Index: linux-3.2.46/drivers/media/dvb/dvb-usb/dvb-usb-firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/dvb-usb/dvb-usb-firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/dvb-usb/dvb-usb-firmware.c	2013-07-26 19:25:22.000000000 +0000
+@@ -80,14 +80,9 @@
+ 	int ret;
+ 	const struct firmware *fw = NULL;
+ 
+-	if ((ret = request_firmware(&fw, props->firmware, &udev->dev)) != 0) {
+-		err("did not find the firmware file. (%s) "
+-			"Please see linux/Documentation/dvb/ for more details on firmware-problems. (%d)",
+-			props->firmware,ret);
++	ret = request_firmware(&fw, props->firmware, &udev->dev);
++	if (ret)
+ 		return ret;
+-	}
+-
+-	info("downloading firmware from file '%s'",props->firmware);
+ 
+ 	switch (props->usb_ctrl) {
+ 		case CYPRESS_AN2135:
+Index: linux-3.2.46/drivers/media/dvb/dvb-usb/gp8psk.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/dvb-usb/gp8psk.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/dvb-usb/gp8psk.c	2013-07-26 19:25:22.000000000 +0000
+@@ -116,20 +116,14 @@
+ 	const u8 *ptr;
+ 	u8 *buf;
+ 	if ((ret = request_firmware(&fw, bcm4500_firmware,
+-					&d->udev->dev)) != 0) {
+-		err("did not find the bcm4500 firmware file. (%s) "
+-			"Please see linux/Documentation/dvb/ for more details on firmware-problems. (%d)",
+-			bcm4500_firmware,ret);
++					&d->udev->dev)) != 0)
+ 		return ret;
+-	}
+ 
+ 	ret = -EINVAL;
+ 
+ 	if (gp8psk_usb_out_op(d, LOAD_BCM4500,1,0,NULL, 0))
+ 		goto out_rel_fw;
+ 
+-	info("downloading bcm4500 firmware from file '%s'",bcm4500_firmware);
+-
+ 	ptr = fw->data;
+ 	buf = kmalloc(64, GFP_KERNEL | GFP_DMA);
+ 	if (!buf) {
+Index: linux-3.2.46/drivers/media/dvb/dvb-usb/opera1.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/dvb-usb/opera1.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/dvb-usb/opera1.c	2013-07-26 19:25:22.000000000 +0000
+@@ -452,9 +452,6 @@
+ 	info("start downloading fpga firmware %s",filename);
+ 
+ 	if ((ret = request_firmware(&fw, filename, &dev->dev)) != 0) {
+-		err("did not find the firmware file. (%s) "
+-			"Please see linux/Documentation/dvb/ for more details on firmware-problems.",
+-			filename);
+ 		return ret;
+ 	} else {
+ 		p = kmalloc(fw->size, GFP_KERNEL);
+Index: linux-3.2.46/drivers/media/dvb/frontends/af9013.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/af9013.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/af9013.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1346,15 +1346,8 @@
+ 
+ 	/* request the firmware, this will block and timeout */
+ 	ret = request_firmware(&fw, fw_file, state->i2c->dev.parent);
+-	if (ret) {
+-		err("did not find the firmware file. (%s) "
+-			"Please see linux/Documentation/dvb/ for more details" \
+-			" on firmware-problems. (%d)",
+-			fw_file, ret);
++	if (ret)
+ 		goto error;
+-	}
+-
+-	info("downloading firmware from file '%s'", fw_file);
+ 
+ 	/* calc checksum */
+ 	for (i = 0; i < fw->size; i++)
+Index: linux-3.2.46/drivers/media/dvb/frontends/bcm3510.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/bcm3510.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/bcm3510.c	2013-07-26 19:25:22.000000000 +0000
+@@ -619,10 +619,9 @@
+ 	int ret,i;
+ 
+ 	deb_info("requesting firmware\n");
+-	if ((ret = st->config->request_firmware(fe, &fw, BCM3510_DEFAULT_FIRMWARE)) < 0) {
+-		err("could not load firmware (%s): %d",BCM3510_DEFAULT_FIRMWARE,ret);
++	ret = st->config->request_firmware(fe, &fw, BCM3510_DEFAULT_FIRMWARE);
++	if (ret)
+ 		return ret;
+-	}
+ 	deb_info("got firmware: %zd\n",fw->size);
+ 
+ 	b = fw->data;
+Index: linux-3.2.46/drivers/media/dvb/frontends/cx24116.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/cx24116.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/cx24116.c	2013-07-26 19:25:22.000000000 +0000
+@@ -493,13 +493,8 @@
+ 			__func__, CX24116_DEFAULT_FIRMWARE);
+ 		ret = request_firmware(&fw, CX24116_DEFAULT_FIRMWARE,
+ 			state->i2c->dev.parent);
+-		printk(KERN_INFO "%s: Waiting for firmware upload(2)...\n",
+-			__func__);
+-		if (ret) {
+-			printk(KERN_ERR "%s: No firmware uploaded "
+-				"(timeout or file not found?)\n", __func__);
++		if (ret)
+ 			return ret;
+-		}
+ 
+ 		/* Make sure we don't recurse back through here
+ 		 * during loading */
+Index: linux-3.2.46/drivers/media/dvb/frontends/drxd_hard.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/drxd_hard.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/drxd_hard.c	2013-07-26 19:25:22.000000000 +0000
+@@ -909,10 +909,8 @@
+ {
+ 	const struct firmware *fw;
+ 
+-	if (request_firmware(&fw, fw_name, state->dev) < 0) {
+-		printk(KERN_ERR "drxd: firmware load failure [%s]\n", fw_name);
++	if (request_firmware(&fw, fw_name, state->dev))
+ 		return -EIO;
+-	}
+ 
+ 	state->microcode = kmalloc(fw->size, GFP_KERNEL);
+ 	if (state->microcode == NULL) {
+Index: linux-3.2.46/drivers/media/dvb/frontends/drxk_hard.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/drxk_hard.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/drxk_hard.c	2013-07-26 19:25:22.000000000 +0000
+@@ -5968,13 +5968,8 @@
+ 	dprintk(1, "\n");
+ 
+ 	err = request_firmware(&fw, mc_name, state->i2c->dev.parent);
+-	if (err < 0) {
+-		printk(KERN_ERR
+-		       "drxk: Could not load firmware file %s.\n", mc_name);
+-		printk(KERN_INFO
+-		       "drxk: Copy %s to your hotplug directory!\n", mc_name);
++	if (err)
+ 		return err;
+-	}
+ 	err = DownloadMicrocode(state, fw->data, fw->size);
+ 	release_firmware(fw);
+ 	return err;
+Index: linux-3.2.46/drivers/media/dvb/frontends/ds3000.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/ds3000.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/ds3000.c	2013-07-26 19:25:22.000000000 +0000
+@@ -403,12 +403,8 @@
+ 				DS3000_DEFAULT_FIRMWARE);
+ 	ret = request_firmware(&fw, DS3000_DEFAULT_FIRMWARE,
+ 				state->i2c->dev.parent);
+-	printk(KERN_INFO "%s: Waiting for firmware upload(2)...\n", __func__);
+-	if (ret) {
+-		printk(KERN_ERR "%s: No firmware uploaded (timeout or file not "
+-				"found?)\n", __func__);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	/* Make sure we don't recurse back through here during loading */
+ 	state->skip_fw_load = 1;
+Index: linux-3.2.46/drivers/media/dvb/frontends/nxt200x.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/nxt200x.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/nxt200x.c	2013-07-26 19:25:22.000000000 +0000
+@@ -881,11 +881,8 @@
+ 	printk("nxt2002: Waiting for firmware upload (%s)...\n", NXT2002_DEFAULT_FIRMWARE);
+ 	ret = request_firmware(&fw, NXT2002_DEFAULT_FIRMWARE,
+ 			       state->i2c->dev.parent);
+-	printk("nxt2002: Waiting for firmware upload(2)...\n");
+-	if (ret) {
+-		printk("nxt2002: No firmware uploaded (timeout or file not found?)\n");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	ret = nxt2002_load_firmware(fe, fw);
+ 	release_firmware(fw);
+@@ -946,11 +943,8 @@
+ 	printk("nxt2004: Waiting for firmware upload (%s)...\n", NXT2004_DEFAULT_FIRMWARE);
+ 	ret = request_firmware(&fw, NXT2004_DEFAULT_FIRMWARE,
+ 			       state->i2c->dev.parent);
+-	printk("nxt2004: Waiting for firmware upload(2)...\n");
+-	if (ret) {
+-		printk("nxt2004: No firmware uploaded (timeout or file not found?)\n");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	ret = nxt2004_load_firmware(fe, fw);
+ 	release_firmware(fw);
+Index: linux-3.2.46/drivers/media/dvb/frontends/or51132.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/or51132.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/or51132.c	2013-07-26 19:25:22.000000000 +0000
+@@ -341,11 +341,8 @@
+ 		printk("or51132: Waiting for firmware upload(%s)...\n",
+ 		       fwname);
+ 		ret = request_firmware(&fw, fwname, state->i2c->dev.parent);
+-		if (ret) {
+-			printk(KERN_WARNING "or51132: No firmware up"
+-			       "loaded(timeout or file not found?)\n");
++		if (ret)
+ 			return ret;
+-		}
+ 		ret = or51132_load_firmware(fe, fw);
+ 		release_firmware(fw);
+ 		if (ret) {
+Index: linux-3.2.46/drivers/media/dvb/frontends/or51211.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/or51211.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/or51211.c	2013-07-26 19:25:22.000000000 +0000
+@@ -379,12 +379,8 @@
+ 		       "(%s)...\n", OR51211_DEFAULT_FIRMWARE);
+ 		ret = config->request_firmware(fe, &fw,
+ 					       OR51211_DEFAULT_FIRMWARE);
+-		printk(KERN_INFO "or51211:Got Hotplug firmware\n");
+-		if (ret) {
+-			printk(KERN_WARNING "or51211: No firmware uploaded "
+-			       "(timeout or file not found?)\n");
++		if (ret)
+ 			return ret;
+-		}
+ 
+ 		ret = or51211_load_firmware(fe, fw);
+ 		release_firmware(fw);
+Index: linux-3.2.46/drivers/media/dvb/frontends/sp8870.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/sp8870.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/sp8870.c	2013-07-26 19:25:22.000000000 +0000
+@@ -315,10 +315,8 @@
+ 
+ 	/* request the firmware, this will block until someone uploads it */
+ 	printk("sp8870: waiting for firmware upload (%s)...\n", SP8870_DEFAULT_FIRMWARE);
+-	if (state->config->request_firmware(fe, &fw, SP8870_DEFAULT_FIRMWARE)) {
+-		printk("sp8870: no firmware upload (timeout or file not found?)\n");
++	if (state->config->request_firmware(fe, &fw, SP8870_DEFAULT_FIRMWARE))
+ 		return -EIO;
+-	}
+ 
+ 	if (sp8870_firmware_upload(state, fw)) {
+ 		printk("sp8870: writing firmware to device failed\n");
+Index: linux-3.2.46/drivers/media/dvb/frontends/sp887x.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/sp887x.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/sp887x.c	2013-07-26 19:25:22.000000000 +0000
+@@ -514,10 +514,8 @@
+ 		/* request the firmware, this will block until someone uploads it */
+ 		printk("sp887x: waiting for firmware upload (%s)...\n", SP887X_DEFAULT_FIRMWARE);
+ 		ret = state->config->request_firmware(fe, &fw, SP887X_DEFAULT_FIRMWARE);
+-		if (ret) {
+-			printk("sp887x: no firmware upload (timeout or file not found?)\n");
++		if (ret)
+ 			return ret;
+-		}
+ 
+ 		ret = sp887x_initial_setup(fe, fw);
+ 		release_firmware(fw);
+Index: linux-3.2.46/drivers/media/dvb/frontends/tda10048.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/tda10048.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/tda10048.c	2013-07-26 19:25:22.000000000 +0000
+@@ -509,8 +509,6 @@
+ 	ret = request_firmware(&fw, TDA10048_DEFAULT_FIRMWARE,
+ 		state->i2c->dev.parent);
+ 	if (ret) {
+-		printk(KERN_ERR "%s: Upload failed. (file not found?)\n",
+-			__func__);
+ 		return -EIO;
+ 	} else {
+ 		printk(KERN_INFO "%s: firmware read %Zu bytes.\n",
+Index: linux-3.2.46/drivers/media/dvb/frontends/tda1004x.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/tda1004x.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/tda1004x.c	2013-07-26 19:25:22.000000000 +0000
+@@ -397,10 +397,8 @@
+ 	/* request the firmware, this will block until someone uploads it */
+ 	printk(KERN_INFO "tda1004x: waiting for firmware upload (%s)...\n", TDA10045_DEFAULT_FIRMWARE);
+ 	ret = state->config->request_firmware(fe, &fw, TDA10045_DEFAULT_FIRMWARE);
+-	if (ret) {
+-		printk(KERN_ERR "tda1004x: no firmware upload (timeout or file not found?)\n");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	/* reset chip */
+ 	tda1004x_write_mask(state, TDA1004X_CONFC4, 0x10, 0);
+@@ -541,7 +539,6 @@
+ 			/* remain compatible to old bug: try to load with tda10045 image name */
+ 			ret = state->config->request_firmware(fe, &fw, TDA10045_DEFAULT_FIRMWARE);
+ 			if (ret) {
+-				printk(KERN_ERR "tda1004x: no firmware upload (timeout or file not found?)\n");
+ 				return ret;
+ 			} else {
+ 				printk(KERN_INFO "tda1004x: please rename the firmware file to %s\n",
+Index: linux-3.2.46/drivers/media/dvb/frontends/tda10071.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/frontends/tda10071.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/frontends/tda10071.c	2013-07-26 19:25:22.000000000 +0000
+@@ -930,13 +930,8 @@
+ 
+ 		/* request the firmware, this will block and timeout */
+ 		ret = request_firmware(&fw, fw_file, priv->i2c->dev.parent);
+-		if (ret) {
+-			err("did not find the firmware file. (%s) "
+-				"Please see linux/Documentation/dvb/ for more" \
+-				" details on firmware-problems. (%d)",
+-				fw_file, ret);
++		if (ret)
+ 			goto error;
+-		}
+ 
+ 		/* init */
+ 		for (i = 0; i < ARRAY_SIZE(tab2); i++) {
+Index: linux-3.2.46/drivers/media/dvb/ngene/ngene-core.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/ngene/ngene-core.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/ngene/ngene-core.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1272,13 +1272,8 @@
+ 		break;
+ 	}
+ 
+-	if (request_firmware(&fw, fw_name, &dev->pci_dev->dev) < 0) {
+-		printk(KERN_ERR DEVICE_NAME
+-			": Could not load firmware file %s.\n", fw_name);
+-		printk(KERN_INFO DEVICE_NAME
+-			": Copy %s to your hotplug directory!\n", fw_name);
++	if (request_firmware(&fw, fw_name, &dev->pci_dev->dev))
+ 		return -1;
+-	}
+ 	if (size == 0)
+ 		size = fw->size;
+ 	if (size != fw->size) {
+@@ -1286,8 +1281,6 @@
+ 			": Firmware %s has invalid size!", fw_name);
+ 		err = -1;
+ 	} else {
+-		printk(KERN_INFO DEVICE_NAME
+-			": Loading firmware file %s.\n", fw_name);
+ 		ngene_fw = (u8 *) fw->data;
+ 		err = ngene_command_load_firmware(dev, ngene_fw, size);
+ 	}
+Index: linux-3.2.46/drivers/media/dvb/siano/smscoreapi.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/siano/smscoreapi.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/siano/smscoreapi.c	2013-07-26 19:25:22.000000000 +0000
+@@ -642,10 +642,8 @@
+ 		return -EINVAL;
+ 
+ 	rc = request_firmware(&fw, filename, coredev->device);
+-	if (rc < 0) {
+-		sms_info("failed to open \"%s\"", filename);
++	if (rc)
+ 		return rc;
+-	}
+ 	sms_info("read FW %s, size=%zd", filename, fw->size);
+ 	fw_buffer = kmalloc(ALIGN(fw->size, SMS_ALLOC_ALIGNMENT),
+ 			    GFP_KERNEL | GFP_DMA);
+Index: linux-3.2.46/drivers/media/dvb/ttpci/av7110.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/ttpci/av7110.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/ttpci/av7110.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1532,16 +1532,9 @@
+ 	/* request the av7110 firmware, this will block until someone uploads it */
+ 	ret = request_firmware(&fw, "dvb-ttpci-01.fw", &av7110->dev->pci->dev);
+ 	if (ret) {
+-		if (ret == -ENOENT) {
+-			printk(KERN_ERR "dvb-ttpci: could not load firmware,"
+-			       " file not found: dvb-ttpci-01.fw\n");
+-			printk(KERN_ERR "dvb-ttpci: usually this should be in "
+-			       "/usr/lib/hotplug/firmware or /lib/firmware\n");
+-			printk(KERN_ERR "dvb-ttpci: and can be downloaded from"
++		if (ret == -ENOENT)
++			printk(KERN_ERR "dvb-ttpci: firmware can be downloaded from"
+ 			       " http://www.linuxtv.org/download/dvb/firmware/\n");
+-		} else
+-			printk(KERN_ERR "dvb-ttpci: cannot request firmware"
+-			       " (error %i)\n", ret);
+ 		return -EINVAL;
+ 	}
+ 
+Index: linux-3.2.46/drivers/media/dvb/ttpci/av7110_hw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/ttpci/av7110_hw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/ttpci/av7110_hw.c	2013-07-26 19:25:22.000000000 +0000
+@@ -243,11 +243,8 @@
+ 	//saa7146_setgpio(dev, 3, SAA7146_GPIO_INPUT);
+ 
+ 	ret = request_firmware(&fw, fw_name, &dev->pci->dev);
+-	if (ret) {
+-		printk(KERN_ERR "dvb-ttpci: Failed to load firmware \"%s\"\n",
+-			fw_name);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	mwdebi(av7110, DEBISWAB, DPRAM_BASE, fw->data, fw->size);
+ 	release_firmware(fw);
+Index: linux-3.2.46/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/ttusb-budget/dvb-ttusb-budget.c	2013-07-26 19:25:22.000000000 +0000
+@@ -296,10 +296,8 @@
+ 
+ 	err = request_firmware(&fw, "ttusb-budget/dspbootcode.bin",
+ 			       &ttusb->dev->dev);
+-	if (err) {
+-		printk(KERN_ERR "ttusb-budget: failed to request firmware\n");
++	if (err)
+ 		return err;
+-	}
+ 
+ 	/* BootBlock */
+ 	b[0] = 0xaa;
+Index: linux-3.2.46/drivers/media/dvb/ttusb-dec/ttusb_dec.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/dvb/ttusb-dec/ttusb_dec.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/dvb/ttusb-dec/ttusb_dec.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1293,11 +1293,8 @@
+ 
+ 	dprintk("%s\n", __func__);
+ 
+-	if (request_firmware(&fw_entry, dec->firmware_name, &dec->udev->dev)) {
+-		printk(KERN_ERR "%s: Firmware (%s) unavailable.\n",
+-		       __func__, dec->firmware_name);
++	if (request_firmware(&fw_entry, dec->firmware_name, &dec->udev->dev))
+ 		return 1;
+-	}
+ 
+ 	firmware = fw_entry->data;
+ 	firmware_size = fw_entry->size;
+Index: linux-3.2.46/drivers/media/radio/radio-wl1273.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/radio/radio-wl1273.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/radio/radio-wl1273.c	2013-07-26 19:25:22.000000000 +0000
+@@ -512,11 +512,8 @@
+ 	 * Uploading the firmware patch is not always necessary,
+ 	 * so we only print an info message.
+ 	 */
+-	if (request_firmware(&fw_p, fw_name, dev)) {
+-		dev_info(dev, "%s - %s not found\n", __func__, fw_name);
+-
++	if (request_firmware(&fw_p, fw_name, dev))
+ 		return 0;
+-	}
+ 
+ 	ptr = (__u8 *) fw_p->data;
+ 	packet_num = ptr[0];
+Index: linux-3.2.46/drivers/media/radio/wl128x/fmdrv_common.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/radio/wl128x/fmdrv_common.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/radio/wl128x/fmdrv_common.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1248,10 +1248,8 @@
+ 
+ 	ret = request_firmware(&fw_entry, fw_name,
+ 				&fmdev->radio_dev->dev);
+-	if (ret < 0) {
+-		fmerr("Unable to read firmware(%s) content\n", fw_name);
++	if (ret)
+ 		return ret;
+-	}
+ 	fmdbg("Firmware(%s) length : %d bytes\n", fw_name, fw_entry->size);
+ 
+ 	fw_data = (void *)fw_entry->data;
+Index: linux-3.2.46/drivers/media/video/bt8xx/bttv-cards.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/bt8xx/bttv-cards.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/bt8xx/bttv-cards.c	2013-07-26 19:25:22.000000000 +0000
+@@ -3766,10 +3766,8 @@
+ 	int rc;
+ 
+ 	rc = request_firmware(&fw_entry, "hcwamc.rbf", &btv->c.pci->dev);
+-	if (rc != 0) {
+-		pr_warn("%d: no altera firmware [via hotplug]\n", btv->c.nr);
++	if (rc != 0)
+ 		return rc;
+-	}
+ 	rc = pvr_altera_load(btv, fw_entry->data, fw_entry->size);
+ 	pr_info("%d: altera firmware upload %s\n",
+ 		btv->c.nr, (rc < 0) ? "failed" : "ok");
+Index: linux-3.2.46/drivers/media/video/cpia2/cpia2_core.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cpia2/cpia2_core.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cpia2/cpia2_core.c	2013-07-26 19:25:22.000000000 +0000
+@@ -905,11 +905,8 @@
+ 	struct cpia2_command cmd;
+ 
+ 	ret = request_firmware(&fw, fw_name, &cam->dev->dev);
+-	if (ret) {
+-		printk(KERN_ERR "cpia2: failed to load VP patch \"%s\"\n",
+-		       fw_name);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	cmd.req_mode = CAMERAACCESS_TYPE_REPEAT | CAMERAACCESS_VP;
+ 	cmd.direction = TRANSFER_WRITE;
+Index: linux-3.2.46/drivers/media/video/cx18/cx18-av-firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx18/cx18-av-firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx18/cx18-av-firmware.c	2013-07-26 19:25:22.000000000 +0000
+@@ -85,10 +85,8 @@
+ 	int i;
+ 	int retries1 = 0;
+ 
+-	if (request_firmware(&fw, FWFILE, &cx->pci_dev->dev) != 0) {
+-		CX18_ERR_DEV(sd, "unable to open firmware %s\n", FWFILE);
++	if (request_firmware(&fw, FWFILE, &cx->pci_dev->dev) != 0)
+ 		return -EINVAL;
+-	}
+ 
+ 	/* The firmware load often has byte errors, so allow for several
+ 	   retries, both at byte level and at the firmware load level. */
+Index: linux-3.2.46/drivers/media/video/cx18/cx18-dvb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx18/cx18-dvb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx18/cx18-dvb.c	2013-07-26 19:25:22.000000000 +0000
+@@ -139,9 +139,7 @@
+ 	int ret;
+ 
+ 	ret = request_firmware(fw, fn, &cx->pci_dev->dev);
+-	if (ret)
+-		CX18_ERR("Unable to open firmware file %s\n", fn);
+-	else {
++	if (!ret) {
+ 		size_t sz = (*fw)->size;
+ 		if (sz < 2 || sz > 64 || (sz % 2) != 0) {
+ 			CX18_ERR("Firmware %s has a bad size: %lu bytes\n",
+@@ -154,7 +152,7 @@
+ 
+ 	if (ret) {
+ 		CX18_ERR("The MPC718 board variant with the MT352 DVB-T"
+-			  "demodualtor will not work without it\n");
++			  "demodulator will not work without firmware\n");
+ 		CX18_ERR("Run 'linux/Documentation/dvb/get_dvb_firmware "
+ 			  "mpc718' if you need the firmware\n");
+ 	}
+Index: linux-3.2.46/drivers/media/video/cx18/cx18-firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx18/cx18-firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx18/cx18-firmware.c	2013-07-26 19:25:22.000000000 +0000
+@@ -106,11 +106,8 @@
+ 	u32 __iomem *dst = (u32 __iomem *)mem;
+ 	const u32 *src;
+ 
+-	if (request_firmware(&fw, fn, &cx->pci_dev->dev)) {
+-		CX18_ERR("Unable to open firmware %s\n", fn);
+-		CX18_ERR("Did you put the firmware in the hotplug firmware directory?\n");
++	if (request_firmware(&fw, fn, &cx->pci_dev->dev))
+ 		return -ENOMEM;
+-	}
+ 
+ 	src = (const u32 *)fw->data;
+ 
+@@ -151,8 +148,6 @@
+ 	int sz;
+ 
+ 	if (request_firmware(&fw, fn, &cx->pci_dev->dev)) {
+-		CX18_ERR("unable to open firmware %s\n", fn);
+-		CX18_ERR("did you put the firmware in the hotplug firmware directory?\n");
+ 		cx18_setup_page(cx, 0);
+ 		return -ENOMEM;
+ 	}
+Index: linux-3.2.46/drivers/media/video/cx231xx/cx231xx-417.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx231xx/cx231xx-417.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx231xx/cx231xx-417.c	2013-07-26 19:25:22.000000000 +0000
+@@ -979,14 +979,8 @@
+ 	retval = request_firmware(&firmware, CX231xx_FIRM_IMAGE_NAME,
+ 				  &dev->udev->dev);
+ 
+-	if (retval != 0) {
+-		printk(KERN_ERR
+-			"ERROR: Hotplug firmware request failed (%s).\n",
+-			CX231xx_FIRM_IMAGE_NAME);
+-		printk(KERN_ERR "Please fix your hotplug setup, the board will "
+-			"not work without firmware loaded!\n");
++	if (retval != 0)
+ 		return -1;
+-	}
+ 
+ 	if (firmware->size != CX231xx_FIRM_IMAGE_SIZE) {
+ 		printk(KERN_ERR "ERROR: Firmware size mismatch "
+Index: linux-3.2.46/drivers/media/video/cx23885/cx23885-417.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx23885/cx23885-417.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx23885/cx23885-417.c	2013-07-26 19:25:22.000000000 +0000
+@@ -929,14 +929,8 @@
+ 	retval = request_firmware(&firmware, CX23885_FIRM_IMAGE_NAME,
+ 				  &dev->pci->dev);
+ 
+-	if (retval != 0) {
+-		printk(KERN_ERR
+-			"ERROR: Hotplug firmware request failed (%s).\n",
+-			CX23885_FIRM_IMAGE_NAME);
+-		printk(KERN_ERR "Please fix your hotplug setup, the board will "
+-			"not work without firmware loaded!\n");
++	if (retval != 0)
+ 		return -1;
+-	}
+ 
+ 	if (firmware->size != CX23885_FIRM_IMAGE_SIZE) {
+ 		printk(KERN_ERR "ERROR: Firmware size mismatch "
+Index: linux-3.2.46/drivers/media/video/cx23885/cx23885-cards.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx23885/cx23885-cards.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx23885/cx23885-cards.c	2013-07-26 19:25:22.000000000 +0000
+@@ -1513,11 +1513,7 @@
+ 				cinfo.rev, filename);
+ 
+ 		ret = request_firmware(&fw, filename, &dev->pci->dev);
+-		if (ret != 0)
+-			printk(KERN_ERR "did not find the firmware file. (%s) "
+-			"Please see linux/Documentation/dvb/ for more details "
+-			"on firmware-problems.", filename);
+-		else
++		if (ret == 0)
+ 			altera_init(&netup_config, fw);
+ 
+ 		release_firmware(fw);
+Index: linux-3.2.46/drivers/media/video/cx25840/cx25840-firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx25840/cx25840-firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx25840/cx25840-firmware.c	2013-07-26 19:25:23.000000000 +0000
+@@ -123,10 +123,8 @@
+ 		MAX_BUF_SIZE = 16;  /* cx231xx cannot accept more than 16 bytes at a time */
+ 	}
+ 
+-	if (request_firmware(&fw, fwname, FWDEV(client)) != 0) {
+-		v4l_err(client, "unable to open firmware %s\n", fwname);
++	if (request_firmware(&fw, fwname, FWDEV(client)) != 0)
+ 		return -EINVAL;
+-	}
+ 
+ 	start_fw_load(client);
+ 
+Index: linux-3.2.46/drivers/media/video/cx88/cx88-blackbird.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/cx88/cx88-blackbird.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/cx88/cx88-blackbird.c	2013-07-26 19:25:23.000000000 +0000
+@@ -446,13 +446,8 @@
+ 				  &dev->pci->dev);
+ 
+ 
+-	if (retval != 0) {
+-		dprintk(0, "ERROR: Hotplug firmware request failed (%s).\n",
+-			CX2341X_FIRM_ENC_FILENAME);
+-		dprintk(0, "Please fix your hotplug setup, the board will "
+-			"not work without firmware loaded!\n");
++	if (retval != 0)
+ 		return -1;
+-	}
+ 
+ 	if (firmware->size != BLACKBIRD_FIRM_IMAGE_SIZE) {
+ 		dprintk(0, "ERROR: Firmware size mismatch (have %zd, expected %d)\n",
+Index: linux-3.2.46/drivers/media/video/gspca/vicam.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/gspca/vicam.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/gspca/vicam.c	2013-07-26 19:25:23.000000000 +0000
+@@ -270,10 +270,8 @@
+ 
+ 	ret = request_ihex_firmware(&fw, "vicam/firmware.fw",
+ 				    &gspca_dev->dev->dev);
+-	if (ret) {
+-		pr_err("Failed to load \"vicam/firmware.fw\": %d\n", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	firmware_buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+ 	if (!firmware_buf) {
+Index: linux-3.2.46/drivers/media/video/ivtv/ivtv-firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/ivtv/ivtv-firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/ivtv/ivtv-firmware.c	2013-07-26 19:25:23.000000000 +0000
+@@ -80,8 +80,6 @@
+ 		release_firmware(fw);
+ 		return size;
+ 	}
+-	IVTV_ERR("Unable to open firmware %s (must be %ld bytes)\n", fn, size);
+-	IVTV_ERR("Did you put the firmware in the hotplug firmware directory?\n");
+ 	return -ENOMEM;
+ }
+ 
+Index: linux-3.2.46/drivers/media/video/pvrusb2/pvrusb2-hdw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/pvrusb2/pvrusb2-hdw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/pvrusb2/pvrusb2-hdw.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1415,29 +1415,6 @@
+ 			   "request_firmware fatal error with code=%d",ret);
+ 		return ret;
+ 	}
+-	pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+-		   "***WARNING***"
+-		   " Device %s firmware"
+-		   " seems to be missing.",
+-		   fwtypename);
+-	pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+-		   "Did you install the pvrusb2 firmware files"
+-		   " in their proper location?");
+-	if (fwcount == 1) {
+-		pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+-			   "request_firmware unable to locate %s file %s",
+-			   fwtypename,fwnames[0]);
+-	} else {
+-		pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+-			   "request_firmware unable to locate"
+-			   " one of the following %s files:",
+-			   fwtypename);
+-		for (idx = 0; idx < fwcount; idx++) {
+-			pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+-				   "request_firmware: Failed to find %s",
+-				   fwnames[idx]);
+-		}
+-	}
+ 	return ret;
+ }
+ 
+Index: linux-3.2.46/drivers/media/video/s2255drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/s2255drv.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/s2255drv.c	2013-07-26 19:25:23.000000000 +0000
+@@ -2588,10 +2588,8 @@
+ 	}
+ 	/* load the first chunk */
+ 	if (request_firmware(&dev->fw_data->fw,
+-			     FIRMWARE_FILE_NAME, &dev->udev->dev)) {
+-		printk(KERN_ERR "sensoray 2255 failed to get firmware\n");
++			     FIRMWARE_FILE_NAME, &dev->udev->dev))
+ 		goto errorREQFW;
+-	}
+ 	/* check the firmware is valid */
+ 	fw_size = dev->fw_data->fw->size;
+ 	pdata = (__le32 *) &dev->fw_data->fw->data[fw_size - 8];
+Index: linux-3.2.46/drivers/media/video/s5p-mfc/s5p_mfc_ctrl.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/s5p-mfc/s5p_mfc_ctrl.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/s5p-mfc/s5p_mfc_ctrl.c	2013-07-26 19:25:23.000000000 +0000
+@@ -39,10 +39,8 @@
+ 	mfc_debug_enter();
+ 	err = request_firmware((const struct firmware **)&fw_blob,
+ 				     "s5p-mfc.fw", dev->v4l2_dev.dev);
+-	if (err != 0) {
+-		mfc_err("Firmware is not present in the /lib/firmware directory nor compiled in kernel\n");
++	if (err != 0)
+ 		return -EINVAL;
+-	}
+ 	dev->fw_size = ALIGN(fw_blob->size, FIRMWARE_ALIGN);
+ 	if (s5p_mfc_bitproc_buf) {
+ 		mfc_err("Attempting to allocate firmware when it seems that it is already loaded\n");
+@@ -117,10 +115,8 @@
+ 	mfc_debug_enter();
+ 	err = request_firmware((const struct firmware **)&fw_blob,
+ 				     "s5p-mfc.fw", dev->v4l2_dev.dev);
+-	if (err != 0) {
+-		mfc_err("Firmware is not present in the /lib/firmware directory nor compiled in kernel\n");
++	if (err != 0)
+ 		return -EINVAL;
+-	}
+ 	if (fw_blob->size > dev->fw_size) {
+ 		mfc_err("MFC firmware is too big to be loaded\n");
+ 		release_firmware(fw_blob);
+Index: linux-3.2.46/drivers/media/video/saa7164/saa7164-fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/saa7164/saa7164-fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/saa7164/saa7164-fw.c	2013-07-26 19:25:23.000000000 +0000
+@@ -420,11 +420,8 @@
+ 			__func__, fwname);
+ 
+ 		ret = request_firmware(&fw, fwname, &dev->pci->dev);
+-		if (ret) {
+-			printk(KERN_ERR "%s() Upload failed. "
+-				"(file not found?)\n", __func__);
++		if (ret)
+ 			return -ENOMEM;
+-		}
+ 
+ 		printk(KERN_INFO "%s() firmware read %Zu bytes.\n",
+ 			__func__, fw->size);
+Index: linux-3.2.46/drivers/media/video/tlg2300/pd-main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/video/tlg2300/pd-main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/media/video/tlg2300/pd-main.c	2013-07-26 19:25:23.000000000 +0000
+@@ -219,10 +219,8 @@
+ 	size_t max_packet_size;
+ 
+ 	ret = request_firmware(&fw, firmware_name, &udev->dev);
+-	if (ret) {
+-		log("download err : %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	fwlength = fw->size;
+ 
+Index: linux-3.2.46/drivers/misc/iwmc3200top/fw-download.c
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/iwmc3200top/fw-download.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/misc/iwmc3200top/fw-download.c	2013-07-26 19:25:23.000000000 +0000
+@@ -311,11 +311,8 @@
+ 
+ 	/* get the firmware */
+ 	ret = request_firmware(&raw, fw_name, &priv->func->dev);
+-	if (ret < 0) {
+-		LOG_ERROR(priv, FW_DOWNLOAD, "%s request_firmware failed %d\n",
+-			  fw_name, ret);
++	if (ret)
+ 		goto exit;
+-	}
+ 
+ 	if (raw->size < sizeof(struct iwmct_fw_sec_hdr)) {
+ 		LOG_ERROR(priv, FW_DOWNLOAD, "%s smaller then (%zd) (%zd)\n",
+Index: linux-3.2.46/drivers/misc/ti-st/st_kim.c
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/ti-st/st_kim.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/misc/ti-st/st_kim.c	2013-07-26 19:25:23.000000000 +0000
+@@ -281,11 +281,8 @@
+ 	    request_firmware(&kim_gdata->fw_entry, bts_scr_name,
+ 			     &kim_gdata->kim_pdev->dev);
+ 	if (unlikely((err != 0) || (kim_gdata->fw_entry->data == NULL) ||
+-		     (kim_gdata->fw_entry->size == 0))) {
+-		pr_err(" request_firmware failed(errno %ld) for %s", err,
+-			   bts_scr_name);
++		     (kim_gdata->fw_entry->size == 0)))
+ 		return -EINVAL;
+-	}
+ 	ptr = (void *)kim_gdata->fw_entry->data;
+ 	len = kim_gdata->fw_entry->size;
+ 	/* bts_header to remove out magic number and
+Index: linux-3.2.46/drivers/net/can/softing/softing_fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/can/softing/softing_fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/can/softing/softing_fw.c	2013-07-26 19:25:23.000000000 +0000
+@@ -237,11 +237,8 @@
+ 	int8_t type_end = 0, type_entrypoint = 0;
+ 
+ 	ret = request_firmware(&fw, file, &card->pdev->dev);
+-	if (ret) {
+-		dev_alert(&card->pdev->dev, "request_firmware(%s) got %i\n",
+-			file, ret);
++	if (ret)
+ 		return ret;
+-	}
+ 	dev_dbg(&card->pdev->dev, "firmware(%s) got %lu bytes\n",
+ 		file, (unsigned long)fw->size);
+ 	/* parse the firmware */
+Index: linux-3.2.46/drivers/net/ethernet/3com/typhoon.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/3com/typhoon.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/3com/typhoon.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1289,11 +1289,8 @@
+ 		return 0;
+ 
+ 	err = request_firmware(&typhoon_fw, FIRMWARE_NAME, &tp->pdev->dev);
+-	if (err) {
+-		netdev_err(tp->dev, "Failed to load firmware \"%s\"\n",
+-			   FIRMWARE_NAME);
++	if (err)
+ 		return err;
+-	}
+ 
+ 	image_data = (u8 *) typhoon_fw->data;
+ 	remaining = typhoon_fw->size;
+Index: linux-3.2.46/drivers/net/ethernet/adaptec/starfire.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/adaptec/starfire.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/adaptec/starfire.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1044,11 +1044,8 @@
+ #endif /* VLAN_SUPPORT */
+ 
+ 	retval = request_firmware(&fw_rx, FIRMWARE_RX, &np->pci_dev->dev);
+-	if (retval) {
+-		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
+-		       FIRMWARE_RX);
++	if (retval)
+ 		goto out_init;
+-	}
+ 	if (fw_rx->size % 4) {
+ 		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
+ 		       fw_rx->size, FIRMWARE_RX);
+@@ -1056,11 +1053,8 @@
+ 		goto out_rx;
+ 	}
+ 	retval = request_firmware(&fw_tx, FIRMWARE_TX, &np->pci_dev->dev);
+-	if (retval) {
+-		printk(KERN_ERR "starfire: Failed to load firmware \"%s\"\n",
+-		       FIRMWARE_TX);
++	if (retval)
+ 		goto out_rx;
+-	}
+ 	if (fw_tx->size % 4) {
+ 		printk(KERN_ERR "starfire: bogus length %zu in \"%s\"\n",
+ 		       fw_tx->size, FIRMWARE_TX);
+Index: linux-3.2.46/drivers/net/ethernet/alteon/acenic.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/alteon/acenic.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/alteon/acenic.c	2013-07-26 19:25:23.000000000 +0000
+@@ -2906,11 +2906,8 @@
+ 		fw_name = "acenic/tg1.bin";
+ 
+ 	ret = request_firmware(&fw, fw_name, &ap->pdev->dev);
+-	if (ret) {
+-		printk(KERN_ERR "%s: Failed to load firmware \"%s\"\n",
+-		       ap->name, fw_name);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	fw_data = (void *)fw->data;
+ 
+Index: linux-3.2.46/drivers/net/ethernet/broadcom/bnx2.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/broadcom/bnx2.c	2013-07-26 19:24:43.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/broadcom/bnx2.c	2013-07-26 19:25:23.000000000 +0000
+@@ -3681,16 +3681,13 @@
+ 	}
+ 
+ 	rc = request_firmware(&bp->mips_firmware, mips_fw_file, &bp->pdev->dev);
+-	if (rc) {
+-		pr_err("Can't load firmware file \"%s\"\n", mips_fw_file);
++	if (rc)
+ 		goto out;
+-	}
+ 
+ 	rc = request_firmware(&bp->rv2p_firmware, rv2p_fw_file, &bp->pdev->dev);
+-	if (rc) {
+-		pr_err("Can't load firmware file \"%s\"\n", rv2p_fw_file);
++	if (rc)
+ 		goto err_release_mips_firmware;
+-	}
++
+ 	mips_fw = (const struct bnx2_mips_fw_file *) bp->mips_firmware->data;
+ 	rv2p_fw = (const struct bnx2_rv2p_fw_file *) bp->rv2p_firmware->data;
+ 	if (bp->mips_firmware->size < sizeof(*mips_fw) ||
+Index: linux-3.2.46/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c	2013-07-26 19:25:23.000000000 +0000
+@@ -10569,11 +10569,8 @@
+ 
+ 		rc = request_firmware(&bp->firmware, fw_file_name,
+ 				      &bp->pdev->dev);
+-		if (rc) {
+-			BNX2X_ERR("Can't load firmware file %s\n",
+-				  fw_file_name);
++		if (rc)
+ 			goto request_firmware_exit;
+-		}
+ 
+ 		rc = bnx2x_check_firmware(bp);
+ 		if (rc) {
+Index: linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 19:24:34.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/broadcom/tg3.c	2013-07-26 19:25:23.000000000 +0000
+@@ -9562,11 +9562,8 @@
+ {
+ 	const __be32 *fw_data;
+ 
+-	if (request_firmware(&tp->fw, tp->fw_needed, &tp->pdev->dev)) {
+-		netdev_err(tp->dev, "Failed to load firmware \"%s\"\n",
+-			   tp->fw_needed);
++	if (request_firmware(&tp->fw, tp->fw_needed, &tp->pdev->dev))
+ 		return -ENOENT;
+-	}
+ 
+ 	fw_data = (void *)tp->fw->data;
+ 
+Index: linux-3.2.46/drivers/net/ethernet/brocade/bna/cna_fwimg.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/brocade/bna/cna_fwimg.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/brocade/bna/cna_fwimg.c	2013-07-26 19:25:23.000000000 +0000
+@@ -29,10 +29,8 @@
+ {
+ 	const struct firmware *fw;
+ 
+-	if (request_firmware(&fw, fw_name, &pdev->dev)) {
+-		pr_alert("Can't locate firmware %s\n", fw_name);
++	if (request_firmware(&fw, fw_name, &pdev->dev))
+ 		goto error;
+-	}
+ 
+ 	*bfi_image = (u32 *)fw->data;
+ 	*bfi_image_size = fw->size/sizeof(u32);
+Index: linux-3.2.46/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1030,12 +1030,8 @@
+ 	snprintf(buf, sizeof(buf), get_edc_fw_name(edc_idx));
+ 
+ 	ret = request_firmware(&fw, buf, &adapter->pdev->dev);
+-	if (ret < 0) {
+-		dev_err(&adapter->pdev->dev,
+-			"could not upgrade firmware: unable to load %s\n",
+-			buf);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	/* check size, take checksum in account */
+ 	if (fw->size > size + 4) {
+@@ -1072,11 +1068,8 @@
+ 	struct device *dev = &adap->pdev->dev;
+ 
+ 	ret = request_firmware(&fw, FW_FNAME, dev);
+-	if (ret < 0) {
+-		dev_err(dev, "could not upgrade firmware: unable to load %s\n",
+-			FW_FNAME);
++	if (ret)
+ 		return ret;
+-	}
+ 	ret = t3_load_fw(adap, fw->data, fw->size);
+ 	release_firmware(fw);
+ 
+@@ -1121,11 +1114,8 @@
+ 	snprintf(buf, sizeof(buf), TPSRAM_NAME, rev);
+ 
+ 	ret = request_firmware(&tpsram, buf, dev);
+-	if (ret < 0) {
+-		dev_err(dev, "could not load TP SRAM: unable to load %s\n",
+-			buf);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	ret = t3_check_tpsram(adap, tpsram->data, tpsram->size);
+ 	if (ret)
+Index: linux-3.2.46/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c	2013-07-26 19:25:23.000000000 +0000
+@@ -830,11 +830,8 @@
+ 	struct device *dev = adap->pdev_dev;
+ 
+ 	ret = request_firmware(&fw, FW_FNAME, dev);
+-	if (ret < 0) {
+-		dev_err(dev, "unable to load firmware image " FW_FNAME
+-			", error %d\n", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	hdr = (const struct fw_hdr *)fw->data;
+ 	vers = ntohl(hdr->fw_ver);
+Index: linux-3.2.46/drivers/net/ethernet/intel/e100.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/intel/e100.c	2013-07-26 19:24:06.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/intel/e100.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1273,9 +1273,6 @@
+ 
+ 	if (err) {
+ 		if (required) {
+-			netif_err(nic, probe, nic->netdev,
+-				  "Failed to load firmware \"%s\": %d\n",
+-				  fw_name, err);
+ 			return ERR_PTR(err);
+ 		} else {
+ 			netif_info(nic, probe, nic->netdev,
+Index: linux-3.2.46/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/myricom/myri10ge/myri10ge.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/myricom/myri10ge/myri10ge.c	2013-07-26 19:25:23.000000000 +0000
+@@ -594,8 +594,6 @@
+ 	unsigned i;
+ 
+ 	if ((status = request_firmware(&fw, mgp->fw_name, dev)) < 0) {
+-		dev_err(dev, "Unable to load %s firmware image via hotplug\n",
+-			mgp->fw_name);
+ 		status = -EINVAL;
+ 		goto abort_with_nothing;
+ 	}
+Index: linux-3.2.46/drivers/net/ethernet/smsc/smc91c92_cs.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/ethernet/smsc/smc91c92_cs.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/ethernet/smsc/smc91c92_cs.c	2013-07-26 19:25:23.000000000 +0000
+@@ -649,10 +649,8 @@
+ 	int i, err;
+ 
+ 	err = request_firmware(&fw, FIRMWARE_NAME, &link->dev);
+-	if (err) {
+-		pr_err("Failed to load firmware \"%s\"\n", FIRMWARE_NAME);
++	if (err)
+ 		return err;
+-	}
+ 
+ 	/* Download the Seven of Diamonds firmware */
+ 	for (i = 0; i < fw->size; i++) {
+--- a/drivers/net/ethernet/sun/cassini.c
++++ b/drivers/net/ethernet/sun/cassini.c
+@@ -819,11 +819,8 @@ static int cas_saturn_firmware_init(stru
+ 		return;
+ 
+ 	err = request_firmware(&fw, fw_name, &cp->pdev->dev);
+-	if (err) {
+-		pr_err("Failed to load firmware \"%s\"\n",
+-		       fw_name);
++	if (err)
+ 		return;
+-	}
+ 	if (fw->size < 2) {
+ 		pr_err("bogus length %zu in \"%s\"\n",
+ 		       fw->size, fw_name);
+Index: linux-3.2.46/drivers/net/hamradio/yam.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hamradio/yam.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/hamradio/yam.c	2013-07-26 19:25:23.000000000 +0000
+@@ -373,11 +373,8 @@
+ 		}
+ 		err = request_firmware(&fw, fw_name[predef], &pdev->dev);
+ 		platform_device_unregister(pdev);
+-		if (err) {
+-			printk(KERN_ERR "Failed to load firmware \"%s\"\n",
+-			       fw_name[predef]);
++		if (err)
+ 			return NULL;
+-		}
+ 		if (fw->size != YAM_FPGA_SIZE) {
+ 			printk(KERN_ERR "Bogus length %zu in firmware \"%s\"\n",
+ 			       fw->size, fw_name[predef]);
+Index: linux-3.2.46/drivers/net/usb/kaweth.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/usb/kaweth.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/usb/kaweth.c	2013-07-26 19:25:23.000000000 +0000
+@@ -399,10 +399,8 @@
+ 	int ret;
+ 
+ 	ret = request_firmware(&fw, fwname, &kaweth->dev->dev);
+-	if (ret) {
+-		err("Firmware request failed\n");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (fw->size > KAWETH_FIRMWARE_BUF_SIZE) {
+ 		err("Firmware too big: %zu", fw->size);
+Index: linux-3.2.46/drivers/net/wimax/i2400m/fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wimax/i2400m/fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wimax/i2400m/fw.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1582,11 +1582,8 @@
+ 		}
+ 		d_printf(1, dev, "trying firmware %s (%d)\n", fw_name, itr);
+ 		ret = request_firmware(&fw, fw_name, dev);
+-		if (ret < 0) {
+-			dev_err(dev, "fw %s: cannot load file: %d\n",
+-				fw_name, ret);
++		if (ret)
+ 			continue;
+-		}
+ 		i2400m->fw_name = fw_name;
+ 		ret = i2400m_fw_bootstrap(i2400m, fw, flags);
+ 		release_firmware(fw);
+@@ -1629,8 +1626,6 @@
+ 	kref_init(&i2400m_fw->kref);
+ 	result = request_firmware(&i2400m_fw->fw, i2400m->fw_name, dev);
+ 	if (result < 0) {
+-		dev_err(dev, "firmware %s: failed to cache: %d\n",
+-			i2400m->fw_name, result);
+ 		kfree(i2400m_fw);
+ 		i2400m_fw = (void *) ~0;
+ 	} else
+Index: linux-3.2.46/drivers/net/wireless/at76c50x-usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/at76c50x-usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/at76c50x-usb.c	2013-07-26 19:25:23.000000000 +0000
+@@ -1584,14 +1584,8 @@
+ 
+ 	at76_dbg(DBG_FW, "downloading firmware %s", fwe->fwname);
+ 	ret = request_firmware(&fwe->fw, fwe->fwname, &udev->dev);
+-	if (ret < 0) {
+-		dev_printk(KERN_ERR, &udev->dev, "firmware %s not found!\n",
+-			   fwe->fwname);
+-		dev_printk(KERN_ERR, &udev->dev,
+-			   "you may need to download the firmware from "
+-			   "http://developer.berlios.de/projects/at76c503a/\n");
++	if (ret)
+ 		goto exit;
+-	}
+ 
+ 	at76_dbg(DBG_FW, "got it.");
+ 	fwh = (struct at76_fw_header *)(fwe->fw->data);
+Index: linux-3.2.46/drivers/net/wireless/ath/ath9k/hif_usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/ath/ath9k/hif_usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/ath/ath9k/hif_usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1030,11 +1030,8 @@
+ 	/* Request firmware */
+ 	ret = request_firmware(&hif_dev->firmware, hif_dev->fw_name,
+ 			       &hif_dev->udev->dev);
+-	if (ret) {
+-		dev_err(&hif_dev->udev->dev,
+-			"ath9k_htc: Firmware - %s not found\n", hif_dev->fw_name);
++	if (ret)
+ 		goto err_fw_req;
+-	}
+ 
+ 	/* Download firmware */
+ 	ret = ath9k_hif_usb_download_fw(hif_dev, drv_info);
+Index: linux-3.2.46/drivers/net/wireless/ath/carl9170/usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/ath/carl9170/usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/ath/carl9170/usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1018,7 +1018,6 @@
+ 		return;
+ 	}
+ 
+-	dev_err(&ar->udev->dev, "firmware not found.\n");
+ 	carl9170_usb_firmware_failed(ar);
+ }
+ 
+Index: linux-3.2.46/drivers/net/wireless/atmel.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/atmel.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/atmel.c	2013-07-26 19:25:24.000000000 +0000
+@@ -3937,12 +3937,8 @@
+ 					strcpy(priv->firmware_id, "atmel_at76c502.bin");
+ 				}
+ 				err = request_firmware(&fw_entry, priv->firmware_id, priv->sys_dev);
+-				if (err != 0) {
+-					printk(KERN_ALERT
+-					       "%s: firmware %s is missing, cannot continue.\n",
+-					       dev->name, priv->firmware_id);
++				if (err != 0)
+ 					return err;
+-				}
+ 			} else {
+ 				int fw_index = 0;
+ 				int success = 0;
+Index: linux-3.2.46/drivers/net/wireless/b43/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/b43/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/b43/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -2131,18 +2131,8 @@
+ 		return -ENOSYS;
+ 	}
+ 	err = request_firmware(&blob, ctx->fwname, ctx->dev->dev->dev);
+-	if (err == -ENOENT) {
+-		snprintf(ctx->errors[ctx->req_type],
+-			 sizeof(ctx->errors[ctx->req_type]),
+-			 "Firmware file \"%s\" not found\n", ctx->fwname);
++	if (err)
+ 		return err;
+-	} else if (err) {
+-		snprintf(ctx->errors[ctx->req_type],
+-			 sizeof(ctx->errors[ctx->req_type]),
+-			 "Firmware file \"%s\" request failed (err=%d)\n",
+-			 ctx->fwname, err);
+-		return err;
+-	}
+ 	if (blob->size < sizeof(struct b43_fw_header))
+ 		goto err_format;
+ 	hdr = (struct b43_fw_header *)(blob->data);
+Index: linux-3.2.46/drivers/net/wireless/b43legacy/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/b43legacy/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/b43legacy/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1527,11 +1527,8 @@
+ 		 "b43legacy%s/%s.fw",
+ 		 modparam_fwpostfix, name);
+ 	err = request_firmware(fw, path, dev->dev->dev);
+-	if (err) {
+-		b43legacyerr(dev->wl, "Firmware file \"%s\" not found "
+-		       "or load failed.\n", path);
++	if (err)
+ 		return err;
+-	}
+ 	if ((*fw)->size < sizeof(struct b43legacy_fw_header))
+ 		goto err_format;
+ 	hdr = (struct b43legacy_fw_header *)((*fw)->data);
+Index: linux-3.2.46/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/brcm80211/brcmfmac/dhd_sdio.c	2013-07-26 19:25:24.000000000 +0000
+@@ -3413,10 +3413,8 @@
+ 	bus->fw_name = BCM4329_FW_NAME;
+ 	ret = request_firmware(&bus->firmware, bus->fw_name,
+ 			       &bus->sdiodev->func[2]->dev);
+-	if (ret) {
+-		brcmf_dbg(ERROR, "Fail to request firmware %d\n", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 	bus->fw_ptr = 0;
+ 
+ 	memptr = memblock = kmalloc(MEMBLOCK + BRCMF_SDALIGN, GFP_ATOMIC);
+@@ -3511,10 +3509,8 @@
+ 	bus->nv_name = BCM4329_NV_NAME;
+ 	ret = request_firmware(&bus->firmware, bus->nv_name,
+ 			       &bus->sdiodev->func[2]->dev);
+-	if (ret) {
+-		brcmf_dbg(ERROR, "Fail to request nvram %d\n", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 	bus->fw_ptr = 0;
+ 
+ 	memblock = kmalloc(MEMBLOCK, GFP_ATOMIC);
+Index: linux-3.2.46/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/brcm80211/brcmsmac/mac80211_if.c	2013-07-26 19:25:24.000000000 +0000
+@@ -785,19 +785,13 @@
+ 		sprintf(fw_name, "%s-%d.fw", brcms_firmwares[i],
+ 			UCODE_LOADER_API_VER);
+ 		status = request_firmware(&wl->fw.fw_bin[i], fw_name, device);
+-		if (status) {
+-			wiphy_err(wl->wiphy, "%s: fail to load firmware %s\n",
+-				  KBUILD_MODNAME, fw_name);
++		if (status)
+ 			return status;
+-		}
+ 		sprintf(fw_name, "%s_hdr-%d.fw", brcms_firmwares[i],
+ 			UCODE_LOADER_API_VER);
+ 		status = request_firmware(&wl->fw.fw_hdr[i], fw_name, device);
+-		if (status) {
+-			wiphy_err(wl->wiphy, "%s: fail to load firmware %s\n",
+-				  KBUILD_MODNAME, fw_name);
++		if (status)
+ 			return status;
+-		}
+ 		wl->fw.hdr_num_entries[i] =
+ 		    wl->fw.fw_hdr[i]->size / (sizeof(struct firmware_hdr));
+ 	}
+Index: linux-3.2.46/drivers/net/wireless/ipw2x00/ipw2100.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/ipw2x00/ipw2100.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/ipw2x00/ipw2100.c	2013-07-26 19:25:24.000000000 +0000
+@@ -8519,12 +8519,8 @@
+ 
+ 	rc = request_firmware(&fw->fw_entry, fw_name, &priv->pci_dev->dev);
+ 
+-	if (rc < 0) {
+-		printk(KERN_ERR DRV_NAME ": "
+-		       "%s: Firmware '%s' not available or load failed.\n",
+-		       priv->net_dev->name, fw_name);
++	if (rc)
+ 		return rc;
+-	}
+ 	IPW_DEBUG_INFO("firmware data %p size %zd\n", fw->fw_entry->data,
+ 		       fw->fw_entry->size);
+ 
+Index: linux-3.2.46/drivers/net/wireless/ipw2x00/ipw2200.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/ipw2x00/ipw2200.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/ipw2x00/ipw2200.c	2013-07-26 19:25:24.000000000 +0000
+@@ -3401,10 +3401,8 @@
+ 
+ 	/* ask firmware_class module to get the boot firmware off disk */
+ 	rc = request_firmware(raw, name, &priv->pci_dev->dev);
+-	if (rc < 0) {
+-		IPW_ERROR("%s request_firmware failed: Reason %d\n", name, rc);
++	if (rc)
+ 		return rc;
+-	}
+ 
+ 	if ((*raw)->size < sizeof(*fw)) {
+ 		IPW_ERROR("%s is too small (%zd)\n", name, (*raw)->size);
+Index: linux-3.2.46/drivers/net/wireless/iwlegacy/iwl3945-base.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/iwlegacy/iwl3945-base.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/iwlegacy/iwl3945-base.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1870,8 +1870,6 @@
+ 		sprintf(buf, "%s%u%s", name_pre, index, ".ucode");
+ 		ret = request_firmware(&ucode_raw, buf, &priv->pci_dev->dev);
+ 		if (ret < 0) {
+-			IWL_ERR(priv, "%s firmware file req failed: %d\n",
+-				  buf, ret);
+ 			if (ret == -ENOENT)
+ 				continue;
+ 			else
+Index: linux-3.2.46/drivers/net/wireless/iwlwifi/iwl-agn.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/iwlwifi/iwl-agn.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/iwlwifi/iwl-agn.c	2013-07-26 19:25:24.000000000 +0000
+@@ -909,13 +909,8 @@
+ 
+ 	memset(&pieces, 0, sizeof(pieces));
+ 
+-	if (!ucode_raw) {
+-		if (priv->fw_index <= api_ok)
+-			IWL_ERR(priv,
+-				"request for firmware file '%s' failed.\n",
+-				priv->firmware_name);
++	if (!ucode_raw)
+ 		goto try_again;
+-	}
+ 
+ 	IWL_DEBUG_INFO(priv, "Loaded firmware file '%s' (%zd bytes).\n",
+ 		       priv->firmware_name, ucode_raw->size);
+Index: linux-3.2.46/drivers/net/wireless/iwmc3200wifi/fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/iwmc3200wifi/fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/iwmc3200wifi/fw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -168,10 +168,8 @@
+ 	char *build_tag;
+ 
+ 	ret = request_firmware(&fw, img_name, iwm_to_dev(iwm));
+-	if (ret) {
+-		IWM_ERR(iwm, "Request firmware failed");
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	IWM_DBG_FW(iwm, INFO, "Start to load FW %s\n", img_name);
+ 
+Index: linux-3.2.46/drivers/net/wireless/libertas/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/libertas/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/libertas/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1207,19 +1207,13 @@
+ 	/* Try user-specified firmware first */
+ 	if (user_helper) {
+ 		ret = request_firmware(helper, user_helper, dev);
+-		if (ret) {
+-			dev_err(dev, "couldn't find helper firmware %s\n",
+-				user_helper);
++		if (ret)
+ 			goto fail;
+-		}
+ 	}
+ 	if (user_mainfw) {
+ 		ret = request_firmware(mainfw, user_mainfw, dev);
+-		if (ret) {
+-			dev_err(dev, "couldn't find main firmware %s\n",
+-				user_mainfw);
++		if (ret)
+ 			goto fail;
+-		}
+ 	}
+ 
+ 	if (*helper && *mainfw)
+Index: linux-3.2.46/drivers/net/wireless/libertas_tf/if_usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/libertas_tf/if_usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/libertas_tf/if_usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -827,8 +827,6 @@
+ 	kparam_block_sysfs_write(fw_name);
+ 	ret = request_firmware(&cardp->fw, lbtf_fw_name, &cardp->udev->dev);
+ 	if (ret < 0) {
+-		pr_err("request_firmware() failed with %#x\n", ret);
+-		pr_err("firmware %s not found\n", lbtf_fw_name);
+ 		kparam_unblock_sysfs_write(fw_name);
+ 		goto done;
+ 	}
+Index: linux-3.2.46/drivers/net/wireless/mwifiex/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/mwifiex/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/mwifiex/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -311,8 +311,6 @@
+ 	err = request_firmware(&adapter->firmware, adapter->fw_name,
+ 			       adapter->dev);
+ 	if (err < 0) {
+-		dev_err(adapter->dev, "request_firmware() returned"
+-				" error code %#x\n", err);
+ 		ret = -1;
+ 		goto done;
+ 	}
+Index: linux-3.2.46/drivers/net/wireless/mwl8k.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/mwl8k.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/mwl8k.c	2013-07-26 19:25:24.000000000 +0000
+@@ -5191,16 +5191,12 @@
+ static void mwl8k_fw_state_machine(const struct firmware *fw, void *context)
+ {
+ 	struct mwl8k_priv *priv = context;
+-	struct mwl8k_device_info *di = priv->device_info;
+ 	int rc;
+ 
+ 	switch (priv->fw_state) {
+ 	case FW_STATE_INIT:
+-		if (!fw) {
+-			printk(KERN_ERR "%s: Error requesting helper fw %s\n",
+-			       pci_name(priv->pdev), di->helper_image);
++		if (!fw)
+ 			goto fail;
+-		}
+ 		priv->fw_helper = fw;
+ 		rc = mwl8k_request_fw(priv, priv->fw_pref, &priv->fw_ucode,
+ 				      true);
+@@ -5235,11 +5231,8 @@
+ 		break;
+ 
+ 	case FW_STATE_LOADING_ALT:
+-		if (!fw) {
+-			printk(KERN_ERR "%s: Error requesting alt fw %s\n",
+-			       pci_name(priv->pdev), di->helper_image);
++		if (!fw)
+ 			goto fail;
+-		}
+ 		priv->fw_ucode = fw;
+ 		rc = mwl8k_firmware_load_success(priv);
+ 		if (rc)
+@@ -5274,10 +5267,8 @@
+ 
+ 	/* Ask userland hotplug daemon for the device firmware */
+ 	rc = mwl8k_request_firmware(priv, fw_image, nowait);
+-	if (rc) {
+-		wiphy_err(hw->wiphy, "Firmware files not found\n");
++	if (rc)
+ 		return rc;
+-	}
+ 
+ 	if (nowait)
+ 		return rc;
+Index: linux-3.2.46/drivers/net/wireless/orinoco/fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/orinoco/fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/orinoco/fw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -132,7 +132,6 @@
+ 		err = request_firmware(&fw_entry, firmware, priv->dev);
+ 
+ 		if (err) {
+-			dev_err(dev, "Cannot find firmware %s\n", firmware);
+ 			err = -ENOENT;
+ 			goto free;
+ 		}
+@@ -292,10 +291,8 @@
+ 	const struct firmware *fw_entry;
+ 
+ 	if (!orinoco_cached_fw_get(priv, true)) {
+-		if (request_firmware(&fw_entry, fw->pri_fw, priv->dev) != 0) {
+-			dev_err(dev, "Cannot find firmware: %s\n", fw->pri_fw);
++		if (request_firmware(&fw_entry, fw->pri_fw, priv->dev) != 0)
+ 			return -ENOENT;
+-		}
+ 	} else
+ 		fw_entry = orinoco_cached_fw_get(priv, true);
+ 
+@@ -311,10 +308,8 @@
+ 	}
+ 
+ 	if (!orinoco_cached_fw_get(priv, false)) {
+-		if (request_firmware(&fw_entry, fw->sta_fw, priv->dev) != 0) {
+-			dev_err(dev, "Cannot find firmware: %s\n", fw->sta_fw);
++		if (request_firmware(&fw_entry, fw->sta_fw, priv->dev) != 0)
+ 			return -ENOENT;
+-		}
+ 	} else
+ 		fw_entry = orinoco_cached_fw_get(priv, false);
+ 
+Index: linux-3.2.46/drivers/net/wireless/orinoco/orinoco_usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/orinoco/orinoco_usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/orinoco/orinoco_usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1684,7 +1684,6 @@
+ 	if (firmware.size && firmware.code) {
+ 		ezusb_firmware_download(upriv, &firmware);
+ 	} else {
+-		err("No firmware to download");
+ 		goto error;
+ 	}
+ 
+Index: linux-3.2.46/drivers/net/wireless/p54/p54pci.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/p54/p54pci.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/p54/p54pci.c	2013-07-26 19:25:24.000000000 +0000
+@@ -564,7 +564,6 @@
+ 	err = request_firmware(&priv->firmware, "isl3886pci",
+ 			       &priv->pdev->dev);
+ 	if (err) {
+-		dev_err(&pdev->dev, "Cannot find firmware (isl3886pci)\n");
+ 		err = request_firmware(&priv->firmware, "isl3886",
+ 				       &priv->pdev->dev);
+ 		if (err)
+Index: linux-3.2.46/drivers/net/wireless/p54/p54spi.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/p54/p54spi.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/p54/p54spi.c	2013-07-26 19:25:24.000000000 +0000
+@@ -171,10 +171,8 @@
+ 	/* FIXME: should driver use it's own struct device? */
+ 	ret = request_firmware(&priv->firmware, "3826.arm", &priv->spi->dev);
+ 
+-	if (ret < 0) {
+-		dev_err(&priv->spi->dev, "request_firmware() failed: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	ret = p54_parse_firmware(dev, priv->firmware);
+ 	if (ret) {
+Index: linux-3.2.46/drivers/net/wireless/p54/p54usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/p54/p54usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/p54/p54usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -856,9 +856,6 @@
+ 
+ 	err = request_firmware(&priv->fw, p54u_fwlist[i].fw, &priv->udev->dev);
+ 	if (err) {
+-		dev_err(&priv->udev->dev, "(p54usb) cannot load firmware %s "
+-					  "(%d)!\n", p54u_fwlist[i].fw, err);
+-
+ 		err = request_firmware(&priv->fw, p54u_fwlist[i].fw_legacy,
+ 				       &priv->udev->dev);
+ 		if (err)
+Index: linux-3.2.46/drivers/net/wireless/prism54/islpci_dev.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/prism54/islpci_dev.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/prism54/islpci_dev.c	2013-07-26 19:25:24.000000000 +0000
+@@ -93,12 +93,9 @@
+ 		const u32 *fw_ptr;
+ 
+ 		rc = request_firmware(&fw_entry, priv->firmware, PRISM_FW_PDEV);
+-		if (rc) {
+-			printk(KERN_ERR
+-			       "%s: request_firmware() failed for '%s'\n",
+-			       "prism54", priv->firmware);
++		if (rc)
+ 			return rc;
+-		}
++
+ 		/* prepare the Direct Memory Base register */
+ 		reg = ISL38XX_DEV_FIRMWARE_ADDRES;
+ 
+Index: linux-3.2.46/drivers/net/wireless/rt2x00/rt2x00firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/rt2x00/rt2x00firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/rt2x00/rt2x00firmware.c	2013-07-26 19:25:24.000000000 +0000
+@@ -51,10 +51,8 @@
+ 	INFO(rt2x00dev, "Loading firmware file '%s'.\n", fw_name);
+ 
+ 	retval = request_firmware(&fw, fw_name, device);
+-	if (retval) {
+-		ERROR(rt2x00dev, "Failed to request Firmware.\n");
++	if (retval)
+ 		return retval;
+-	}
+ 
+ 	if (!fw || !fw->size || !fw->data) {
+ 		ERROR(rt2x00dev, "Failed to read Firmware.\n");
+Index: linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -174,11 +174,8 @@
+ 		fw_name = rtlpriv->cfg->fw_name;
+ 	}
+ 	err = request_firmware(&firmware, fw_name, rtlpriv->io.dev);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Failed to request firmware!\n"));
++	if (err)
+ 		return 1;
+-	}
+ 	if (firmware->size > 0x4000) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Firmware is too big!\n"));
+Index: linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -71,11 +71,8 @@
+ 	/* request fw */
+ 	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+ 			rtlpriv->io.dev);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Failed to request firmware!\n"));
++	if (err)
+ 		return 1;
+-	}
+ 	if (firmware->size > 0x4000) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Firmware is too big!\n"));
+Index: linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192de/sw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/rtlwifi/rtl8192de/sw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192de/sw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -186,11 +186,8 @@
+ 	/* request fw */
+ 	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+ 			       rtlpriv->io.dev);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Failed to request firmware!\n"));
++	if (err)
+ 		return 1;
+-	}
+ 	if (firmware->size > 0x8000) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Firmware is too big!\n"));
+Index: linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192se/sw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/rtlwifi/rtl8192se/sw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/rtlwifi/rtl8192se/sw.c	2013-07-26 19:25:24.000000000 +0000
+@@ -197,11 +197,8 @@
+ 	/* request fw */
+ 	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+ 			rtlpriv->io.dev);
+-	if (err) {
+-		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+-			 ("Failed to request firmware!\n"));
++	if (err)
+ 		return 1;
+-	}
+ 	if (firmware->size > sizeof(struct rt_firmware)) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Firmware is too big!\n"));
+Index: linux-3.2.46/drivers/net/wireless/wl1251/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/wl1251/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/wl1251/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -70,10 +70,8 @@
+ 
+ 	ret = request_firmware(&fw, WL1251_FW_NAME, dev);
+ 
+-	if (ret < 0) {
+-		wl1251_error("could not get firmware: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (fw->size % 4) {
+ 		wl1251_error("firmware size is not multiple of 32 bits: %zu",
+@@ -109,10 +107,8 @@
+ 
+ 	ret = request_firmware(&fw, WL1251_NVS_NAME, dev);
+ 
+-	if (ret < 0) {
+-		wl1251_error("could not get nvs file: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (fw->size % 4) {
+ 		wl1251_error("nvs size is not multiple of 32 bits: %zu",
+Index: linux-3.2.46/drivers/net/wireless/wl12xx/main.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/wl12xx/main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/wl12xx/main.c	2013-07-26 19:25:24.000000000 +0000
+@@ -1071,10 +1071,8 @@
+ 
+ 	ret = request_firmware(&fw, fw_name, wl1271_wl_to_dev(wl));
+ 
+-	if (ret < 0) {
+-		wl1271_error("could not get firmware: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (fw->size % 4) {
+ 		wl1271_error("firmware size is not multiple of 32 bits: %zu",
+@@ -1109,10 +1107,8 @@
+ 
+ 	ret = request_firmware(&fw, WL12XX_NVS_NAME, wl1271_wl_to_dev(wl));
+ 
+-	if (ret < 0) {
+-		wl1271_error("could not get nvs file: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	wl->nvs = kmemdup(fw->data, fw->size, GFP_KERNEL);
+ 
+Index: linux-3.2.46/drivers/net/wireless/wl12xx/sdio_test.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/wl12xx/sdio_test.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/wl12xx/sdio_test.c	2013-07-26 19:25:24.000000000 +0000
+@@ -206,10 +206,8 @@
+ 		ret = request_firmware(&fw, WL127X_FW_NAME,
+ 				       wl1271_wl_to_dev(wl));
+ 
+-	if (ret < 0) {
+-		wl1271_error("could not get firmware: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (fw->size % 4) {
+ 		wl1271_error("firmware size is not multiple of 32 bits: %zu",
+@@ -244,10 +242,8 @@
+ 
+ 	ret = request_firmware(&fw, WL12XX_NVS_NAME, wl1271_wl_to_dev(wl));
+ 
+-	if (ret < 0) {
+-		wl1271_error("could not get nvs file: %d", ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	wl->nvs = kmemdup(fw->data, fw->size, GFP_KERNEL);
+ 
+Index: linux-3.2.46/drivers/net/wireless/zd1201.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/zd1201.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/zd1201.c	2013-07-26 19:25:24.000000000 +0000
+@@ -65,8 +65,6 @@
+ 
+ 	err = request_firmware(&fw_entry, fwfile, &dev->dev);
+ 	if (err) {
+-		dev_err(&dev->dev, "Failed to load %s firmware file!\n", fwfile);
+-		dev_err(&dev->dev, "Make sure the hotplug firmware loader is installed.\n");
+ 		dev_err(&dev->dev, "Goto http://linux-lc100020.sourceforge.net for more info.\n");
+ 		return err;
+ 	}
+Index: linux-3.2.46/drivers/net/wireless/zd1211rw/zd_usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/wireless/zd1211rw/zd_usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/net/wireless/zd1211rw/zd_usb.c	2013-07-26 19:25:24.000000000 +0000
+@@ -121,16 +121,9 @@
+ static int request_fw_file(
+ 	const struct firmware **fw, const char *name, struct device *device)
+ {
+-	int r;
+-
+ 	dev_dbg_f(device, "fw name %s\n", name);
+ 
+-	r = request_firmware(fw, name, device);
+-	if (r)
+-		dev_err(device,
+-		       "Could not load firmware file %s. Error number %d\n",
+-		       name, r);
+-	return r;
++	return request_firmware(fw, name, device);
+ }
+ 
+ static inline u16 get_bcdDevice(const struct usb_device *udev)
+Index: linux-3.2.46/drivers/scsi/advansys.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/advansys.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/advansys.c	2013-07-26 19:25:24.000000000 +0000
+@@ -4792,8 +4792,6 @@
+ 
+ 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
+ 		asc_dvc->err_code |= ASC_IERR_MCODE_CHKSUM;
+ 		return err;
+ 	}
+@@ -5125,8 +5123,6 @@
+ 
+ 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
+ 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
+ 		return err;
+ 	}
+@@ -5641,8 +5637,6 @@
+ 
+ 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
+ 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
+ 		return err;
+ 	}
+@@ -6143,8 +6137,6 @@
+ 
+ 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
+ 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
+ 		return err;
+ 	}
+Index: linux-3.2.46/drivers/scsi/aic94xx/aic94xx_init.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/aic94xx/aic94xx_init.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/aic94xx/aic94xx_init.c	2013-07-26 19:25:25.000000000 +0000
+@@ -399,8 +399,6 @@
+ 				   filename_ptr,
+ 				   &asd_ha->pcidev->dev);
+ 	if (err) {
+-		asd_printk("Failed to load bios image file %s, error %d\n",
+-			   filename_ptr, err);
+ 		err = FAIL_OPEN_BIOS_FILE;
+ 		goto out1;
+ 	}
+Index: linux-3.2.46/drivers/scsi/aic94xx/aic94xx_seq.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/aic94xx/aic94xx_seq.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/aic94xx/aic94xx_seq.c	2013-07-26 19:25:25.000000000 +0000
+@@ -1318,11 +1318,8 @@
+ 
+ 	err = asd_request_firmware(asd_ha);
+ 
+-	if (err) {
+-		asd_printk("Failed to load sequencer firmware file %s, error %d\n",
+-			   SAS_RAZOR_SEQUENCER_FW_FILE, err);
++	if (err)
+ 		return err;
+-	}
+ 
+ 	err = asd_seq_download_seqs(asd_ha);
+ 	if (err) {
+Index: linux-3.2.46/drivers/scsi/bfa/bfad.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/bfa/bfad.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/bfa/bfad.c	2013-07-26 19:25:25.000000000 +0000
+@@ -1592,7 +1592,6 @@
+ 	const struct firmware *fw;
+ 
+ 	if (request_firmware(&fw, fw_name, &pdev->dev)) {
+-		printk(KERN_ALERT "Can't locate firmware %s\n", fw_name);
+ 		*bfi_image = NULL;
+ 		goto out;
+ 	}
+Index: linux-3.2.46/drivers/scsi/ipr.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/ipr.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/ipr.c	2013-07-26 19:25:25.000000000 +0000
+@@ -3744,10 +3744,8 @@
+ 	len = snprintf(fname, 99, "%s", buf);
+ 	fname[len-1] = '\0';
+ 
+-	if(request_firmware(&fw_entry, fname, &ioa_cfg->pdev->dev)) {
+-		dev_err(&ioa_cfg->pdev->dev, "Firmware file %s not found\n", fname);
++	if (request_firmware(&fw_entry, fname, &ioa_cfg->pdev->dev))
+ 		return -EIO;
+-	}
+ 
+ 	image_hdr = (struct ipr_ucode_image_header *)fw_entry->data;
+ 
+Index: linux-3.2.46/drivers/scsi/pm8001/pm8001_ctl.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/pm8001/pm8001_ctl.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/pm8001/pm8001_ctl.c	2013-07-26 19:25:25.000000000 +0000
+@@ -502,9 +502,6 @@
+ 			       pm8001_ha->dev);
+ 
+ 	if (err) {
+-		PM8001_FAIL_DBG(pm8001_ha,
+-			pm8001_printk("Failed to load firmware image file %s,"
+-			" error %d\n", filename_ptr, err));
+ 		err = FAIL_OPEN_BIOS_FILE;
+ 		goto out1;
+ 	}
+Index: linux-3.2.46/drivers/scsi/qla1280.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/qla1280.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/qla1280.c	2013-07-26 19:25:25.000000000 +0000
+@@ -1561,8 +1561,6 @@
+ 	err = request_firmware(&fw, fwname, &ha->pdev->dev);
+ 
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
+ 		fw = ERR_PTR(err);
+ 		goto unlock;
+ 	}
+Index: linux-3.2.46/drivers/scsi/qla2xxx/qla_init.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/qla2xxx/qla_init.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/qla2xxx/qla_init.c	2013-07-26 19:25:25.000000000 +0000
+@@ -4725,8 +4725,6 @@
+ 	/* Load firmware blob. */
+ 	blob = qla2x00_request_firmware(vha);
+ 	if (!blob) {
+-		ql_log(ql_log_info, vha, 0x0083,
+-		    "Fimware image unavailable.\n");
+ 		ql_log(ql_log_info, vha, 0x0084,
+ 		    "Firmware images can be retrieved from: "QLA_FW_URL ".\n");
+ 		return QLA_FUNCTION_FAILED;
+@@ -4827,8 +4825,6 @@
+ 	/* Load firmware blob. */
+ 	blob = qla2x00_request_firmware(vha);
+ 	if (!blob) {
+-		ql_log(ql_log_warn, vha, 0x0090,
+-		    "Fimware image unavailable.\n");
+ 		ql_log(ql_log_warn, vha, 0x0091,
+ 		    "Firmware images can be retrieved from: "
+ 		    QLA_FW_URL ".\n");
+Index: linux-3.2.46/drivers/scsi/qla2xxx/qla_nx.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/qla2xxx/qla_nx.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/qla2xxx/qla_nx.c	2013-07-26 19:25:25.000000000 +0000
+@@ -2466,11 +2466,8 @@
+ 
+ 	/* Load firmware blob. */
+ 	blob = ha->hablob = qla2x00_request_firmware(vha);
+-	if (!blob) {
+-		ql_log(ql_log_fatal, vha, 0x00a3,
+-		    "Firmware image not preset.\n");
++	if (!blob)
+ 		goto fw_load_failed;
+-	}
+ 
+ 	/* Validating firmware blob */
+ 	if (qla82xx_validate_firmware_blob(vha,
+Index: linux-3.2.46/drivers/scsi/qla2xxx/qla_os.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/qla2xxx/qla_os.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/qla2xxx/qla_os.c	2013-07-26 19:25:25.000000000 +0000
+@@ -3967,8 +3967,6 @@
+ 		goto out;
+ 
+ 	if (request_firmware(&blob->fw, blob->name, &ha->pdev->dev)) {
+-		ql_log(ql_log_warn, vha, 0x0063,
+-		    "Failed to load firmware image (%s).\n", blob->name);
+ 		blob->fw = NULL;
+ 		blob = NULL;
+ 		goto out;
+Index: linux-3.2.46/drivers/scsi/qlogicpti.c
+===================================================================
+--- linux-3.2.46.orig/drivers/scsi/qlogicpti.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/scsi/qlogicpti.c	2013-07-26 19:25:25.000000000 +0000
+@@ -476,11 +476,8 @@
+ 	int i, timeout;
+ 
+ 	err = request_firmware(&fw, fwname, &qpti->op->dev);
+-	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fwname, err);
++	if (err)
+ 		return err;
+-	}
+ 	if (fw->size % 2) {
+ 		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+ 		       fw->size, fwname);
+Index: linux-3.2.46/drivers/staging/comedi/drivers/usbdux.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/comedi/drivers/usbdux.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/comedi/drivers/usbdux.c	2013-07-26 19:25:25.000000000 +0000
+@@ -2307,11 +2307,8 @@
+ 	struct usb_device *usbdev = usbduxsub_tmp->usbdev;
+ 	int ret;
+ 
+-	if (fw == NULL) {
+-		dev_err(&usbdev->dev,
+-			"Firmware complete handler without firmware!\n");
++	if (fw == NULL)
+ 		return;
+-	}
+ 
+ 	/*
+ 	 * we need to upload the firmware here because fw will be
+Index: linux-3.2.46/drivers/staging/comedi/drivers/usbduxsigma.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/comedi/drivers/usbduxsigma.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/comedi/drivers/usbduxsigma.c	2013-07-26 19:25:25.000000000 +0000
+@@ -2312,11 +2312,8 @@
+ 	struct usb_device *usbdev = usbduxsub_tmp->usbdev;
+ 	int ret;
+ 
+-	if (fw == NULL) {
+-		dev_err(&usbdev->dev,
+-			"Firmware complete handler without firmware!\n");
++	if (fw == NULL)
+ 		return;
+-	}
+ 
+ 	/*
+ 	 * we need to upload the firmware here because fw will be
+Index: linux-3.2.46/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c	2013-07-26 19:25:25.000000000 +0000
+@@ -2194,16 +2194,12 @@
+ 	info->AsicID = ft1000_read_reg(dev, FT1000_REG_ASIC_ID);
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+ 		DEBUG(0, "ft1000_hw: ELECTRABUZZ ASIC\n");
+-		if (request_firmware(&fw_entry, "ft1000.img", &link->dev) != 0) {
+-			printk(KERN_INFO "ft1000: Could not open ft1000.img\n");
++		if (request_firmware(&fw_entry, "ft1000.img", &link->dev) != 0)
+ 			goto err_unreg;
+-		}
+ 	} else {
+ 		DEBUG(0, "ft1000_hw: MAGNEMITE ASIC\n");
+-		if (request_firmware(&fw_entry, "ft2000.img", &link->dev) != 0) {
+-			printk(KERN_INFO "ft1000: Could not open ft2000.img\n");
++		if (request_firmware(&fw_entry, "ft2000.img", &link->dev) != 0)
+ 			goto err_unreg;
+-		}
+ 	}
+ 
+ 	ft1000_enable_interrupts(dev);
+Index: linux-3.2.46/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c	2013-07-26 19:25:25.000000000 +0000
+@@ -139,10 +139,8 @@
+ 	      ft1000dev->bulk_out_endpointAddr);
+ 
+ 	ret = request_firmware(&dsp_fw, "ft3000.img", &dev->dev);
+-	if (ret < 0) {
+-		printk(KERN_ERR "Error request_firmware().\n");
++	if (ret)
+ 		goto err_fw;
+-	}
+ 
+ 	size = max_t(uint, dsp_fw->size, 4096);
+ 	pFileStart = kmalloc(size, GFP_KERNEL);
+Index: linux-3.2.46/drivers/staging/intel_sst/intel_sst_drv_interface.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/intel_sst/intel_sst_drv_interface.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/intel_sst/intel_sst_drv_interface.c	2013-07-26 19:25:25.000000000 +0000
+@@ -66,10 +66,8 @@
+ 
+ 	pr_debug("Downloading %s FW now...\n", name);
+ 	retval = request_firmware(&fw_sst, name, &sst_drv_ctx->pci->dev);
+-	if (retval) {
+-		pr_err("request fw failed %d\n", retval);
++	if (retval)
+ 		return retval;
+-	}
+ 	sst_drv_ctx->alloc_block[0].sst_id = FW_DWNL_ID;
+ 	sst_drv_ctx->alloc_block[0].ops_block.condition = false;
+ 	retval = sst_load_fw(fw_sst, NULL);
+Index: linux-3.2.46/drivers/staging/intel_sst/intel_sst_dsp.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/intel_sst/intel_sst_dsp.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/intel_sst/intel_sst_dsp.c	2013-07-26 19:25:25.000000000 +0000
+@@ -471,10 +471,8 @@
+ 	pr_debug("Requesting %s\n", buf);
+ 
+ 	error = request_firmware(&fw_lib, buf, &sst_drv_ctx->pci->dev);
+-	if (error) {
+-		pr_err("library load failed %d\n", error);
++	if (error)
+ 		goto wake;
+-	}
+ 	error = sst_validate_library(fw_lib, &lib->slot_info, &entry_point);
+ 	if (error)
+ 		goto wake_free;
+Index: linux-3.2.46/drivers/staging/media/as102/as102_fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/media/as102/as102_fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/media/as102/as102_fw.c	2013-07-26 19:25:25.000000000 +0000
+@@ -197,11 +197,8 @@
+ 
+ 	/* request kernel to locate firmware file: part1 */
+ 	errno = request_firmware(&firmware, fw1, &dev->dev);
+-	if (errno < 0) {
+-		printk(KERN_ERR "%s: unable to locate firmware file: %s\n",
+-				 DRIVER_NAME, fw1);
++	if (errno)
+ 		goto error;
+-	}
+ 
+ 	/* initiate firmware upload */
+ 	errno = as102_firmware_upload(bus_adap, cmd_buf, firmware);
+@@ -220,11 +217,8 @@
+ 
+ 	/* request kernel to locate firmware file: part2 */
+ 	errno = request_firmware(&firmware, fw2, &dev->dev);
+-	if (errno < 0) {
+-		printk(KERN_ERR "%s: unable to locate firmware file: %s\n",
+-				 DRIVER_NAME, fw2);
++	if (errno)
+ 		goto error;
+-	}
+ 
+ 	/* initiate firmware upload */
+ 	errno = as102_firmware_upload(bus_adap, cmd_buf, firmware);
+Index: linux-3.2.46/drivers/staging/media/go7007/go7007-driver.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/media/go7007/go7007-driver.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/media/go7007/go7007-driver.c	2013-07-26 19:25:25.000000000 +0000
+@@ -97,11 +97,8 @@
+ 	int fw_len, rv = 0;
+ 	u16 intr_val, intr_data;
+ 
+-	if (request_firmware(&fw_entry, fw_name, go->dev)) {
+-		v4l2_err(go, "unable to load firmware from file "
+-			"\"%s\"\n", fw_name);
++	if (request_firmware(&fw_entry, fw_name, go->dev))
+ 		return -1;
+-	}
+ 	if (fw_entry->size < 16 || memcmp(fw_entry->data, "WISGO7007FW", 11)) {
+ 		v4l2_err(go, "file \"%s\" does not appear to be "
+ 				"go7007 firmware\n", fw_name);
+Index: linux-3.2.46/drivers/staging/media/go7007/go7007-fw.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/media/go7007/go7007-fw.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/media/go7007/go7007-fw.c	2013-07-26 19:25:25.000000000 +0000
+@@ -1576,12 +1576,8 @@
+ 	default:
+ 		return -1;
+ 	}
+-	if (request_firmware(&fw_entry, go->board_info->firmware, go->dev)) {
+-		printk(KERN_ERR
+-			"go7007: unable to load firmware from file \"%s\"\n",
+-			go->board_info->firmware);
++	if (request_firmware(&fw_entry, go->board_info->firmware, go->dev))
+ 		return -1;
+-	}
+ 	code = kzalloc(codespace * 2, GFP_KERNEL);
+ 	if (code == NULL) {
+ 		printk(KERN_ERR "go7007: unable to allocate %d bytes for "
+Index: linux-3.2.46/drivers/staging/media/go7007/s2250-loader.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/media/go7007/s2250-loader.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/media/go7007/s2250-loader.c	2013-07-26 19:25:25.000000000 +0000
+@@ -98,12 +98,8 @@
+ 
+ 	mutex_unlock(&s2250_dev_table_mutex);
+ 
+-	if (request_firmware(&fw, S2250_LOADER_FIRMWARE, &usbdev->dev)) {
+-		printk(KERN_ERR
+-			"s2250: unable to load firmware from file \"%s\"\n",
+-			S2250_LOADER_FIRMWARE);
++	if (request_firmware(&fw, S2250_LOADER_FIRMWARE, &usbdev->dev))
+ 		goto failed2;
+-	}
+ 	ret = usb_cypress_load_firmware(usbdev, fw, CYPRESS_FX2);
+ 	release_firmware(fw);
+ 	if (0 != ret) {
+@@ -111,12 +107,8 @@
+ 		goto failed2;
+ 	}
+ 
+-	if (request_firmware(&fw, S2250_FIRMWARE, &usbdev->dev)) {
+-		printk(KERN_ERR
+-			"s2250: unable to load firmware from file \"%s\"\n",
+-			S2250_FIRMWARE);
++	if (request_firmware(&fw, S2250_FIRMWARE, &usbdev->dev))
+ 		goto failed2;
+-	}
+ 	ret = usb_cypress_load_firmware(usbdev, fw, CYPRESS_FX2);
+ 	release_firmware(fw);
+ 	if (0 != ret) {
+Index: linux-3.2.46/drivers/staging/media/lirc/lirc_zilog.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/media/lirc/lirc_zilog.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/media/lirc/lirc_zilog.c	2013-07-26 19:25:25.000000000 +0000
+@@ -765,8 +765,6 @@
+ 	/* Request codeset data file */
+ 	ret = request_firmware(&fw_entry, "haup-ir-blaster.bin", tx->ir->l.dev);
+ 	if (ret != 0) {
+-		zilog_error("firmware haup-ir-blaster.bin not available "
+-			    "(%d)\n", ret);
+ 		ret = ret < 0 ? ret : -EFAULT;
+ 		goto out;
+ 	}
+Index: linux-3.2.46/drivers/staging/rtl8192u/r819xU_firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/rtl8192u/r819xU_firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/rtl8192u/r819xU_firmware.c	2013-07-26 19:25:25.000000000 +0000
+@@ -284,10 +284,8 @@
+ 		 */
+ 		if(rst_opt == OPT_SYSTEM_RESET) {
+ 			rc = request_firmware(&fw_entry, fw_name[init_step],&priv->udev->dev);
+-			if(rc < 0 ) {
+-				RT_TRACE(COMP_ERR, "request firmware fail!\n");
++			if (rc)
+ 				goto download_firmware_fail;
+-			}
+ 
+ 			if(fw_entry->size > sizeof(pfirmware->firmware_buf)) {
+ 				RT_TRACE(COMP_ERR, "img file size exceed the container buffer fail!\n");
+Index: linux-3.2.46/drivers/staging/rtl8712/hal_init.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/rtl8712/hal_init.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/rtl8712/hal_init.c	2013-07-26 19:25:25.000000000 +0000
+@@ -50,7 +50,6 @@
+ 	if (!firmware) {
+ 		struct usb_device *udev = padapter->dvobjpriv.pusbdev;
+ 		struct usb_interface *pusb_intf = padapter->pusb_intf;
+-		printk(KERN_ERR "r8712u: Firmware request failed\n");
+ 		padapter->fw_found = false;
+ 		usb_put_dev(udev);
+ 		usb_set_intfdata(pusb_intf, NULL);
+Index: linux-3.2.46/drivers/staging/slicoss/slicoss.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/slicoss/slicoss.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/slicoss/slicoss.c	2013-07-26 19:25:25.000000000 +0000
+@@ -519,11 +519,8 @@
+ 	}
+ 
+ 	ret = request_firmware(&fw, file, &adapter->pcidev->dev);
+-	if (ret) {
+-		dev_err(&adapter->pcidev->dev,
+-			"SLICOSS: Failed to load firmware %s\n", file);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	rcvucodelen = *(u32 *)(fw->data + index);
+ 	index += 4;
+@@ -597,11 +594,8 @@
+ 		break;
+ 	}
+ 	ret = request_firmware(&fw, file, &adapter->pcidev->dev);
+-	if (ret) {
+-		dev_err(&adapter->pcidev->dev,
+-			"SLICOSS: Failed to load firmware %s\n", file);
++	if (ret)
+ 		return ret;
+-	}
+ 	numsects = *(u32 *)(fw->data + index);
+ 	index += 4;
+ 	ASSERT(numsects <= 3);
+Index: linux-3.2.46/drivers/staging/vt6656/firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/vt6656/firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/staging/vt6656/firmware.c	2013-07-26 19:25:25.000000000 +0000
+@@ -76,11 +76,8 @@
+ 		int rc;
+ 
+ 		rc = request_firmware(&pDevice->firmware, FIRMWARE_NAME, dev);
+-		if (rc) {
+-			dev_err(dev, "firmware file %s request failed (%d)\n",
+-				FIRMWARE_NAME, rc);
++		if (rc)
+ 			goto out;
+-		}
+ 	}
+ 	fw = pDevice->firmware;
+ 
+Index: linux-3.2.46/drivers/tty/cyclades.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/cyclades.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/tty/cyclades.c	2013-07-26 19:25:26.000000000 +0000
+@@ -3543,10 +3543,8 @@
+ 	int retval;
+ 
+ 	retval = request_firmware(&fw, "cyzfirm.bin", &pdev->dev);
+-	if (retval) {
+-		dev_err(&pdev->dev, "can't get firmware\n");
++	if (retval)
+ 		goto err;
+-	}
+ 
+ 	/* Check whether the firmware is already loaded and running. If
+ 	   positive, skip this board */
+Index: linux-3.2.46/drivers/tty/moxa.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/moxa.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/tty/moxa.c	2013-07-26 19:25:26.000000000 +0000
+@@ -867,13 +867,8 @@
+ 	}
+ 
+ 	ret = request_firmware(&fw, file, dev);
+-	if (ret) {
+-		printk(KERN_ERR "MOXA: request_firmware failed. Make sure "
+-				"you've placed '%s' file into your firmware "
+-				"loader directory (e.g. /lib/firmware)\n",
+-				file);
++	if (ret)
+ 		goto err_free;
+-	}
+ 
+ 	ret = moxa_load_fw(brd, fw);
+ 
+Index: linux-3.2.46/drivers/tty/serial/icom.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/serial/icom.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/tty/serial/icom.c	2013-07-26 19:25:26.000000000 +0000
+@@ -374,7 +374,6 @@
+ 
+ 	/* Load Call Setup into Adapter */
+ 	if (request_firmware(&fw, "icom_call_setup.bin", &dev->dev) < 0) {
+-		dev_err(&dev->dev,"Unable to load icom_call_setup.bin firmware image\n");
+ 		status = -1;
+ 		goto load_code_exit;
+ 	}
+@@ -394,7 +393,6 @@
+ 
+ 	/* Load Resident DCE portion of Adapter */
+ 	if (request_firmware(&fw, "icom_res_dce.bin", &dev->dev) < 0) {
+-		dev_err(&dev->dev,"Unable to load icom_res_dce.bin firmware image\n");
+ 		status = -1;
+ 		goto load_code_exit;
+ 	}
+@@ -439,7 +437,6 @@
+ 	}
+ 
+ 	if (request_firmware(&fw, "icom_asc.bin", &dev->dev) < 0) {
+-		dev_err(&dev->dev,"Unable to load icom_asc.bin firmware image\n");
+ 		status = -1;
+ 		goto load_code_exit;
+ 	}
+Index: linux-3.2.46/drivers/tty/serial/ucc_uart.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/serial/ucc_uart.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/tty/serial/ucc_uart.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1173,10 +1173,8 @@
+ 	struct device *dev = context;
+ 	int ret;
+ 
+-	if (!fw) {
+-		dev_err(dev, "firmware not found\n");
++	if (!fw)
+ 		return;
+-	}
+ 
+ 	firmware = (struct qe_firmware *) fw->data;
+ 
+Index: linux-3.2.46/drivers/usb/atm/cxacru.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/atm/cxacru.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/atm/cxacru.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1082,8 +1082,6 @@
+ 		return -ENOENT;
+ 	}
+ 
+-	usb_info(usbatm, "found firmware %s\n", buf);
+-
+ 	return 0;
+ }
+ 
+Index: linux-3.2.46/drivers/usb/atm/ueagle-atm.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/atm/ueagle-atm.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/atm/ueagle-atm.c	2013-07-26 19:25:26.000000000 +0000
+@@ -622,10 +622,8 @@
+ 	int ret, size;
+ 
+ 	uea_enters(usb);
+-	if (!fw_entry) {
+-		uea_err(usb, "firmware is not available\n");
++	if (!fw_entry)
+ 		goto err;
+-	}
+ 
+ 	pfw = fw_entry->data;
+ 	size = fw_entry->size;
+@@ -720,10 +718,6 @@
+ 	ret = request_firmware_nowait(THIS_MODULE, 1, fw_name, &usb->dev,
+ 					GFP_KERNEL, usb,
+ 					uea_upload_pre_firmware);
+-	if (ret)
+-		uea_err(usb, "firmware %s is not available\n", fw_name);
+-	else
+-		uea_info(usb, "loading firmware %s\n", fw_name);
+ 
+ 	uea_leaves(usb);
+ 	return ret;
+@@ -885,12 +879,8 @@
+ 	}
+ 
+ 	ret = request_firmware(&sc->dsp_firm, dsp_name, &sc->usb_dev->dev);
+-	if (ret < 0) {
+-		uea_err(INS_TO_USBDEV(sc),
+-		       "requesting firmware %s failed with error %d\n",
+-			dsp_name, ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	if (UEA_CHIP_VERSION(sc) == EAGLE_IV)
+ 		ret = check_dsp_e4(sc->dsp_firm->data, sc->dsp_firm->size);
+@@ -1607,12 +1597,8 @@
+ 
+ 	cmvs_file_name(sc, cmv_name, 1);
+ 	ret = request_firmware(fw, cmv_name, &sc->usb_dev->dev);
+-	if (ret < 0) {
+-		uea_err(INS_TO_USBDEV(sc),
+-		       "requesting firmware %s failed with error %d\n",
+-		       cmv_name, ret);
++	if (ret)
+ 		return ret;
+-	}
+ 
+ 	data = (u8 *) (*fw)->data;
+ 	size = (*fw)->size;
+@@ -1649,9 +1635,6 @@
+ 				"try to get older cmvs\n", cmv_name);
+ 			return request_cmvs_old(sc, cmvs, fw);
+ 		}
+-		uea_err(INS_TO_USBDEV(sc),
+-		       "requesting firmware %s failed with error %d\n",
+-		       cmv_name, ret);
+ 		return ret;
+ 	}
+ 
+@@ -1934,11 +1917,8 @@
+ 	uea_enters(INS_TO_USBDEV(sc));
+ 
+ 	ret = request_firmware(&fw_entry, fw_name, &sc->usb_dev->dev);
+-	if (ret) {
+-		uea_err(INS_TO_USBDEV(sc), "firmware %s is not available\n",
+-		       fw_name);
++	if (ret)
+ 		goto err0;
+-	}
+ 
+ 	pfw = fw_entry->data;
+ 	size = fw_entry->size;
+Index: linux-3.2.46/drivers/usb/misc/emi26.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/misc/emi26.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/misc/emi26.c	2013-07-26 19:25:26.000000000 +0000
+@@ -96,21 +96,17 @@
+ 
+ 	err = request_ihex_firmware(&loader_fw, "emi26/loader.fw", &dev->dev);
+ 	if (err)
+-		goto nofw;
++		goto wraperr;
+ 
+ 	err = request_ihex_firmware(&bitstream_fw, "emi26/bitstream.fw",
+ 				    &dev->dev);
+ 	if (err)
+-		goto nofw;
++		goto wraperr;
+ 
+ 	err = request_ihex_firmware(&firmware_fw, "emi26/firmware.fw",
+ 				    &dev->dev);
+-	if (err) {
+-	nofw:
+-		dev_err(&dev->dev, "%s - request_firmware() failed\n",
+-			__func__);
++	if (err)
+ 		goto wraperr;
+-	}
+ 
+ 	/* Assert reset (stop the CPU in the EMI) */
+ 	err = emi26_set_reset(dev,1);
+Index: linux-3.2.46/drivers/usb/misc/emi62.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/misc/emi62.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/misc/emi62.c	2013-07-26 19:25:26.000000000 +0000
+@@ -105,19 +105,16 @@
+ 
+ 	err = request_ihex_firmware(&loader_fw, "emi62/loader.fw", &dev->dev);
+ 	if (err)
+-		goto nofw;
++		goto wraperr;
+ 
+ 	err = request_ihex_firmware(&bitstream_fw, "emi62/bitstream.fw",
+ 				    &dev->dev);
+ 	if (err)
+-		goto nofw;
++		goto wraperr;
+ 
+ 	err = request_ihex_firmware(&firmware_fw, FIRMWARE_FW, &dev->dev);
+-	if (err) {
+-	nofw:
+-		err( "%s - request_firmware() failed", __func__);
++	if (err)
+ 		goto wraperr;
+-	}
+ 
+ 	/* Assert reset (stop the CPU in the EMI) */
+ 	err = emi62_set_reset(dev,1);
+Index: linux-3.2.46/drivers/usb/misc/isight_firmware.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/misc/isight_firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/misc/isight_firmware.c	2013-07-26 19:25:26.000000000 +0000
+@@ -48,7 +48,6 @@
+ 		return -ENOMEM;
+ 
+ 	if (request_firmware(&firmware, "isight.fw", &dev->dev) != 0) {
+-		printk(KERN_ERR "Unable to load isight firmware\n");
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+Index: linux-3.2.46/drivers/usb/serial/io_edgeport.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/io_edgeport.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/io_edgeport.c	2013-07-26 19:25:26.000000000 +0000
+@@ -308,11 +308,8 @@
+ 
+ 	response = request_ihex_firmware(&fw, fw_name,
+ 					 &edge_serial->serial->dev->dev);
+-	if (response) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fw_name, response);
++	if (response)
+ 		return;
+-	}
+ 
+ 	rec = (const struct ihex_binrec *)fw->data;
+ 	BootMajorVersion = rec->data[0];
+Index: linux-3.2.46/drivers/usb/serial/io_ti.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/io_ti.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/io_ti.c	2013-07-26 19:25:26.000000000 +0000
+@@ -870,8 +870,6 @@
+ 
+ 	err = request_firmware(&fw, fw_name, dev);
+ 	if (err) {
+-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-		       fw_name, err);
+ 		kfree(buffer);
+ 		return err;
+ 	}
+@@ -1436,8 +1434,6 @@
+ 
+ 		err = request_firmware(&fw, fw_name, dev);
+ 		if (err) {
+-			printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+-			       fw_name, err);
+ 			kfree(buffer);
+ 			return err;
+ 		}
+Index: linux-3.2.46/drivers/usb/serial/keyspan.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/keyspan.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/keyspan.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1399,10 +1399,8 @@
+ 		return 1;
+ 	}
+ 
+-	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev, "Required keyspan firmware image (%s) unavailable.\n", fw_name);
++	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev))
+ 		return(1);
+-	}
+ 
+ 	dbg("Uploading Keyspan %s firmware.", fw_name);
+ 
+Index: linux-3.2.46/drivers/usb/serial/keyspan_pda.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/keyspan_pda.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/keyspan_pda.c	2013-07-26 19:25:26.000000000 +0000
+@@ -765,11 +765,8 @@
+ 			__func__);
+ 		return -ENODEV;
+ 	}
+-	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev, "failed to load firmware \"%s\"\n",
+-			fw_name);
++	if (request_ihex_firmware(&fw, fw_name, &serial->dev->dev))
+ 		return -ENOENT;
+-	}
+ 	record = (const struct ihex_binrec *)fw->data;
+ 
+ 	while (record) {
+Index: linux-3.2.46/drivers/usb/serial/ti_usb_3410_5052.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/ti_usb_3410_5052.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/ti_usb_3410_5052.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1745,10 +1745,8 @@
+ 		}
+ 		status = request_firmware(&fw_p, buf, &dev->dev);
+ 	}
+-	if (status) {
+-		dev_err(&dev->dev, "%s - firmware not found\n", __func__);
++	if (status)
+ 		return -ENOENT;
+-	}
+ 	if (fw_p->size > TI_FIRMWARE_BUF_SIZE) {
+ 		dev_err(&dev->dev, "%s - firmware too large %zu\n", __func__, fw_p->size);
+ 		release_firmware(fw_p);
+Index: linux-3.2.46/drivers/usb/serial/whiteheat.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/serial/whiteheat.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/usb/serial/whiteheat.c	2013-07-26 19:25:26.000000000 +0000
+@@ -301,18 +301,11 @@
+ 	dbg("%s", __func__);
+ 
+ 	if (request_ihex_firmware(&firmware_fw, "whiteheat.fw",
+-				  &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev,
+-			"%s - request \"whiteheat.fw\" failed\n", __func__);
++				  &serial->dev->dev))
+ 		goto out;
+-	}
+ 	if (request_ihex_firmware(&loader_fw, "whiteheat_loader.fw",
+-			     &serial->dev->dev)) {
+-		dev_err(&serial->dev->dev,
+-			"%s - request \"whiteheat_loader.fw\" failed\n",
+-			__func__);
++			     &serial->dev->dev))
+ 		goto out;
+-	}
+ 	ret = 0;
+ 	response = ezusb_set_reset (serial, 1);
+ 
+Index: linux-3.2.46/drivers/video/broadsheetfb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/broadsheetfb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/video/broadsheetfb.c	2013-07-26 19:25:26.000000000 +0000
+@@ -741,10 +741,8 @@
+ 		return -EINVAL;
+ 
+ 	err = request_firmware(&fw_entry, "broadsheet.wbf", dev);
+-	if (err < 0) {
+-		dev_err(dev, "Failed to get broadsheet waveform\n");
++	if (err)
+ 		goto err_failed;
+-	}
+ 
+ 	/* try to enforce reasonable min max on waveform */
+ 	if ((fw_entry->size < 8*1024) || (fw_entry->size > 64*1024)) {
+Index: linux-3.2.46/drivers/video/metronomefb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/metronomefb.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/drivers/video/metronomefb.c	2013-07-26 19:25:26.000000000 +0000
+@@ -677,10 +677,8 @@
+ 		a) request the waveform file from userspace
+ 		b) process waveform and decode into metromem */
+ 	retval = request_firmware(&fw_entry, "metronome.wbf", &dev->dev);
+-	if (retval < 0) {
+-		dev_err(&dev->dev, "Failed to get waveform\n");
++	if (retval)
+ 		goto err_csum_table;
+-	}
+ 
+ 	retval = load_waveform((u8 *) fw_entry->data, fw_entry->size, 3, 31,
+ 				par);
+Index: linux-3.2.46/sound/drivers/vx/vx_hwdep.c
+===================================================================
+--- linux-3.2.46.orig/sound/drivers/vx/vx_hwdep.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/drivers/vx/vx_hwdep.c	2013-07-26 19:25:26.000000000 +0000
+@@ -73,10 +73,8 @@
+ 		if (! fw_files[chip->type][i])
+ 			continue;
+ 		sprintf(path, "vx/%s", fw_files[chip->type][i]);
+-		if (request_firmware(&fw, path, chip->dev)) {
+-			snd_printk(KERN_ERR "vx: can't load firmware %s\n", path);
++		if (request_firmware(&fw, path, chip->dev))
+ 			return -ENOENT;
+-		}
+ 		err = chip->ops->load_dsp(chip, i, fw);
+ 		if (err < 0) {
+ 			release_firmware(fw);
+Index: linux-3.2.46/sound/isa/msnd/msnd_pinnacle.c
+===================================================================
+--- linux-3.2.46.orig/sound/isa/msnd/msnd_pinnacle.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/isa/msnd/msnd_pinnacle.c	2013-07-26 19:25:26.000000000 +0000
+@@ -387,15 +387,11 @@
+ 	outb(HPBLKSEL_0, chip->io + HP_BLKS);
+ 
+ 	err = request_firmware(&init_fw, INITCODEFILE, card->dev);
+-	if (err < 0) {
+-		printk(KERN_ERR LOGNAME ": Error loading " INITCODEFILE);
++	if (err)
+ 		goto cleanup1;
+-	}
+ 	err = request_firmware(&perm_fw, PERMCODEFILE, card->dev);
+-	if (err < 0) {
+-		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
++	if (err)
+ 		goto cleanup;
+-	}
+ 
+ 	memcpy_toio(chip->mappedbase, perm_fw->data, perm_fw->size);
+ 	if (snd_msnd_upload_host(chip, init_fw->data, init_fw->size) < 0) {
+Index: linux-3.2.46/sound/isa/sscape.c
+===================================================================
+--- linux-3.2.46.orig/sound/isa/sscape.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/isa/sscape.c	2013-07-26 19:25:26.000000000 +0000
+@@ -543,10 +543,8 @@
+ 	int ret;
+ 
+ 	ret = request_firmware(&init_fw, "scope.cod", card->dev);
+-	if (ret < 0) {
+-		snd_printk(KERN_ERR "sscape: Error loading scope.cod");
++	if (ret)
+ 		return ret;
+-	}
+ 	ret = upload_dma_data(sscape, init_fw->data, init_fw->size);
+ 
+ 	release_firmware(init_fw);
+@@ -583,11 +581,8 @@
+ 	snprintf(name, sizeof(name), "sndscape.co%d", version);
+ 
+ 	err = request_firmware(&init_fw, name, card->dev);
+-	if (err < 0) {
+-		snd_printk(KERN_ERR "sscape: Error loading sndscape.co%d",
+-				version);
++	if (err)
+ 		return err;
+-	}
+ 	err = upload_dma_data(sscape, init_fw->data, init_fw->size);
+ 	if (err == 0)
+ 		snd_printk(KERN_INFO "sscape: MIDI firmware loaded %d KBs\n",
+Index: linux-3.2.46/sound/isa/wavefront/wavefront_synth.c
+===================================================================
+--- linux-3.2.46.orig/sound/isa/wavefront/wavefront_synth.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/isa/wavefront/wavefront_synth.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1947,10 +1947,8 @@
+ 	const struct firmware *firmware;
+ 
+ 	err = request_firmware(&firmware, path, dev->card->dev);
+-	if (err < 0) {
+-		snd_printk(KERN_ERR "firmware (%s) download failed!!!\n", path);
++	if (err)
+ 		return 1;
+-	}
+ 
+ 	len = 0;
+ 	buf = firmware->data;
+Index: linux-3.2.46/sound/pci/asihpi/hpidspcd.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/asihpi/hpidspcd.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/asihpi/hpidspcd.c	2013-07-26 19:25:26.000000000 +0000
+@@ -51,9 +51,6 @@
+ 	err = request_firmware(&firmware, fw_name, &dev->dev);
+ 
+ 	if (err || !firmware) {
+-		dev_printk(KERN_ERR, &dev->dev,
+-			"%d, request_firmware failed for  %s\n", err,
+-			fw_name);
+ 		goto error1;
+ 	}
+ 	if (firmware->size < sizeof(header)) {
+Index: linux-3.2.46/sound/pci/cs46xx/cs46xx_lib.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/cs46xx/cs46xx_lib.c	2013-07-26 19:16:50.000000000 +0000
++++ linux-3.2.46/sound/pci/cs46xx/cs46xx_lib.c	2013-07-26 19:25:26.000000000 +0000
+@@ -411,10 +411,8 @@
+ 
+ 	err = request_firmware(&firmware, "cs46xx/cs46xx-old.fw",
+ 			       &chip->pci->dev);
+-	if (err < 0) {
+-		snd_printk(KERN_ERR "cs46xx: no firmware\n");
++	if (err)
+ 		return err;
+-	}
+ 
+ 	err = snd_cs46xx_check_image_size(firmware);
+ 	if (err < 0)
+Index: linux-3.2.46/sound/pci/echoaudio/echoaudio.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/echoaudio/echoaudio.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/echoaudio/echoaudio.c	2013-07-26 19:25:26.000000000 +0000
+@@ -57,10 +57,8 @@
+ 	DE_ACT(("firmware requested: %s\n", card_fw[fw_index].data));
+ 	snprintf(name, sizeof(name), "ea/%s", card_fw[fw_index].data);
+ 	err = request_firmware(fw_entry, name, pci_device(chip));
+-	if (err < 0)
+-		snd_printk(KERN_ERR "get_firmware(): Firmware not available (%d)\n", err);
+ #ifdef CONFIG_PM
+-	else
++	if (!err)
+ 		chip->fw_cache[fw_index] = *fw_entry;
+ #endif
+ 	return err;
+Index: linux-3.2.46/sound/pci/emu10k1/emu10k1_main.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/emu10k1/emu10k1_main.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/emu10k1/emu10k1_main.c	2013-07-26 19:25:26.000000000 +0000
+@@ -668,10 +668,8 @@
+ 	const struct firmware *fw_entry;
+ 
+ 	err = request_firmware(&fw_entry, filename, &emu->pci->dev);
+-	if (err != 0) {
+-		snd_printk(KERN_ERR "firmware: %s not found. Err = %d\n", filename, err);
++	if (err != 0)
+ 		return err;
+-	}
+ 	snd_printk(KERN_INFO "firmware size = 0x%zx\n", fw_entry->size);
+ 
+ 	/* The FPGA is a Xilinx Spartan IIE XC2S50E */
+Index: linux-3.2.46/sound/pci/hda/hda_hwdep.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/hda/hda_hwdep.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/hda/hda_hwdep.c	2013-07-26 19:25:26.000000000 +0000
+@@ -792,11 +792,8 @@
+ 	if (snd_BUG_ON(!dev))
+ 		return -ENODEV;
+ 	err = request_firmware(&fw, patch, dev);
+-	if (err < 0) {
+-		printk(KERN_ERR "hda-codec: Cannot load the patch '%s'\n",
+-		       patch);
++	if (!err)
+ 		return err;
+-	}
+ 
+ 	tmp = *fw;
+ 	line_mode = LINE_MODE_NONE;
+Index: linux-3.2.46/sound/pci/korg1212/korg1212.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/korg1212/korg1212.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/korg1212/korg1212.c	2013-07-26 19:25:26.000000000 +0000
+@@ -2346,7 +2346,6 @@
+ 	err = request_firmware(&dsp_code, "korg/k1212.dsp", &pci->dev);
+ 	if (err < 0) {
+ 		release_firmware(dsp_code);
+-		snd_printk(KERN_ERR "firmware not available\n");
+ 		snd_korg1212_free(korg1212);
+ 		return err;
+ 	}
+Index: linux-3.2.46/sound/pci/mixart/mixart_hwdep.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/mixart/mixart_hwdep.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/mixart/mixart_hwdep.c	2013-07-26 19:25:26.000000000 +0000
+@@ -566,10 +566,8 @@
+ 
+ 	for (i = 0; i < 3; i++) {
+ 		sprintf(path, "mixart/%s", fw_files[i]);
+-		if (request_firmware(&fw_entry, path, &mgr->pci->dev)) {
+-			snd_printk(KERN_ERR "miXart: can't load firmware %s\n", path);
++		if (request_firmware(&fw_entry, path, &mgr->pci->dev))
+ 			return -ENOENT;
+-		}
+ 		/* fake hwdep dsp record */
+ 		err = mixart_dsp_load(mgr, i, fw_entry);
+ 		release_firmware(fw_entry);
+Index: linux-3.2.46/sound/pci/pcxhr/pcxhr_hwdep.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/pcxhr/pcxhr_hwdep.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/pcxhr/pcxhr_hwdep.c	2013-07-26 19:25:26.000000000 +0000
+@@ -390,11 +390,8 @@
+ 		if (!fw_files[fw_set][i])
+ 			continue;
+ 		sprintf(path, "pcxhr/%s", fw_files[fw_set][i]);
+-		if (request_firmware(&fw_entry, path, &mgr->pci->dev)) {
+-			snd_printk(KERN_ERR "pcxhr: can't load firmware %s\n",
+-				   path);
++		if (request_firmware(&fw_entry, path, &mgr->pci->dev))
+ 			return -ENOENT;
+-		}
+ 		/* fake hwdep dsp record */
+ 		err = pcxhr_dsp_load(mgr, i, fw_entry);
+ 		release_firmware(fw_entry);
+Index: linux-3.2.46/sound/pci/riptide/riptide.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/riptide/riptide.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/riptide/riptide.c	2013-07-26 19:25:26.000000000 +0000
+@@ -1238,11 +1238,8 @@
+ 	if (!chip->fw_entry) {
+ 		err = request_firmware(&chip->fw_entry, "riptide.hex",
+ 				       &chip->pci->dev);
+-		if (err) {
+-			snd_printk(KERN_ERR
+-				   "Riptide: Firmware not available %d\n", err);
++		if (err)
+ 			return -EIO;
+-		}
+ 	}
+ 	err = loadfirmware(cif, chip->fw_entry->data, chip->fw_entry->size);
+ 	if (err) {
+Index: linux-3.2.46/sound/pci/rme9652/hdsp.c
+===================================================================
+--- linux-3.2.46.orig/sound/pci/rme9652/hdsp.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/pci/rme9652/hdsp.c	2013-07-26 19:25:26.000000000 +0000
+@@ -5369,10 +5369,8 @@
+ 		return -EINVAL;
+ 	}
+ 
+-	if (request_firmware(&fw, fwfile, &hdsp->pci->dev)) {
+-		snd_printk(KERN_ERR "Hammerfall-DSP: cannot load firmware %s\n", fwfile);
++	if (request_firmware(&fw, fwfile, &hdsp->pci->dev))
+ 		return -ENOENT;
+-	}
+ 	if (fw->size < sizeof(hdsp->firmware_cache)) {
+ 		snd_printk(KERN_ERR "Hammerfall-DSP: too short firmware size %d (expected %d)\n",
+ 			   (int)fw->size, (int)sizeof(hdsp->firmware_cache));
+Index: linux-3.2.46/sound/soc/codecs/wm2000.c
+===================================================================
+--- linux-3.2.46.orig/sound/soc/codecs/wm2000.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/soc/codecs/wm2000.c	2013-07-26 19:25:27.000000000 +0000
+@@ -773,10 +773,8 @@
+ 	}
+ 
+ 	ret = request_firmware(&fw, filename, &i2c->dev);
+-	if (ret != 0) {
+-		dev_err(&i2c->dev, "Failed to acquire ANC data: %d\n", ret);
++	if (ret != 0)
+ 		goto err;
+-	}
+ 
+ 	/* Pre-cook the concatenation of the register address onto the image */
+ 	wm2000->anc_download_size = fw->size + 2;
+Index: linux-3.2.46/sound/usb/6fire/firmware.c
+===================================================================
+--- linux-3.2.46.orig/sound/usb/6fire/firmware.c	2013-07-26 18:53:58.000000000 +0000
++++ linux-3.2.46/sound/usb/6fire/firmware.c	2013-07-26 19:25:27.000000000 +0000
+@@ -220,8 +220,6 @@
+ 	ret = request_firmware(&fw, fwname, &device->dev);
+ 	if (ret < 0) {
+ 		kfree(rec);
+-		snd_printk(KERN_ERR PREFIX "error requesting ezusb "
+-				"firmware %s.\n", fwname);
+ 		return ret;
+ 	}
+ 	ret = usb6fire_fw_ihex_init(fw, rec);
+@@ -293,8 +291,6 @@
+ 
+ 	ret = request_firmware(&fw, fwname, &device->dev);
+ 	if (ret < 0) {
+-		snd_printk(KERN_ERR PREFIX "unable to get fpga firmware %s.\n",
+-				fwname);
+ 		kfree(buffer);
+ 		return -EIO;
+ 	}

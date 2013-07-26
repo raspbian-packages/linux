@@ -1,0 +1,32 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Subject: Fix console selection in PowerPC LPAR environment
+Date: Tue, 27 Sep 2011 06:04:39 +0100
+Bug-Debian: http://bugs.debian.org/492703
+
+Do not override the preferred console set through the kernel parameter.
+
+Original version by Bastian Blank <waldi@debian.org>.
+
+Index: linux-3.2.46/drivers/tty/hvc/hvc_vio.c
+===================================================================
+--- linux-3.2.46.orig/drivers/tty/hvc/hvc_vio.c	2013-07-26 18:56:37.000000000 +0000
++++ linux-3.2.46/drivers/tty/hvc/hvc_vio.c	2013-07-26 19:17:10.000000000 +0000
+@@ -49,6 +49,7 @@
+ #include <asm/firmware.h>
+ #include <asm/hvsi.h>
+ #include <asm/udbg.h>
++#include <asm/machdep.h>
+ 
+ #include "hvc_console.h"
+ 
+@@ -447,7 +448,9 @@
+ 	if (hvterm_priv0.proto == HV_PROTOCOL_HVSI)
+ 		goto out;
+ #endif
+-	add_preferred_console("hvc", 0, NULL);
++	/* Check whether the user has requested a different console. */
++	if (!strstr(cmd_line, "console="))
++		add_preferred_console("hvc", 0, NULL);
+ 	hvc_instantiate(0, 0, ops);
+ out:
+ 	of_node_put(stdout_node);

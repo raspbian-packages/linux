@@ -1,0 +1,29 @@
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Date: Sun, 29 Jan 2012 22:14:02 +0000
+Subject: [PATCH 38/77] net/hyperv: rx_bytes should account the ether header
+ size
+
+commit 48c3883999cb06246911e29356d194f96f1c75ef upstream.
+
+skb->len after call eth_type_trans() does not include the ether
+header size, but rx_bytes should account it.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+---
+ drivers/net/hyperv/netvsc_drv.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/net/hyperv/netvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:43.000000000 +0000
++++ linux-3.2.46/drivers/net/hyperv/netvsc_drv.c	2013-07-26 19:18:45.000000000 +0000
+@@ -298,7 +298,7 @@
+ 	skb->ip_summed = CHECKSUM_NONE;
+ 
+ 	net->stats.rx_packets++;
+-	net->stats.rx_bytes += skb->len;
++	net->stats.rx_bytes += packet->total_data_buflen;
+ 
+ 	/*
+ 	 * Pass the skb back up. Network stack will deallocate the skb when it

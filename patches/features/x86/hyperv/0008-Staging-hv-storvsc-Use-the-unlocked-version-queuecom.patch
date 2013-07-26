@@ -1,0 +1,88 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Tue, 8 Nov 2011 09:01:45 -0800
+Subject: [PATCH 08/77] Staging: hv: storvsc: Use the unlocked version
+ queuecommand
+
+commit bab445e12b45153282fb7d39143516e11987deaa upstream.
+
+Use the unlocked version queuecommand.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/storvsc_drv.c |   19 +++++--------------
+ 1 file changed, 5 insertions(+), 14 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/hv/storvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:04.000000000 +0000
++++ linux-3.2.46/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:18:05.000000000 +0000
+@@ -1143,11 +1143,10 @@
+ /*
+  * storvsc_queuecommand - Initiate command processing
+  */
+-static int storvsc_queuecommand_lck(struct scsi_cmnd *scmnd,
+-				void (*done)(struct scsi_cmnd *))
++static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ {
+ 	int ret;
+-	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
++	struct hv_host_device *host_dev = shost_priv(host);
+ 	struct hv_device *dev = host_dev->dev;
+ 	struct hv_storvsc_request *request;
+ 	struct storvsc_cmd_request *cmd_request;
+@@ -1158,7 +1157,7 @@
+ 	struct vmscsi_request *vm_srb;
+ 
+ 	if (storvsc_check_scsi_cmd(scmnd) == false) {
+-		done(scmnd);
++		scmnd->scsi_done(scmnd);
+ 		return 0;
+ 	}
+ 
+@@ -1171,16 +1170,13 @@
+ 		goto retry_request;
+ 	}
+ 
+-	scmnd->scsi_done = done;
+-
+ 	request_size = sizeof(struct storvsc_cmd_request);
+ 
+ 	cmd_request = mempool_alloc(host_dev->request_mempool,
+ 				       GFP_ATOMIC);
+-	if (!cmd_request) {
+-		scmnd->scsi_done = NULL;
++	if (!cmd_request)
+ 		return SCSI_MLQUEUE_DEVICE_BUSY;
+-	}
++
+ 	memset(cmd_request, 0, sizeof(struct storvsc_cmd_request));
+ 
+ 	/* Setup the cmd request */
+@@ -1233,7 +1229,6 @@
+ 				create_bounce_buffer(sgl, scsi_sg_count(scmnd),
+ 						     scsi_bufflen(scmnd));
+ 			if (!cmd_request->bounce_sgl) {
+-				scmnd->scsi_done = NULL;
+ 				scmnd->host_scribble = NULL;
+ 				mempool_free(cmd_request,
+ 						host_dev->request_mempool);
+@@ -1280,7 +1275,6 @@
+ 
+ 		mempool_free(cmd_request, host_dev->request_mempool);
+ 
+-		scmnd->scsi_done = NULL;
+ 		scmnd->host_scribble = NULL;
+ 
+ 		ret = SCSI_MLQUEUE_DEVICE_BUSY;
+@@ -1289,9 +1283,6 @@
+ 	return ret;
+ }
+ 
+-static DEF_SCSI_QCMD(storvsc_queuecommand)
+-
+-
+ /* Scsi driver */
+ static struct scsi_host_template scsi_driver = {
+ 	.module	=		THIS_MODULE,

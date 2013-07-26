@@ -1,0 +1,50 @@
+commit 7487b3f7f684e829ad3e9eb1b835ac937ad63690
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Apr 27 00:31:37 2012 +0100
+
+    Build modules needed for USB booting into kernel
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:32:35.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_cutdown_defconfig	2013-07-26 19:32:46.000000000 +0000
+@@ -90,7 +90,7 @@
+ CONFIG_MISC_DEVICES=y
+ CONFIG_SCSI=y
+ # CONFIG_SCSI_PROC_FS is not set
+-CONFIG_BLK_DEV_SD=m
++CONFIG_BLK_DEV_SD=y
+ CONFIG_BLK_DEV_SR=m
+ CONFIG_SCSI_MULTI_LUN=y
+ # CONFIG_SCSI_LOWLEVEL is not set
+@@ -292,7 +292,7 @@
+ CONFIG_USB_STORAGE_KARMA=m
+ CONFIG_USB_STORAGE_CYPRESS_ATACB=m
+ CONFIG_USB_STORAGE_ENE_UB6250=m
+-CONFIG_USB_UAS=m
++CONFIG_USB_UAS=y
+ CONFIG_USB_LIBUSUAL=y
+ CONFIG_USB_MDC800=m
+ CONFIG_USB_MICROTEK=m
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:32:35.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:32:46.000000000 +0000
+@@ -106,7 +106,7 @@
+ CONFIG_MISC_DEVICES=y
+ CONFIG_SCSI=y
+ # CONFIG_SCSI_PROC_FS is not set
+-CONFIG_BLK_DEV_SD=m
++CONFIG_BLK_DEV_SD=y
+ CONFIG_BLK_DEV_SR=m
+ CONFIG_SCSI_MULTI_LUN=y
+ # CONFIG_SCSI_LOWLEVEL is not set
+@@ -309,7 +309,7 @@
+ CONFIG_USB_STORAGE_KARMA=m
+ CONFIG_USB_STORAGE_CYPRESS_ATACB=m
+ CONFIG_USB_STORAGE_ENE_UB6250=m
+-CONFIG_USB_UAS=m
++CONFIG_USB_UAS=y
+ CONFIG_USB_LIBUSUAL=y
+ CONFIG_USB_MDC800=m
+ CONFIG_USB_MICROTEK=m

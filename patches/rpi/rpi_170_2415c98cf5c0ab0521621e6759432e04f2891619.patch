@@ -1,0 +1,20 @@
+commit 2415c98cf5c0ab0521621e6759432e04f2891619
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Fri Jun 22 12:55:39 2012 +0100
+
+    Fix unintended line swap that cause cause memory leak in USB driver
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c	2013-07-26 19:33:00.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c	2013-07-26 19:33:38.000000000 +0000
+@@ -764,8 +764,8 @@
+ 	if(urb->hcpriv != NULL) {
+ 		dwc_otg_hcd_urb_dequeue(dwc_otg_hcd, (dwc_otg_hcd_urb_t *)urb->hcpriv);
+ 
+-		urb->hcpriv = NULL;
+ 		dwc_free(urb->hcpriv);
++		urb->hcpriv = NULL;
+ 	}
+ 
+ 	/* Higher layer software sets URB status. */

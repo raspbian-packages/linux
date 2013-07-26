@@ -1,0 +1,126 @@
+commit 0872b20fbea2377c6286c39cbc60d3bd83a814aa
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sun Aug 19 14:06:11 2012 +0100
+
+    Make microframe schedule patch a little closer to denx version. Remove vestiges of HW2937_WORKAROUND
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_cil.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_cil.c	2013-07-26 19:34:44.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_cil.c	2013-07-26 19:35:17.000000000 +0000
+@@ -2403,7 +2403,6 @@
+ 	dwc_otg_core_global_regs_t *global_regs;
+ 	dwc_otg_host_global_regs_t *host_global_regs;
+ 
+-	DWC_DEBUGPL(DBG_HW2937, "  dwc_otg_hc_halt(%d)\n", hc->hc_num);
+ 	hc_regs = core_if->host_if->hc_regs[hc->hc_num];
+ 	global_regs = core_if->core_global_regs;
+ 	host_global_regs = core_if->host_if->host_global_regs;
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_cil.h
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_cil.h	2013-07-26 19:34:44.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_cil.h	2013-07-26 19:35:17.000000000 +0000
+@@ -34,8 +34,6 @@
+ #if !defined(__DWC_CIL_H__)
+ #define __DWC_CIL_H__
+ 
+-#define DBG_HW2937 0x400
+-
+ #include "dwc_list.h"
+ #include "dwc_otg_dbg.h"
+ #include "dwc_otg_regs.h"
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd.c	2013-07-26 19:35:16.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.c	2013-07-26 19:35:17.000000000 +0000
+@@ -1336,7 +1336,8 @@
+ 			ret_val = DWC_OTG_TRANSACTION_ALL;
+ 		}
+ 
+-		hcd->non_periodic_channels++;
++		if (!microframe_schedule)
++			hcd->non_periodic_channels++;
+ 	}
+ 
+ #ifdef DEBUG_HOST_CHANNELS
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.h
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd.h	2013-07-26 19:35:16.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd.h	2013-07-26 19:35:17.000000000 +0000
+@@ -369,16 +369,6 @@
+ 
+ DWC_CIRCLEQ_HEAD(hc_list, dwc_hc);
+ 
+-#ifdef HW2937_WORKAROUND
+-
+-typedef enum {
+-	HW2937_XFER_MODE_IDLE,
+-	HW2937_XFER_MODE_IN,
+-	HW2937_XFER_MODE_OUT,
+-	HW2937_XFER_MODE_PAUSEIN /* Transitioning from IN to IDLE */
+-} hw2937_xfer_mode_t;
+-#endif
+-
+ /**
+  * This structure holds the state of the HCD, including the non-periodic and
+  * periodic schedules.
+@@ -572,14 +562,6 @@
+ 	/** Frame List DMA address */
+ 	dma_addr_t frame_list_dma;
+ 
+-#ifdef HW2937_WORKAROUND
+-	/** Current transfer mode (IN, OUT, or IDLE) */
+-	hw2937_xfer_mode_t hw2937_xfer_mode;
+-
+-	/** Mask of channels assigned to the current mode */
+-	uint32_t hw2937_assigned_channels;
+-#endif
+-
+ #ifdef DEBUG
+ 	uint32_t frrem_samples;
+ 	uint64_t frrem_accum;
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c	2013-07-26 19:35:16.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c	2013-07-26 19:35:17.000000000 +0000
+@@ -613,16 +613,16 @@
+ 		}
+ 
+ 		status = check_periodic_bandwidth(hcd, qh);
+-
+-		if (status) {
+-			DWC_INFO("%s: Insufficient periodic bandwidth for " "periodic transfer.\n", __func__);	//NOTICE
+-			return status;
+-		}
+-
+-		status = check_max_xfer_size(hcd, qh);
+ 	}
+ 	if (status) {
+-		DWC_INFO("%s: Channel max transfer size too small " "for periodic transfer.\n", __func__);	//NOTICE
++		DWC_INFO("%s: Insufficient periodic bandwidth for "
++			    "periodic transfer.\n", __func__);
++		return status;
++	}
++	status = check_max_xfer_size(hcd, qh);
++	if (status) {
++		DWC_INFO("%s: Channel max transfer size too small "
++			    "for periodic transfer.\n", __func__);
+ 		return status;
+ 	}
+ 
+@@ -692,12 +692,12 @@
+ 	int i;
+ 	DWC_LIST_REMOVE_INIT(&qh->qh_list_entry);
+ 
++	/* Update claimed usecs per (micro)frame. */
++	hcd->periodic_usecs -= qh->usecs;
++
+ 	if (!microframe_schedule) {
+ 		/* Release the periodic channel reservation. */
+ 		hcd->periodic_channels--;
+-
+-		/* Update claimed usecs per (micro)frame. */
+-		hcd->periodic_usecs -= qh->usecs;
+ 	} else {
+ 		for (i = 0; i < 8; i++) {
+ 			hcd->frame_usecs[i] += qh->frame_usecs[i];

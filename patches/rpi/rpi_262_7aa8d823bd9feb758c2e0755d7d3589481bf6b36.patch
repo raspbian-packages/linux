@@ -1,0 +1,16 @@
+commit 7aa8d823bd9feb758c2e0755d7d3589481bf6b36
+Author: Stephan Raue <stephan@openelec.tv>
+Date:   Mon Oct 8 16:33:17 2012 +0200
+
+    fix build with CONFIG_BCM2708_VCHIQ is disabled
+
+Index: linux-3.2.46/drivers/misc/Makefile
+===================================================================
+--- linux-3.2.46.orig/drivers/misc/Makefile	2013-07-26 19:32:00.000000000 +0000
++++ linux-3.2.46/drivers/misc/Makefile	2013-07-26 19:37:03.000000000 +0000
+@@ -48,4 +48,4 @@
+ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+ obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
+-obj-y				+= vc04_services/
++obj-$(CONFIG_BCM2708_VCHIQ)	+= vc04_services/

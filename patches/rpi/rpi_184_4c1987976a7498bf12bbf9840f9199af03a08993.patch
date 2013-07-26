@@ -1,0 +1,32 @@
+commit 4c1987976a7498bf12bbf9840f9199af03a08993
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Tue Jul 10 00:14:48 2012 +0100
+
+    Possible fix for failure to boot with compressed kernels
+
+Index: linux-3.2.46/arch/arm/mach-bcm2708/include/mach/uncompress.h
+===================================================================
+--- linux-3.2.46.orig/arch/arm/mach-bcm2708/include/mach/uncompress.h	2013-07-26 19:31:51.000000000 +0000
++++ linux-3.2.46/arch/arm/mach-bcm2708/include/mach/uncompress.h	2013-07-26 19:33:58.000000000 +0000
+@@ -20,6 +20,7 @@
+  */
+ 
+ #include <linux/io.h>
++#include <linux/amba/serial.h>
+ #include <mach/hardware.h>
+ 
+ #define BCM2708_UART_DR	__io_address(UART0_BASE + 0x00)
+@@ -38,8 +39,12 @@
+ 
+ static inline void flush(void)
+ {
+-	while (readl(BCM2708_UART_FR) & (1 << 3))
++	int fr;
++
++	do {
++		fr = __raw_readl(BCM2708_UART_FR);
+ 		barrier();
++	} while ((fr & (UART011_FR_TXFE | UART01x_FR_BUSY)) != UART011_FR_TXFE);
+ }
+ 
+ /*

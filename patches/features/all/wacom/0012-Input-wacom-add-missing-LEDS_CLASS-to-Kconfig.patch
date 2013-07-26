@@ -1,0 +1,26 @@
+From: Chris Bagwell <chris@cnpbagwell.com>
+Date: Wed, 8 Feb 2012 23:08:48 -0800
+Subject: Input: wacom - add missing LEDS_CLASS to Kconfig
+
+commit 68513a4c5fe68938350cf2c56d97946e49f014e1 upstream.
+
+Signed-off-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+---
+ drivers/input/tablet/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux-3.2.46/drivers/input/tablet/Kconfig
+===================================================================
+--- linux-3.2.46.orig/drivers/input/tablet/Kconfig	2013-07-26 18:55:36.000000000 +0000
++++ linux-3.2.46/drivers/input/tablet/Kconfig	2013-07-26 19:20:21.000000000 +0000
+@@ -77,6 +77,8 @@
+ 	tristate "Wacom Intuos/Graphire tablet support (USB)"
+ 	depends on USB_ARCH_HAS_HCD
+ 	select USB
++	select NEW_LEDS
++	select LEDS_CLASS
+ 	help
+ 	  Say Y here if you want to use the USB version of the Wacom Intuos
+ 	  or Graphire tablet.  Make sure to say Y to "Mouse support"

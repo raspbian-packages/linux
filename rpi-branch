@@ -1,0 +1,19 @@
+commit ada8b4415ff44d535d63e4291a0eca733bc2ad0f
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Nov 26 21:40:34 2012 +0000
+
+    Leave missing_status enabled for now.
+
+diff --git a/drivers/mmc/host/sdhci-bcm2708.c b/drivers/mmc/host/sdhci-bcm2708.c
+index 861b0f4..4d6c616 100644
+--- a/drivers/mmc/host/sdhci-bcm2708.c
++++ b/drivers/mmc/host/sdhci-bcm2708.c
+@@ -141,7 +141,7 @@ static inline unsigned long int since_ns(hptime_t t)
+ static bool allow_highspeed = 1;
+ static int emmc_clock_freq = BCM2708_EMMC_CLOCK_FREQ;
+ static bool sync_after_dma = 1;
+-static bool missing_status = 0;
++static bool missing_status = 1;
+ static bool spurious_crc_acmd51 = 0;
+ bool enable_llm = 1;
+ 

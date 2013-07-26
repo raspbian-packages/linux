@@ -1,0 +1,27 @@
+commit d7afba1425d968e0675434215f04b3fac0213dec
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Jun 16 22:35:38 2012 +0100
+
+    sdhci-bcm2708: raise DMA sync timeout
+    
+    Commit d64b84c by accident reduced the maximum overall DMA sync
+    timeout. The maximum overall timeout was reduced from 100ms to 30ms,
+    which isn't enough for many cards. Increase it to 150ms, just to be
+    extra safe. According to commit 872a8ff in the MMC subsystem, some
+    cards require crazy long timeouts (3s), but as we're busy-waiting,
+    and shouldn't delay for such a long time, let's hope 150ms will be
+    enough for most cards.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:28.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:29.000000000 +0000
+@@ -840,7 +840,7 @@
+ 		   We get CRC and DEND errors unless we wait for
+ 		   the SD controller to finish reading/writing to the card. */
+ 		u32 state_mask;
+-		int timeout=1000;
++		int timeout=5000;
+ 
+ 		DBG("PDMA over - sync card\n");
+ 		if (data->flags & MMC_DATA_READ)

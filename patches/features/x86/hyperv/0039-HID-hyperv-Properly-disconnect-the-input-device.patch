@@ -1,0 +1,29 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Wed, 18 Jan 2012 08:57:14 -0800
+Subject: [PATCH 39/77] HID: hyperv: Properly disconnect the input device
+
+commit c1c454b8691cc95aa83f19273ed7845914c70e83 upstream.
+
+When we unload the mouse driver, properly disconnect the input device.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reported-by: Fuzhou Chen <fuzhouch@microsoft.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/hid/hid-hyperv.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-3.2.46/drivers/hid/hid-hyperv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/hid/hid-hyperv.c	2013-07-26 19:18:30.000000000 +0000
++++ linux-3.2.46/drivers/hid/hid-hyperv.c	2013-07-26 19:18:46.000000000 +0000
+@@ -548,6 +548,7 @@
+ 	struct mousevsc_dev *input_dev = hv_get_drvdata(dev);
+ 
+ 	vmbus_close(dev->channel);
++	hid_hw_stop(input_dev->hid_device);
+ 	hid_destroy_device(input_dev->hid_device);
+ 	mousevsc_free_device(input_dev);
+ 

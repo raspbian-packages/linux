@@ -1,0 +1,22 @@
+commit bcf011fb144a3a90ed0aacc9042e7c548cb5edca
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Wed Mar 14 23:26:14 2012 +0000
+
+    Allow 24bpp for framebuffer
+
+Index: linux-3.2.46/drivers/video/bcm2708_fb.c
+===================================================================
+--- linux-3.2.46.orig/drivers/video/bcm2708_fb.c	2013-07-26 19:32:18.000000000 +0000
++++ linux-3.2.46/drivers/video/bcm2708_fb.c	2013-07-26 19:32:21.000000000 +0000
+@@ -92,6 +92,11 @@
+ 		if (var->green.length != 5 && var->green.length != 6)
+ 			var->green.length = 6;
+ 		break;
++	case 24:
++		var->red.length = 8;
++		var->blue.length = 8;
++		var->green.length = 8;
++		break;
+ 	case 32:
+ 		var->red.length = 8;
+ 		var->green.length = 8;

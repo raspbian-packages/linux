@@ -1,0 +1,41 @@
+tag v3.2.41
+Tagger: Ben Hutchings <ben@decadent.org.uk>
+Date:   Wed Mar 20 15:03:42 2013 +0000
+
+This is the 3.2.41 stable release
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUUnPzue/yOyVhhEJAQq4vw//fTGCfGRANXWiMFKCdR0BvNnPvSK0BXWO
+CHnwOrCbvyViKfM/O6vx7i72JguhGSiUQ82OLjSv3UK9+S1SmRUDeJH6eHDomliZ
+Jz13RXVX6zC0K1Q26ELkWAnNOH1yiI3eDKp8WKNXjRvlA7TvYu+O8Kx8mj0vHZpN
+fLpkRgMw+7S71s7+H1JPfndE6/qELaRQ49WjKQWE+yDRDDYGLR0lUsbPFwZ5q0ZS
+fl+VSSXDhc31ADAjFEvy5cdxbbEGRBNL6to5RmcQIhrbGjyIpm4bOz0XaeyCbIuf
+pirjVvwj0I5tLsUO24Li1cvqMjOLJ3xZOSIh0QHs1wMlUrC6gP77gAv4fhT/0Gdv
+n+JMUtPJHS5J+40brvkLv735n7n7XUX0MGD5l/QeZyZn0+SviGrebWX57bsQaHdu
+n24aUF+d6GEbKzfEIV7BMPvxdpZO1iCKEBvZEbyB6y81ltuO7n34nyRr9HLzvdkL
+oH6wv4N93GTRZH66tN2xDGPKsGnO4AcZ5E8A4ALVqnwchOzs1A+icdaqPD5NCcuK
+8oZ3Tavb5M9e6KHgWlh6ZvSdybub69iZqJsHCfkwk/dlVUhNWL57vDAwNgDqfos5
+E4PrbOvFY865qlOdM5StLSpvM8Qet6PzshJrqvTO2hjdpDCEYdCE3q5et8cjEg6q
+4B8Vn68IWz8=
+=M0Vt
+-----END PGP SIGNATURE-----
+
+commit 1c08ea4b7c527e2b951d9315f88de24f3d46b0ca
+Author: Ben Hutchings <ben@decadent.org.uk>
+Date:   Wed Mar 20 15:03:42 2013 +0000
+
+    Linux 3.2.41
+
+diff --git a/Makefile b/Makefile
+index 47af1e9..95e6220 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 2
+-SUBLEVEL = 40
++SUBLEVEL = 41
+ EXTRAVERSION =
+ NAME = Saber-toothed Squirrel
+ 

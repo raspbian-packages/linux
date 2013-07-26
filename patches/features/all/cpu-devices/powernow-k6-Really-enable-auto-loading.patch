@@ -1,0 +1,31 @@
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Sat, 11 Feb 2012 23:04:12 +0000
+Subject: powernow-k6: Really enable auto-loading
+
+commit b4d2d23148b446f6853e711eb31c533c7385eba5 upstream.
+
+Commit fa8031aefec0cf7ea6c2387c93610d99d9659aa2 ('cpufreq: Add support
+for x86 cpuinfo auto loading v4') added a device ID table to this
+driver, but didn't declare it as the module device ID table.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Thomas Renninger <trenn@suse.de>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/cpufreq/powernow-k6.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/cpufreq/powernow-k6.c
+===================================================================
+--- linux-3.2.46.orig/drivers/cpufreq/powernow-k6.c	2013-07-26 19:23:23.000000000 +0000
++++ linux-3.2.46/drivers/cpufreq/powernow-k6.c	2013-07-26 19:23:31.000000000 +0000
+@@ -216,7 +216,7 @@
+ 	{ X86_VENDOR_AMD, 5, 13 },
+ 	{}
+ };
+-
++MODULE_DEVICE_TABLE(x86cpu, powernow_k6_ids);
+ 
+ /**
+  * powernow_k6_init - initializes the k6 PowerNow! CPUFreq driver

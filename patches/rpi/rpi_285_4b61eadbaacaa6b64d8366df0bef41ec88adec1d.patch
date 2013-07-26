@@ -1,0 +1,32 @@
+commit 4b61eadbaacaa6b64d8366df0bef41ec88adec1d
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Mon Nov 19 19:28:22 2012 +0000
+
+    Enable DMA helper module and iSCSI modules
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:37:35.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:37:39.000000000 +0000
+@@ -31,10 +31,10 @@
+ CONFIG_MODULE_UNLOAD=y
+ CONFIG_MODVERSIONS=y
+ CONFIG_MODULE_SRCVERSION_ALL=y
+-# CONFIG_BLK_DEV_BSG is not set
+ CONFIG_BLK_DEV_THROTTLING=y
+ CONFIG_CFQ_GROUP_IOSCHED=y
+ CONFIG_ARCH_BCM2708=y
++CONFIG_BCM2708_DMAER=m
+ CONFIG_NO_HZ=y
+ CONFIG_HIGH_RES_TIMERS=y
+ CONFIG_PREEMPT=y
+@@ -345,7 +345,8 @@
+ CONFIG_CHR_DEV_OSST=m
+ CONFIG_BLK_DEV_SR=m
+ CONFIG_SCSI_MULTI_LUN=y
+-# CONFIG_SCSI_LOWLEVEL is not set
++CONFIG_SCSI_ISCSI_ATTRS=y
++CONFIG_ISCSI_TCP=m
+ CONFIG_MD=y
+ CONFIG_BLK_DEV_DM=m
+ CONFIG_DM_CRYPT=m

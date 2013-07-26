@@ -1,0 +1,19 @@
+commit 973ebad9feb981465994f88448d2fb25d9bee941
+Author: popcornmix <popcornmix@gmail.com>
+Date:   Sat Jun 30 11:40:33 2012 +0100
+
+    Add 802.1q vlan module
+
+Index: linux-3.2.46/arch/arm/configs/bcmrpi_defconfig
+===================================================================
+--- linux-3.2.46.orig/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:41.000000000 +0000
++++ linux-3.2.46/arch/arm/configs/bcmrpi_defconfig	2013-07-26 19:33:44.000000000 +0000
+@@ -210,6 +210,8 @@
+ CONFIG_BRIDGE_EBT_ULOG=m
+ CONFIG_BRIDGE_EBT_NFLOG=m
+ CONFIG_BRIDGE=m
++CONFIG_VLAN_8021Q=m
++CONFIG_VLAN_8021Q_GVRP=y
+ CONFIG_NET_PKTGEN=m
+ CONFIG_IRDA=m
+ CONFIG_IRLAN=m

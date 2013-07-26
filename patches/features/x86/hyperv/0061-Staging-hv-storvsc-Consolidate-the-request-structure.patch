@@ -1,0 +1,238 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Thu, 12 Jan 2012 12:38:07 -0800
+Subject: [PATCH 61/77] Staging: hv: storvsc: Consolidate the request
+ structure
+
+commit 61eaffc91d375e02bc12c2c831478841f5ce4757 upstream.
+
+Consolidate the request structure by getting rid of struct hv_storvsc_request.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/staging/hv/storvsc_drv.c |   65 ++++++++++++++++----------------------
+ 1 file changed, 27 insertions(+), 38 deletions(-)
+
+Index: linux-3.2.46/drivers/staging/hv/storvsc_drv.c
+===================================================================
+--- linux-3.2.46.orig/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:19:13.000000000 +0000
++++ linux-3.2.46/drivers/staging/hv/storvsc_drv.c	2013-07-26 19:19:15.000000000 +0000
+@@ -236,17 +236,20 @@
+ #define SRB_STATUS_ERROR	0x04
+ 
+ 
++struct storvsc_cmd_request {
++	struct list_head entry;
++	struct scsi_cmnd *cmd;
++
++	unsigned int bounce_sgl_count;
++	struct scatterlist *bounce_sgl;
+ 
+-struct hv_storvsc_request {
+ 	struct hv_device *device;
+ 
+ 	/* Synchronize the request/response if needed */
+ 	struct completion wait_event;
+ 
+ 	unsigned char *sense_buffer;
+-	struct storvsc_cmd_request  *cmd;
+ 	struct hv_multipage_buffer data_buffer;
+-
+ 	struct vstor_packet vstor_packet;
+ };
+ 
+@@ -272,8 +275,8 @@
+ 	unsigned char target_id;
+ 
+ 	/* Used for vsc/vsp channel reset process */
+-	struct hv_storvsc_request init_request;
+-	struct hv_storvsc_request reset_request;
++	struct storvsc_cmd_request init_request;
++	struct storvsc_cmd_request reset_request;
+ };
+ 
+ struct stor_mem_pools {
+@@ -288,16 +291,6 @@
+ 	unsigned char target;
+ };
+ 
+-struct storvsc_cmd_request {
+-	struct list_head entry;
+-	struct scsi_cmnd *cmd;
+-
+-	unsigned int bounce_sgl_count;
+-	struct scatterlist *bounce_sgl;
+-
+-	struct hv_storvsc_request request;
+-};
+-
+ struct storvsc_scan_work {
+ 	struct work_struct work;
+ 	struct Scsi_Host *host;
+@@ -629,7 +622,7 @@
+ static int storvsc_channel_init(struct hv_device *device)
+ {
+ 	struct storvsc_device *stor_device;
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	struct vstor_packet *vstor_packet;
+ 	int ret, t;
+ 
+@@ -644,7 +637,7 @@
+ 	 * Now, initiate the vsc/vsp initialization protocol on the open
+ 	 * channel
+ 	 */
+-	memset(request, 0, sizeof(struct hv_storvsc_request));
++	memset(request, 0, sizeof(struct storvsc_cmd_request));
+ 	init_completion(&request->wait_event);
+ 	vstor_packet->operation = VSTOR_OPERATION_BEGIN_INITIALIZATION;
+ 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+@@ -758,9 +751,8 @@
+ }
+ 
+ 
+-static void storvsc_command_completion(struct hv_storvsc_request *request)
++static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ {
+-	struct storvsc_cmd_request *cmd_request = request->cmd;
+ 	struct scsi_cmnd *scmnd = cmd_request->cmd;
+ 	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+@@ -769,7 +761,7 @@
+ 	struct storvsc_scan_work *wrk;
+ 	struct stor_mem_pools *memp = scmnd->device->hostdata;
+ 
+-	vm_srb = &request->vstor_packet.vm_srb;
++	vm_srb = &cmd_request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+ 		if (vm_srb->data_in == READ_TYPE)
+ 			copy_from_bounce_buffer(scsi_sglist(scmnd),
+@@ -820,7 +812,7 @@
+ 	}
+ 
+ 	scsi_set_resid(scmnd,
+-		request->data_buffer.len -
++		cmd_request->data_buffer.len -
+ 		vm_srb->data_transfer_length);
+ 
+ 	scsi_done_fn = scmnd->scsi_done;
+@@ -835,7 +827,7 @@
+ 
+ static void storvsc_on_io_completion(struct hv_device *device,
+ 				  struct vstor_packet *vstor_packet,
+-				  struct hv_storvsc_request *request)
++				  struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct vstor_packet *stor_pkt;
+@@ -907,7 +899,7 @@
+ 
+ static void storvsc_on_receive(struct hv_device *device,
+ 			     struct vstor_packet *vstor_packet,
+-			     struct hv_storvsc_request *request)
++			     struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_scan_work *work;
+ 	struct storvsc_device *stor_device;
+@@ -941,7 +933,7 @@
+ 	u32 bytes_recvd;
+ 	u64 request_id;
+ 	unsigned char packet[ALIGN(sizeof(struct vstor_packet), 8)];
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	int ret;
+ 
+ 
+@@ -955,7 +947,7 @@
+ 				       &bytes_recvd, &request_id);
+ 		if (ret == 0 && bytes_recvd > 0) {
+ 
+-			request = (struct hv_storvsc_request *)
++			request = (struct storvsc_cmd_request *)
+ 					(unsigned long)request_id;
+ 
+ 			if ((request == &stor_device->init_request) ||
+@@ -1037,7 +1029,7 @@
+ }
+ 
+ static int storvsc_do_io(struct hv_device *device,
+-			      struct hv_storvsc_request *request)
++			      struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct vstor_packet *vstor_packet;
+@@ -1175,7 +1167,7 @@
+ 	struct hv_device *device = host_dev->dev;
+ 
+ 	struct storvsc_device *stor_device;
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	struct vstor_packet *vstor_packet;
+ 	int ret, t;
+ 
+@@ -1244,7 +1236,6 @@
+ 	int ret;
+ 	struct hv_host_device *host_dev = shost_priv(host);
+ 	struct hv_device *dev = host_dev->dev;
+-	struct hv_storvsc_request *request;
+ 	struct storvsc_cmd_request *cmd_request;
+ 	unsigned int request_size = 0;
+ 	int i;
+@@ -1277,8 +1268,7 @@
+ 
+ 	scmnd->host_scribble = (unsigned char *)cmd_request;
+ 
+-	request = &cmd_request->request;
+-	vm_srb = &request->vstor_packet.vm_srb;
++	vm_srb = &cmd_request->vstor_packet.vm_srb;
+ 
+ 
+ 	/* Build the SRB */
+@@ -1294,7 +1284,6 @@
+ 		break;
+ 	}
+ 
+-	request->cmd = cmd_request;
+ 
+ 	vm_srb->port_number = host_dev->port;
+ 	vm_srb->path_id = scmnd->device->channel;
+@@ -1305,10 +1294,10 @@
+ 
+ 	memcpy(vm_srb->cdb, scmnd->cmnd, vm_srb->cdb_length);
+ 
+-	request->sense_buffer = scmnd->sense_buffer;
++	cmd_request->sense_buffer = scmnd->sense_buffer;
+ 
+ 
+-	request->data_buffer.len = scsi_bufflen(scmnd);
++	cmd_request->data_buffer.len = scsi_bufflen(scmnd);
+ 	if (scsi_sg_count(scmnd)) {
+ 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
+ 		sg_count = scsi_sg_count(scmnd);
+@@ -1337,21 +1326,21 @@
+ 			sg_count = cmd_request->bounce_sgl_count;
+ 		}
+ 
+-		request->data_buffer.offset = sgl[0].offset;
++		cmd_request->data_buffer.offset = sgl[0].offset;
+ 
+ 		for (i = 0; i < sg_count; i++)
+-			request->data_buffer.pfn_array[i] =
++			cmd_request->data_buffer.pfn_array[i] =
+ 				page_to_pfn(sg_page((&sgl[i])));
+ 
+ 	} else if (scsi_sglist(scmnd)) {
+-		request->data_buffer.offset =
++		cmd_request->data_buffer.offset =
+ 			virt_to_phys(scsi_sglist(scmnd)) & (PAGE_SIZE-1);
+-		request->data_buffer.pfn_array[0] =
++		cmd_request->data_buffer.pfn_array[0] =
+ 			virt_to_phys(scsi_sglist(scmnd)) >> PAGE_SHIFT;
+ 	}
+ 
+ 	/* Invokes the vsc to start an IO */
+-	ret = storvsc_do_io(dev, &cmd_request->request);
++	ret = storvsc_do_io(dev, cmd_request);
+ 
+ 	if (ret == -EAGAIN) {
+ 		/* no more space */

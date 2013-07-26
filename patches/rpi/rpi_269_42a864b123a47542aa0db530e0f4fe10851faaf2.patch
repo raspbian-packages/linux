@@ -1,0 +1,19 @@
+commit 42a864b123a47542aa0db530e0f4fe10851faaf2
+Author: Gordon Hollingworth <gordon@holliweb.co.uk>
+Date:   Sun Nov 4 15:55:01 2012 +0000
+
+    Make sure we wait for the reset to finish
+
+Index: linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+===================================================================
+--- linux-3.2.46.orig/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c	2013-07-26 19:36:32.000000000 +0000
++++ linux-3.2.46/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c	2013-07-26 19:37:18.000000000 +0000
+@@ -232,6 +232,8 @@
+ 		if (mphi_int_count >= 60)
+ 		{
+ 			DWC_WRITE_REG32(c_mphi_regs.ctrl, ((1<<31) + (1<<16)));
++			while(!(DWC_READ_REG32(c_mphi_regs.ctrl) & (1 << 17)))
++				;
+ 			DWC_WRITE_REG32(c_mphi_regs.ctrl, (1<<31));
+ 			mphi_int_count = 0;
+ 		}

@@ -1,0 +1,20 @@
+commit 89816b2638f7232913df85499592d1422e0fb453
+Author: Chris Boot <bootc@bootc.net>
+Date:   Tue May 8 14:49:59 2012 +0100
+
+    sound/arm/bcm2835.c: add linux/module.h include
+    
+    Signed-off-by: Chris Boot <bootc@bootc.net>
+
+Index: linux-3.2.46/sound/arm/bcm2835.c
+===================================================================
+--- linux-3.2.46.orig/sound/arm/bcm2835.c	2013-07-26 19:32:35.000000000 +0000
++++ linux-3.2.46/sound/arm/bcm2835.c	2013-07-26 19:34:22.000000000 +0000
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/slab.h>
++#include <linux/module.h>
+ 
+ #include "bcm2835.h"
+ 

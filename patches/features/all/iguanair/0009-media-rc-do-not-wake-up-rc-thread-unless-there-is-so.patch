@@ -1,0 +1,44 @@
+From: Sean Young <sean@mess.org>
+Date: Mon, 13 Aug 2012 08:59:47 -0300
+Subject: [09/12] [media] rc: do not wake up rc thread unless there is
+ something to do
+
+commit b83bfd1b0127b0963fcac39280280e365e7e04d8 upstream.
+
+The TechnoTrend USB IR Receiver sends 125 ISO URBs per second, even when
+there is no IR activity. Reduce the number of wake ups from the other
+drivers too.
+
+This saves about 0.25ms/s on a 2.4GHz Core 2 according to powertop.
+
+Signed-off-by: Sean Young <sean@mess.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Restricted to iguanair driver]
+---
+Index: linux-3.2.46/drivers/media/rc/iguanair.c
+===================================================================
+--- linux-3.2.46.orig/drivers/media/rc/iguanair.c	2013-07-26 19:25:59.000000000 +0000
++++ linux-3.2.46/drivers/media/rc/iguanair.c	2013-07-26 19:26:00.000000000 +0000
+@@ -134,6 +134,7 @@
+ 	} else if (len >= 7) {
+ 		DEFINE_IR_RAW_EVENT(rawir);
+ 		unsigned i;
++		bool event = false;
+ 
+ 		init_ir_raw_event(&rawir);
+ 
+@@ -147,10 +148,12 @@
+ 								 RX_RESOLUTION;
+ 			}
+ 
+-			ir_raw_event_store_with_filter(ir->rc, &rawir);
++			if (ir_raw_event_store_with_filter(ir->rc, &rawir))
++				event = true;
+ 		}
+ 
+-		ir_raw_event_handle(ir->rc);
++		if (event)
++			ir_raw_event_handle(ir->rc);
+ 	}
+ }
+ 

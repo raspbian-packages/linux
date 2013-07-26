@@ -1,0 +1,31 @@
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 8 Feb 2012 15:11:17 -0800
+Subject: driver-core: cpu: fix kobject warning when hotplugging a cpu
+
+commit 29bb5d4fd3140a7d5d02d858118c74a45f15c296 upstream.
+
+Due to the sysdev conversion to struct device, the cpu objects get
+reused when adding a cpu after offlining it, which causes a big warning
+that the kobject portion is not properly initialized.
+
+So clear out the object before we register it again, so all is quiet.
+
+Reported-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/cpu.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-3.2.46/drivers/base/cpu.c
+===================================================================
+--- linux-3.2.46.orig/drivers/base/cpu.c	2013-07-26 19:23:12.000000000 +0000
++++ linux-3.2.46/drivers/base/cpu.c	2013-07-26 19:23:13.000000000 +0000
+@@ -241,6 +241,7 @@
+ 	int error;
+ 
+ 	cpu->node_id = cpu_to_node(num);
++	memset(&cpu->dev, 0x00, sizeof(struct device));
+ 	cpu->dev.id = num;
+ 	cpu->dev.bus = &cpu_subsys;
+ 	cpu->dev.release = cpu_device_release;

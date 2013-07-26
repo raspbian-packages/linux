@@ -1,0 +1,28 @@
+From: Alan Cox <alan@linux.intel.com>
+Date: Mon, 30 Jan 2012 14:47:28 +0000
+Subject: cpufreq/gx: Fix the compile error
+
+commit b3012e12cdc5825f93367cc6294419e7ab1f00cc upstream.
+
+Someone forgot to test this one it seems.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/cpufreq/gx-suspmod.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2.46/drivers/cpufreq/gx-suspmod.c
+===================================================================
+--- linux-3.2.46.orig/drivers/cpufreq/gx-suspmod.c	2013-07-26 19:23:23.000000000 +0000
++++ linux-3.2.46/drivers/cpufreq/gx-suspmod.c	2013-07-26 19:23:35.000000000 +0000
+@@ -172,7 +172,7 @@
+ 	{ PCI_VDEVICE(CYRIX, PCI_DEVICE_ID_CYRIX_5510), },
+ 	{ 0, },
+ };
+-MODULE_DEVICE_TABLE(gx_chipset_tbl);
++MODULE_DEVICE_TABLE(pci, gx_chipset_tbl);
+ 
+ static void gx_write_byte(int reg, int value)
+ {

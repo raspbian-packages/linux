@@ -1,0 +1,27 @@
+commit 8f82daa37d8734496e94a6a5c5ead20254abaa84
+Author: Grigori Goronzy <greg@blackbox>
+Date:   Mon Jun 11 18:53:59 2012 +0200
+
+    sdhci-bcm2708: add additional quirks
+    
+    Some additional quirks are needed for correct operation.
+    There's no SDHCI capabilities register documented, and it always reads
+    zero, so add SDHCI_QUIRK_MISSING_CAPS. Apparently
+    SDHCI_QUIRK_NO_HISPD_BIT is needed for many cards to work correctly in
+    high-speed mode, so add it as well.
+
+Index: linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c
+===================================================================
+--- linux-3.2.46.orig/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:23.000000000 +0000
++++ linux-3.2.46/drivers/mmc/host/sdhci-bcm2708.c	2013-07-26 19:33:24.000000000 +0000
+@@ -1311,7 +1311,9 @@
+ 	host->quirks = SDHCI_QUIRK_BROKEN_CARD_DETECTION |
+ 		       SDHCI_QUIRK_DATA_TIMEOUT_USES_SDCLK |
+ 		       SDHCI_QUIRK_BROKEN_TIMEOUT_VAL |
+-		       SDHCI_QUIRK_NONSTANDARD_CLOCK;
++               SDHCI_QUIRK_MISSING_CAPS |
++               SDHCI_QUIRK_NO_HISPD_BIT;
++
+ #ifdef CONFIG_MMC_SDHCI_BCM2708_DMA
+ 	host->flags = SDHCI_USE_PLATDMA;
+ #endif
