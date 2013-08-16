@@ -3373,9 +3373,9 @@ waitagain:
 	if (cnt >= PAGE_SIZE)
 		cnt = PAGE_SIZE - 1;
 
-	/* reset all but tr, trace, and overruns */
+	/* reset all but tr, trace, overruns, started */
 	memset(&iter->seq, 0,
-	       sizeof(struct trace_iterator) -
+	       offsetof(struct trace_iterator, started) -
 	       offsetof(struct trace_iterator, seq));
 	cpumask_clear(iter->started);
 	iter->pos = -1;
