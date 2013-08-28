@@ -825,6 +825,9 @@ struct perf_event {
 	/* mmap bits */
 	struct mutex			mmap_mutex;
 	atomic_t			mmap_count;
+	/* These two are unused but kept here for ABI compat */
+	int				mmap_locked;
+	struct user_struct		*mmap_user;
 
 	struct ring_buffer		*rb;
 	struct list_head		rb_entry;
