@@ -49,7 +49,7 @@ struct intel_dp {
 	uint32_t DP;
 	uint8_t  link_configuration[DP_LINK_CONFIGURATION_SIZE];
 	bool has_audio;
-	int force_audio;
+	enum hdmi_force_audio force_audio;
 	uint32_t color_range;
 	int dpms_mode;
 	uint8_t link_bw;
@@ -384,7 +384,7 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
 		else
 			aux_clock_divider = 225; /* eDP input clock at 450Mhz */
 	} else if (HAS_PCH_SPLIT(dev))
-		aux_clock_divider = 62; /* IRL input clock fixed at 125Mhz */
+		aux_clock_divider = 63; /* IRL input clock fixed at 125Mhz */
 	else
 		aux_clock_divider = intel_hrawclk(dev) / 2;
 
@@ -437,6 +437,10 @@ intel_dp_aux_ch(struct intel_dp *intel_dp,
 			   DP_AUX_CH_CTL_DONE |
 			   DP_AUX_CH_CTL_TIME_OUT_ERROR |
 			   DP_AUX_CH_CTL_RECEIVE_ERROR);
+
+		if (status & (DP_AUX_CH_CTL_TIME_OUT_ERROR |
+			      DP_AUX_CH_CTL_RECEIVE_ERROR))
+			continue;
 		if (status & DP_AUX_CH_CTL_DONE)
 			break;
 	}
@@ -2137,8 +2141,8 @@ intel_dp_detect(struct drm_connector *connector, bool force)
 	if (status != connector_status_connected)
 		return status;
 
-	if (intel_dp->force_audio) {
-		intel_dp->has_audio = intel_dp->force_audio > 0;
+	if (intel_dp->force_audio != HDMI_AUDIO_AUTO) {
+		intel_dp->has_audio = (intel_dp->force_audio == HDMI_AUDIO_ON);
 	} else {
 		edid = intel_dp_get_edid(connector, &intel_dp->adapter);
 		if (edid) {
@@ -2238,10 +2242,10 @@ intel_dp_set_property(struct drm_connector *connector,
 
 		intel_dp->force_audio = i;
 
-		if (i == 0)
+		if (i == HDMI_AUDIO_AUTO)
 			has_audio = intel_dp_detect_audio(connector);
 		else
-			has_audio = i > 0;
+			has_audio = (i == HDMI_AUDIO_ON);
 
 		if (has_audio == intel_dp->has_audio)
 			return 0;
@@ -2274,6 +2278,11 @@ done:
 static void
 intel_dp_destroy(struct drm_connector *connector)
 {
+	struct drm_device *dev = connector->dev;
+
+	if (intel_dpd_is_edp(dev))
+		intel_panel_destroy_backlight(dev);
+
 	drm_sysfs_connector_remove(connector);
 	drm_connector_cleanup(connector);
 	kfree(connector);
