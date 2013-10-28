@@ -41,10 +41,6 @@ struct inet_peer {
 	u32			pmtu_orig;
 	u32			pmtu_learned;
 	struct inetpeer_addr_base redirect_learned;
-	union {
-		struct list_head	gc_list;
-		struct rcu_head     gc_rcu;
-	};
 	/*
 	 * Once inet_peer is queued for deletion (refcnt == -1), following fields
 	 * are not available: rid, tcp_ts, tcp_ts_stamp
@@ -63,6 +59,13 @@ struct inet_peer {
 	/* following fields might be frequently dirtied */
 	__u32			dtime;	/* the time of last use of not referenced entries */
 	atomic_t		refcnt;
+
+#ifndef __GENKSYMS__
+	union {
+		struct list_head	gc_list;
+		struct rcu_head     gc_rcu;
+	};
+#endif
 };
 
 void			inet_initpeers(void) __init;
