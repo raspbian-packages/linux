@@ -1320,6 +1320,7 @@ static int m88e1118_config_init(struct phy_device *phydev)
 	return genphy_soft_reset(phydev);
 }
 
+#if 0
 static int m88e1149_config_init(struct phy_device *phydev)
 {
 	int err;
@@ -1345,7 +1346,9 @@ static int m88e1149_config_init(struct phy_device *phydev)
 
 	return genphy_soft_reset(phydev);
 }
+#endif
 
+#if 0
 static int m88e1145_config_init_rgmii(struct phy_device *phydev)
 {
 	int err;
@@ -1423,6 +1426,7 @@ static int m88e1145_config_init(struct phy_device *phydev)
 
 	return 0;
 }
+#endif
 
 static int m88e1540_get_fld(struct phy_device *phydev, u8 *msecs)
 {
@@ -3145,6 +3149,7 @@ static struct phy_driver marvell_drivers[] = {
 		.led_brightness_set = m88e1318_led_brightness_set,
 		.led_blink_set = m88e1318_led_blink_set,
 	},
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1145,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -3165,6 +3170,8 @@ static struct phy_driver marvell_drivers[] = {
 		.get_tunable = m88e1111_get_tunable,
 		.set_tunable = m88e1111_set_tunable,
 	},
+#endif
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1149R,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -3183,6 +3190,8 @@ static struct phy_driver marvell_drivers[] = {
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
 	},
+#endif
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1240,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -3203,6 +3212,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_tunable = m88e1011_get_tunable,
 		.set_tunable = m88e1011_set_tunable,
 	},
+#endif
 	{
 		.phy_id = MARVELL_PHY_ID_88E1116R,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -3463,9 +3473,9 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
 	{ MARVELL_PHY_ID_88E1111_FINISAR, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1118, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1121R, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1145, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
+/*	{ MARVELL_PHY_ID_88E1145, MARVELL_PHY_ID_MASK }, */
+/*	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK }, */
+/*	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK }, */
 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK },
