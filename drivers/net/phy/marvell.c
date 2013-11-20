@@ -963,6 +963,7 @@ static struct phy_driver marvell_drivers[] = {
 		.set_wol = &m88e1318_set_wol,
 		.driver = { .owner = THIS_MODULE },
 	},
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1145,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -976,6 +977,8 @@ static struct phy_driver marvell_drivers[] = {
 		.config_intr = &marvell_config_intr,
 		.driver = { .owner = THIS_MODULE },
 	},
+#endif
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1149R,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -989,6 +992,8 @@ static struct phy_driver marvell_drivers[] = {
 		.config_intr = &marvell_config_intr,
 		.driver = { .owner = THIS_MODULE },
 	},
+#endif
+#if 0
 	{
 		.phy_id = MARVELL_PHY_ID_88E1240,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -1002,6 +1007,7 @@ static struct phy_driver marvell_drivers[] = {
 		.config_intr = &marvell_config_intr,
 		.driver = { .owner = THIS_MODULE },
 	},
+#endif
 	{
 		.phy_id = MARVELL_PHY_ID_88E1116R,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
@@ -1051,9 +1057,9 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
 	{ MARVELL_PHY_ID_88E1111, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1118, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1121R, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1145, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK },
-	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK },
+/*	{ MARVELL_PHY_ID_88E1145, MARVELL_PHY_ID_MASK }, */
+/*	{ MARVELL_PHY_ID_88E1149R, MARVELL_PHY_ID_MASK }, */
+/*	{ MARVELL_PHY_ID_88E1240, MARVELL_PHY_ID_MASK }, */
 	{ MARVELL_PHY_ID_88E1318S, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1116R, MARVELL_PHY_ID_MASK },
 	{ MARVELL_PHY_ID_88E1510, MARVELL_PHY_ID_MASK },
