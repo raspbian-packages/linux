@@ -437,6 +437,8 @@ struct mm_struct {
 	 */
 	int first_nid;
 #endif
+	struct uprobes_state uprobes_state;
+#ifndef __GENKSYMS__
 #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
 	/*
 	 * An operation with batched TLB flushing is going on. Anything that
@@ -445,7 +447,7 @@ struct mm_struct {
 	 */
 	bool tlb_flush_pending;
 #endif
-	struct uprobes_state uprobes_state;
+#endif
 };
 
 /* first nid will either be a valid NID or one of these values */
