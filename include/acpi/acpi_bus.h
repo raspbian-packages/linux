@@ -169,8 +169,12 @@ struct acpi_device_flags {
 	u32 ejectable:1;
 	u32 power_manageable:1;
 	u32 match_driver:1;
+#ifdef __GENKSYMS__
+	u32 reserved:27;
+#else
 	u32 no_hotplug:1;
 	u32 reserved:26;
+#endif
 };
 
 /* File System */
