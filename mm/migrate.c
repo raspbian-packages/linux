@@ -36,7 +36,9 @@
 #include <linux/hugetlb_cgroup.h>
 #include <linux/gfp.h>
 #include <linux/balloon_compaction.h>
+#ifndef __GENKSYMS__
 #include <linux/mmu_notifier.h>
+#endif
 
 #include <asm/tlbflush.h>
 
