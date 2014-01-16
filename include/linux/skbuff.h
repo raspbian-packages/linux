@@ -492,10 +492,10 @@ struct sk_buff {
 	/* 6/8 bit hole (depending on ndisc_nodetype presence) */
 	kmemcheck_bitfield_end(flags2);
 
-#if defined CONFIG_NET_DMA || defined CONFIG_NET_RX_BUSY_POLL
+#if defined CONFIG_NET_DMA_DUMMY || defined CONFIG_NET_RX_BUSY_POLL
 	union {
 		unsigned int	napi_id;
-		dma_cookie_t	dma_cookie;
+		dma_cookie_t	dma_cookie; /* now unused */
 	};
 #endif
 #ifdef CONFIG_NETWORK_SECMARK
