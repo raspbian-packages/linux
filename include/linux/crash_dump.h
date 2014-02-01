@@ -6,7 +6,9 @@
 #include <linux/proc_fs.h>
 #include <linux/elf.h>
 
+#ifndef __GENKSYMS__
 #include <asm/pgtable.h> /* for pgprot_t */
+#endif
 
 #define ELFCORE_ADDR_MAX	(-1ULL)
 #define ELFCORE_ADDR_ERR	(-2ULL)
