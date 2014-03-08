@@ -325,8 +325,8 @@ struct tcp_sock {
 		struct iovec		*iov;
 		int			memory;
 		int			len;
-#ifdef CONFIG_NET_DMA
-		/* members for async copy */
+#ifdef CONFIG_NET_DMA_DUMMY
+		/* members for async copy, now unused */
 		struct dma_chan		*dma_chan;
 		int			wakeup;
 		struct dma_pinned_list	*pinned_list;
