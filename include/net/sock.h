@@ -283,8 +283,8 @@ struct sock {
 	struct sk_filter __rcu	*sk_filter;
 	struct socket_wq __rcu	*sk_wq;
 
-#ifdef CONFIG_NET_DMA
-	struct sk_buff_head	sk_async_wait_queue;
+#ifdef CONFIG_NET_DMA_DUMMY
+	struct sk_buff_head	sk_async_wait_queue; /* now unused */
 #endif
 
 #ifdef CONFIG_XFRM

@@ -446,8 +446,8 @@ struct sk_buff {
 
 	/* 0/13 bit hole */
 
-#ifdef CONFIG_NET_DMA
-	dma_cookie_t		dma_cookie;
+#ifdef CONFIG_NET_DMA_DUMMY
+	dma_cookie_t		dma_cookie; /* now unused */
 #endif
 #ifdef CONFIG_NETWORK_SECMARK
 	__u32			secmark;
