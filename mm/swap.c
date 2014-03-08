@@ -31,7 +31,9 @@
 #include <linux/backing-dev.h>
 #include <linux/memcontrol.h>
 #include <linux/gfp.h>
+#ifndef __GENKSYMS__
 #include <linux/hugetlb.h>
+#endif
 
 #include "internal.h"
 
