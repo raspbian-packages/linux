@@ -1792,9 +1792,9 @@ static void watchdog(struct rq *rq, struct task_struct *p)
 	if (soft != RLIM_INFINITY) {
 		unsigned long next;
 
-		if (p->rt.watchdog_stamp != jiffies) {
+		if (p->rt_watchdog_stamp != jiffies) {
 			p->rt.timeout++;
-			p->rt.watchdog_stamp = jiffies;
+			p->rt_watchdog_stamp = jiffies;
 		}
 
 		next = DIV_ROUND_UP(min(soft, hard), USEC_PER_SEC/HZ);
