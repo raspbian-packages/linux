@@ -45,8 +45,10 @@
 #include <linux/in.h>
 #include <linux/inet.h>
 #include <linux/slab.h>
+#ifndef __GENKSYMS__
 #include <linux/tcp.h>
 #include <linux/udp.h>
+#endif
 #include <linux/netdevice.h>
 #ifdef CONFIG_NET_CLS_ACT
 #include <net/pkt_sched.h>
