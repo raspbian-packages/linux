@@ -445,6 +445,8 @@ static struct scsi_target *scsi_alloc_target(struct device *parent,
 	}
 	dev = &starget->dev;
 	device_initialize(dev);
+	/* bwh: assert binary compatibility */
+	BUILD_BUG_ON(sizeof(starget->reap_ref) != sizeof(unsigned int));
 	kref_init(&starget->reap_ref);
 	dev->parent = get_device(parent);
 	dev_set_name(dev, "target%d:%d:%d", shost->host_no, channel, id);
