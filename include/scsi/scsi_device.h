@@ -240,7 +240,11 @@ struct scsi_target {
 	struct list_head	siblings;
 	struct list_head	devices;
 	struct device		dev;
+#ifdef __GENKSYMS__
+	unsigned int		reap_ref;
+#else
 	struct kref		reap_ref; /* last put renders target invisible */
+#endif
 	unsigned int		channel;
 	unsigned int		id; /* target id ... replace
 				     * scsi_device.id eventually */
@@ -262,6 +266,7 @@ struct scsi_target {
 #define SCSI_DEFAULT_TARGET_BLOCKED	3
 
 	char			scsi_level;
+	struct execute_work	ew; /* bwh: unused, for binary compatibility */
 	enum scsi_target_state	state;
 	void 			*hostdata; /* available to low-level driver */
 	unsigned long		starget_data[0]; /* for the transport */
