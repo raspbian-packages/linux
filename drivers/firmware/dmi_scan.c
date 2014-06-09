@@ -553,6 +553,10 @@ static bool dmi_is_end_of_table(const struct dmi_system_id *dmi)
 	return dmi->matches[0].slot == DMI_NONE;
 }
 
+/* bwh: See comment in <linux/dmi.h> */
+#undef dmi_check_system
+#undef dmi_first_match
+
 /**
  *	dmi_check_system - check system DMI data
  *	@list: array of dmi_system_id structures to match against
@@ -568,6 +572,12 @@ static bool dmi_is_end_of_table(const struct dmi_system_id *dmi)
  */
 int dmi_check_system(const struct dmi_system_id *list)
 {
+	return dmi_check_system_2(list);
+}
+EXPORT_SYMBOL(dmi_check_system);
+
+int dmi_check_system_2(const struct dmi_system_id *list)
+{
 	int count = 0;
 	const struct dmi_system_id *d;
 
@@ -580,7 +590,7 @@ int dmi_check_system(const struct dmi_system_id *list)
 
 	return count;
 }
-EXPORT_SYMBOL(dmi_check_system);
+EXPORT_SYMBOL(dmi_check_system_2);
 
 /**
  *	dmi_first_match - find dmi_system_id structure matching system DMI data
@@ -596,6 +606,12 @@ EXPORT_SYMBOL(dmi_check_system);
  */
 const struct dmi_system_id *dmi_first_match(const struct dmi_system_id *list)
 {
+	return dmi_first_match_2(list);
+}
+EXPORT_SYMBOL(dmi_first_match);
+
+const struct dmi_system_id *dmi_first_match_2(const struct dmi_system_id *list)
+{
 	const struct dmi_system_id *d;
 
 	for (d = list; !dmi_is_end_of_table(d); d++)
@@ -604,7 +620,7 @@ const struct dmi_system_id *dmi_first_match(const struct dmi_system_id *list)
 
 	return NULL;
 }
-EXPORT_SYMBOL(dmi_first_match);
+EXPORT_SYMBOL(dmi_first_match_2);
 
 /**
  *	dmi_get_system_info - return DMI data value

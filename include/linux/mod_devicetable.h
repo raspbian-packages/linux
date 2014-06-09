@@ -461,8 +461,13 @@ enum dmi_field {
 };
 
 struct dmi_strmatch {
+#ifndef __GENKSYMS__
+	/* Layout supported by dmi_check_system_2() and dmi_first_match_2() */
 	unsigned char slot:7;
 	unsigned char exact_match:1;
+#else
+	unsigned char slot;
+#endif
 	char substr[79];
 };
 
