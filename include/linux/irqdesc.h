@@ -55,8 +55,6 @@ struct irq_desc {
 	unsigned int		irq_count;	/* For detecting broken IRQs */
 	unsigned long		last_unhandled;	/* Aging timer for unhandled count */
 	unsigned int		irqs_unhandled;
-	atomic_t		threads_handled;
-	int			threads_handled_last;
 	raw_spinlock_t		lock;
 	struct cpumask		*percpu_enabled;
 #ifdef CONFIG_SMP
@@ -74,6 +72,10 @@ struct irq_desc {
 #endif
 	struct module		*owner;
 	const char		*name;
+#ifndef __GENKSYMS__
+	atomic_t		threads_handled;
+	int			threads_handled_last;
+#endif
 } ____cacheline_internodealigned_in_smp;
 
 #ifndef CONFIG_SPARSE_IRQ
