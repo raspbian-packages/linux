@@ -112,7 +112,9 @@
 
 #include <linux/compiler.h>		/* For unlikely.  */
 #include <linux/sched.h>		/* For struct task_struct.  */
+#ifndef __GENKSYMS__
 #include <linux/pid_namespace.h>	/* For task_active_pid_ns.  */
+#endif
 
 
 extern long arch_ptrace(struct task_struct *child, long request,
