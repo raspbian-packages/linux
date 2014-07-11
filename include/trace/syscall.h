@@ -4,7 +4,9 @@
 #include <linux/tracepoint.h>
 #include <linux/unistd.h>
 #include <linux/ftrace_event.h>
+#ifndef __GENKSYMS__
 #include <linux/thread_info.h>
+#endif
 
 #include <asm/ptrace.h>
 
