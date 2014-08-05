@@ -171,6 +171,17 @@ static bool ata_sstatus_online(u32 sstatus)
 	return (sstatus & 0xf) == 0x3;
 }
 
+static unsigned int ata_host_get_n_tags(const struct ata_host *host)
+{
+	return (host->flags & ATA_HOST_N_TAGS_MASK) >> ATA_HOST_N_TAGS_SHIFT;
+}
+
+static void ata_host_set_n_tags(struct ata_host *host, unsigned int n_tags)
+{
+	host->flags = ((host->flags & ~ATA_HOST_N_TAGS_MASK) |
+		       (n_tags << ATA_HOST_N_TAGS_SHIFT));
+}
+
 /**
  *	ata_link_next - link iteration helper
  *	@link: the previous link, NULL to start
@@ -4733,7 +4744,7 @@ void swap_buf_le16(u16 *buf, unsigned int buf_words)
 static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
 {
 	struct ata_queued_cmd *qc = NULL;
-	unsigned int max_queue = ap->host->n_tags;
+	unsigned int max_queue = ata_host_get_n_tags(ap->host);
 	unsigned int i, tag;
 
 	/* no command while frozen */
@@ -5937,7 +5948,7 @@ void ata_host_init(struct ata_host *host, struct device *dev,
 {
 	spin_lock_init(&host->lock);
 	mutex_init(&host->eh_mutex);
-	host->n_tags = ATA_MAX_QUEUE - 1;
+	ata_host_set_n_tags(host, ATA_MAX_QUEUE - 1);
 	host->dev = dev;
 	host->flags = flags;
 	host->ops = ops;
@@ -6018,7 +6029,7 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
 {
 	int i, rc;
 
-	host->n_tags = clamp(sht->can_queue, 1, ATA_MAX_QUEUE - 1);
+	ata_host_set_n_tags(host, clamp(sht->can_queue, 1, ATA_MAX_QUEUE - 1));
 
 	/* host must have been started */
 	if (!(host->flags & ATA_HOST_STARTED)) {

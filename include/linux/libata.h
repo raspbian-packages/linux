@@ -250,6 +250,8 @@ enum {
 	ATA_HOST_STARTED	= (1 << 1),	/* Host started */
 	ATA_HOST_PARALLEL_SCAN	= (1 << 2),	/* Ports on this host can be scanned in parallel */
 	ATA_HOST_IGNORE_ATA	= (1 << 3),	/* Ignore ATA devices on this host. */
+	ATA_HOST_N_TAGS_SHIFT	= 4,
+	ATA_HOST_N_TAGS_MASK	= (ATA_MAX_QUEUE - 1) << ATA_HOST_N_TAGS_SHIFT,
 
 	/* bits 24:31 of host->flags are reserved for LLD specific flags */
 
@@ -551,7 +553,6 @@ struct ata_host {
 	struct device 		*dev;
 	void __iomem * const	*iomap;
 	unsigned int		n_ports;
-	unsigned int		n_tags;			/* nr of NCQ tags */
 	void			*private_data;
 	struct ata_port_operations *ops;
 	unsigned long		flags;
