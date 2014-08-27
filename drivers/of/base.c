@@ -2052,6 +2052,7 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
 {
 	struct property *pp;
 
+	of_aliases = of_find_node_by_path("/aliases");
 	of_chosen = of_find_node_by_path("/chosen");
 	if (of_chosen == NULL)
 		of_chosen = of_find_node_by_path("/chosen@0");
@@ -2064,7 +2065,6 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
 			of_stdout = of_find_node_opts_by_path(name, &of_stdout_options);
 	}
 
-	of_aliases = of_find_node_by_path("/aliases");
 	if (!of_aliases)
 		return;
 
