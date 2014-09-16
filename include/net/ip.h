@@ -266,7 +266,8 @@ int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
 }
 
 u32 ip_idents_reserve(u32 hash, int segs);
-void __ip_select_ident(struct iphdr *iph, int segs);
+void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst /*unused*/,
+		       int segs);
 
 static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, int segs)
 {
@@ -285,7 +286,7 @@ static inline void ip_select_ident_segs(struct sk_buff *skb, struct sock *sk, in
 			iph->id = 0;
 		}
 	} else {
-		__ip_select_ident(iph, segs);
+		__ip_select_ident(iph, NULL, segs);
 	}
 }
 
