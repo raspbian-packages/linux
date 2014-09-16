@@ -49,6 +49,7 @@ struct inet_peer {
 	union {
 		struct {
 			atomic_t			rid;		/* Frag reception counter */
+			atomic_t			ip_id_count;    /* now unused */
 			__u32				tcp_ts;
 			__u32				tcp_ts_stamp;
 		};
