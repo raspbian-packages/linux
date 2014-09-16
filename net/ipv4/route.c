@@ -1400,7 +1400,8 @@ u32 ip_idents_reserve(u32 hash, int segs)
 }
 EXPORT_SYMBOL(ip_idents_reserve);
 
-void __ip_select_ident(struct iphdr *iph, int segs)
+void __ip_select_ident(struct iphdr *iph, struct dst_entry *dst /*unused*/,
+		       int segs)
 {
 	static u32 ip_idents_hashrnd __read_mostly;
 	static bool hashrnd_initialized = false;
