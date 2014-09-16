@@ -12,8 +12,10 @@
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <linux/string.h>
+#ifndef __GENKSYMS__
 #include <linux/ratelimit.h>
 #include <linux/sched.h>
+#endif
 #include <linux/types.h>
 #include <net/netlink.h>
 
