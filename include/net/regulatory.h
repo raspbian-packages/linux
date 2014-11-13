@@ -92,7 +92,13 @@ struct ieee80211_reg_rule {
 
 struct ieee80211_regdomain {
 	u32 n_reg_rules;
+#ifdef __GENKSYMS__
+	char alpha2[2];
+	/* 2 bytes padding for alignment */
+#else
 	char alpha2[3];
+	/* 1 byte padding for alignment */
+#endif
 	struct ieee80211_reg_rule reg_rules[];
 };
 
