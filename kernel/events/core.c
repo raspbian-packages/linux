@@ -41,7 +41,9 @@
 #include <linux/cgroup.h>
 #include <linux/module.h>
 #include <linux/mman.h>
+#ifndef __GENKSYMS__
 #include <linux/compat.h>
+#endif
 
 #include "internal.h"
 
