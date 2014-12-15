@@ -725,6 +725,15 @@ ssize_t iov_iter_get_pages(struct iov_iter *i,
 }
 EXPORT_SYMBOL(iov_iter_get_pages);
 
+/* bwh: Alias for iov_iter_get_pages() because I'm an idiot */
+ssize_t iov_iter_get_pages_fixed(struct iov_iter *i,
+		   struct page **pages, size_t maxsize, unsigned maxpages,
+		   size_t *start)
+{
+	return iov_iter_get_pages(i, pages, maxsize, maxpages, start);
+}
+EXPORT_SYMBOL(iov_iter_get_pages_fixed);
+
 ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
 		   struct page ***pages, size_t maxsize,
 		   size_t *start)
