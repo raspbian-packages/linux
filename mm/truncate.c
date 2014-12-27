@@ -20,7 +20,9 @@
 #include <linux/buffer_head.h>	/* grr. try_to_release_page,
 				   do_invalidatepage */
 #include <linux/cleancache.h>
+#ifndef __GENKSYMS__
 #include <linux/rmap.h>
+#endif
 #include "internal.h"
 
 
