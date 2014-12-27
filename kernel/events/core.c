@@ -36,7 +36,9 @@
 #include <linux/perf_event.h>
 #include <linux/ftrace_event.h>
 #include <linux/hw_breakpoint.h>
+#ifndef __GENKSYMS__
 #include <linux/compat.h>
+#endif
 
 #include "internal.h"
 
