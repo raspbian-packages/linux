@@ -163,6 +163,24 @@ static void d_free(struct dentry *dentry)
 		call_rcu(&dentry->d_u.d_rcu, __d_free);
 }
 
+/*
+ * bwh: Assert that dentry union changes didn't change the structure
+ * layout other than to move d_rcu.
+ */
+static void __always_unused dcache_abi_check(void)
+{
+	struct dentry dentry;
+	union {
+		struct list_head d_child;
+		struct rcu_head d_rcu;
+	} old_d_u;
+	BUILD_BUG_ON(sizeof(dentry.d_child) != sizeof(old_d_u) ||
+		     __alignof__(dentry.d_child) != __alignof__(old_d_u));
+	BUILD_BUG_ON(sizeof(dentry.d_u.d_alias) != sizeof(dentry.d_u) ||
+		     __alignof__(dentry.d_u.d_alias) !=
+		     __alignof__(dentry.d_u));
+}
+
 /**
  * dentry_rcuwalk_barrier - invalidate in-progress rcu-walk lookups
  * @dentry: the target dentry
