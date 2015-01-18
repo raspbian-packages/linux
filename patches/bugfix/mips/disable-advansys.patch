@@ -1,0 +1,26 @@
+From: Martin Michlmayr <tbm@cyrius.com>
+Date: Sat, 19 Jan 2008 18:25:02 +0000
+Subject: [arm, mips] Disable Advansys
+Forwarded: http://thread.gmane.org/gmane.linux.scsi/57291
+
+Florian Lohoff <flo@rfc822.org> reports the following build failure on IP32:
+
+  MODPOST 552 modules
+ERROR: "free_dma" [drivers/scsi/advansys.ko] undefined!
+make[5]: *** [__modpost] Error 1
+
+But report:
+http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12773.html
+
+Index: linux-3.16.7/drivers/scsi/Kconfig
+===================================================================
+--- linux-3.16.7.orig/drivers/scsi/Kconfig
++++ linux-3.16.7/drivers/scsi/Kconfig
+@@ -530,6 +530,7 @@ config SCSI_ADVANSYS
+ 	tristate "AdvanSys SCSI support"
+ 	depends on SCSI && VIRT_TO_BUS
+ 	depends on ISA || EISA || PCI
++	depends on (!MIPS && !ARM) || BROKEN
+ 	help
+ 	  This is a driver for all SCSI host adapters manufactured by
+ 	  AdvanSys. It is documented in the kernel source in
