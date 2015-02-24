@@ -2682,3 +2682,13 @@ int try_to_release_page(struct page *page, gfp_t gfp_mask)
 }
 
 EXPORT_SYMBOL(try_to_release_page);
+
+#undef pagecache_get_page
+struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+				int fgp_flags, gfp_t cache_gfp_mask,
+				gfp_t radix_gfp_mask __always_unused)
+{
+	return pagecache_get_page_fixed(mapping, offset, fgp_flags,
+					cache_gfp_mask);
+}
+EXPORT_SYMBOL(pagecache_get_page);
