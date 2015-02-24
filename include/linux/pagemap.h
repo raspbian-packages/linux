@@ -267,7 +267,12 @@ pgoff_t page_cache_prev_hole(struct address_space *mapping,
 #define FGP_NOWAIT		0x00000020
 
 struct page *pagecache_get_page(struct address_space *mapping, pgoff_t offset,
-		int fgp_flags, gfp_t cache_gfp_mask);
+				int fgp_flags, gfp_t cache_gfp_mask,
+				gfp_t radix_gfp_mask);
+struct page *
+pagecache_get_page_fixed(struct address_space *mapping, pgoff_t offset,
+			 int fgp_flags, gfp_t cache_gfp_mask);
+#define pagecache_get_page pagecache_get_page_fixed
 
 /**
  * find_get_page - find and get a page reference
