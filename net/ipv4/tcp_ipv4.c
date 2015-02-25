@@ -684,7 +684,7 @@ static void tcp_v4_send_reset(struct sock *sk, struct sk_buff *skb)
 
 	net = dev_net(skb_dst(skb)->dev);
 	arg.tos = ip_hdr(skb)->tos;
-	ip_send_unicast_reply(*this_cpu_ptr(net->ipv4.tcp_sk),
+	ip_send_unicast_reply(*this_cpu_ptr(net->tcp_sk),
 			      skb, ip_hdr(skb)->saddr,
 			      ip_hdr(skb)->daddr, &arg, arg.iov[0].iov_len);
 
@@ -768,7 +768,7 @@ static void tcp_v4_send_ack(struct net *net,
 	if (oif)
 		arg.bound_dev_if = oif;
 	arg.tos = tos;
-	ip_send_unicast_reply(*this_cpu_ptr(net->ipv4.tcp_sk),
+	ip_send_unicast_reply(*this_cpu_ptr(net->tcp_sk),
 			      skb, ip_hdr(skb)->saddr,
 			      ip_hdr(skb)->daddr, &arg, arg.iov[0].iov_len);
 
@@ -2560,16 +2560,16 @@ static void __net_exit tcp_sk_exit(struct net *net)
 	int cpu;
 
 	for_each_possible_cpu(cpu)
-		inet_ctl_sock_destroy(*per_cpu_ptr(net->ipv4.tcp_sk, cpu));
-	free_percpu(net->ipv4.tcp_sk);
+		inet_ctl_sock_destroy(*per_cpu_ptr(net->tcp_sk, cpu));
+	free_percpu(net->tcp_sk);
 }
 
 static int __net_init tcp_sk_init(struct net *net)
 {
 	int res, cpu;
 
-	net->ipv4.tcp_sk = alloc_percpu(struct sock *);
-	if (!net->ipv4.tcp_sk)
+	net->tcp_sk = alloc_percpu(struct sock *);
+	if (!net->tcp_sk)
 		return -ENOMEM;
 
 	for_each_possible_cpu(cpu) {
@@ -2579,7 +2579,7 @@ static int __net_init tcp_sk_init(struct net *net)
 					   IPPROTO_TCP, net);
 		if (res)
 			goto fail;
-		*per_cpu_ptr(net->ipv4.tcp_sk, cpu) = sk;
+		*per_cpu_ptr(net->tcp_sk, cpu) = sk;
 	}
 	net->ipv4.sysctl_tcp_ecn = 2;
 	return 0;
