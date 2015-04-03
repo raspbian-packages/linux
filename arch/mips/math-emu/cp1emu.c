@@ -974,6 +974,14 @@ emul:
 				/*
 				 * Branch taken: emulate dslot instruction
 				 */
+				unsigned long bcpc;
+
+				/*
+				 * Remember EPC at the branch to point back
+				 * at so that any delay-slot instruction
+				 * signal is not silently ignored.
+				 */
+				bcpc = xcp->cp0_epc;
 				xcp->cp0_epc += dec_insn.pc_inc;
 
 				contpc = MIPSInst_SIMM(ir);
@@ -999,7 +1007,15 @@ emul:
 						 * Single step the non-CP1
 						 * instruction in the dslot.
 						 */
-						return mips_dsemul(xcp, ir, contpc);
+						sig = mips_dsemul(xcp, ir,
+								  contpc);
+						if (sig)
+							xcp->cp0_epc = bcpc;
+						/*
+						 * SIGILL forces out of
+						 * the emulation loop.
+						 */
+						return sig ? sig : SIGILL;
 					}
 				} else
 					contpc = (xcp->cp0_epc + (contpc << 2));
@@ -1014,7 +1030,7 @@ emul:
 					if (cpu_has_mips_2_3_4_5_r)
 						goto emul;
 
-					return SIGILL;
+					goto bc_sigill;
 
 				case cop1_op:
 					goto emul;
@@ -1024,7 +1040,7 @@ emul:
 						/* its one of ours */
 						goto emul;
 
-					return SIGILL;
+					goto bc_sigill;
 
 				case spec_op:
 					switch (MIPSInst_FUNC(ir)) {
@@ -1032,16 +1048,24 @@ emul:
 						if (cpu_has_mips_4_5_r)
 							goto emul;
 
-						return SIGILL;
+						goto bc_sigill;
 					}
 					break;
+
+				bc_sigill:
+					xcp->cp0_epc = bcpc;
+					return SIGILL;
 				}
 
 				/*
 				 * Single step the non-cp1
 				 * instruction in the dslot
 				 */
-				return mips_dsemul(xcp, ir, contpc);
+				sig = mips_dsemul(xcp, ir, contpc);
+				if (sig)
+					xcp->cp0_epc = bcpc;
+				/* SIGILL forces out of the emulation loop.  */
+				return sig ? sig : SIGILL;
 			} else if (likely) {	/* branch not taken */
 					/*
 					 * branch likely nullifies
