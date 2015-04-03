@@ -1187,7 +1187,7 @@ asmlinkage void do_cpu(struct pt_regs *regs)
 		status = -1;
 
 		if (unlikely(compute_return_epc(regs) < 0))
-			goto out;
+			break;
 
 		if (get_isa16_mode(regs->cp0_epc)) {
 			unsigned short mmop[2] = { 0 };
@@ -1220,7 +1220,7 @@ asmlinkage void do_cpu(struct pt_regs *regs)
 			force_sig(status, current);
 		}
 
-		goto out;
+		break;
 
 	case 3:
 		/*
@@ -1236,8 +1236,10 @@ asmlinkage void do_cpu(struct pt_regs *regs)
 		 * erroneously too, so they are covered by this choice
 		 * as well.
 		 */
-		if (raw_cpu_has_fpu)
+		if (raw_cpu_has_fpu) {
+			force_sig(SIGILL, current);
 			break;
+		}
 		/* Fall through.  */
 
 	case 1:
@@ -1253,16 +1255,13 @@ asmlinkage void do_cpu(struct pt_regs *regs)
 				mt_ase_fp_affinity();
 		}
 
-		goto out;
+		break;
 
 	case 2:
 		raw_notifier_call_chain(&cu2_chain, CU2_EXCEPTION, regs);
-		goto out;
+		break;
 	}
 
-	force_sig(SIGILL, current);
-
-out:
 	exception_exit(prev_state);
 }
 
