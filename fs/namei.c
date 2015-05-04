@@ -1178,10 +1178,6 @@ static int follow_dotdot_rcu(struct nameidata *nd)
 	return 0;
 
 failed:
-	nd->flags &= ~LOOKUP_RCU;
-	if (!(nd->flags & LOOKUP_ROOT))
-		nd->root.mnt = NULL;
-	rcu_read_unlock();
 	return -ECHILD;
 }
 
@@ -1494,8 +1490,7 @@ static inline int handle_dots(struct nameidata *nd, int type)
 {
 	if (type == LAST_DOTDOT) {
 		if (nd->flags & LOOKUP_RCU) {
-			if (follow_dotdot_rcu(nd))
-				return -ECHILD;
+			return follow_dotdot_rcu(nd);
 		} else
 			follow_dotdot(nd);
 	}
@@ -1535,8 +1530,12 @@ static inline int walk_component(struct nameidata *nd, struct path *path,
 	 * to be able to know about the current root directory and
 	 * parent relationships.
 	 */
-	if (unlikely(nd->last_type != LAST_NORM))
-		return handle_dots(nd, nd->last_type);
+	if (unlikely(nd->last_type != LAST_NORM)) {
+		err = handle_dots(nd, nd->last_type);
+		if (err)
+			goto out_err;
+		return 0;
+	}
 	err = lookup_fast(nd, path, &inode);
 	if (unlikely(err)) {
 		if (err < 0)
@@ -2904,8 +2903,10 @@ static int do_last(struct nameidata *nd, struct path *path,
 
 	if (nd->last_type != LAST_NORM) {
 		error = handle_dots(nd, nd->last_type);
-		if (error)
+		if (unlikely(error)) {
+			terminate_walk(nd);
 			return error;
+		}
 		goto finish_open;
 	}
 
