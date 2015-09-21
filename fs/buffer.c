@@ -1370,6 +1370,13 @@ __find_get_block(struct block_device *bdev, sector_t block, unsigned size)
 }
 EXPORT_SYMBOL(__find_get_block);
 
+struct buffer_head *__getblk(struct block_device *bdev, sector_t block,
+			     unsigned size)
+{
+	return __getblk_gfp(bdev, block, size, __GFP_MOVABLE);
+}
+EXPORT_SYMBOL(__getblk);
+
 /*
  * __getblk_gfp() will locate (and, if necessary, create) the buffer_head
  * which corresponds to the passed block_device, block and size. The
@@ -1403,6 +1410,23 @@ void __breadahead(struct block_device *bdev, sector_t block, unsigned size)
 	}
 }
 EXPORT_SYMBOL(__breadahead);
+
+/**
+ *  __bread() - reads a specified block and returns the bh
+ *  @bdev: the block_device to read from
+ *  @block: number of block
+ *  @size: size (in bytes) to read
+ *
+ *  Reads a specified block, and returns buffer head that contains it.
+ *  The page cache is allocated from movable area so that it can be migrated.
+ *  It returns NULL if the block was unreadable.
+ */
+struct buffer_head *
+__bread(struct block_device *bdev, sector_t block, unsigned size)
+{
+	return __bread_gfp(bdev, block, size, __GFP_MOVABLE);
+}
+EXPORT_SYMBOL(__bread);
 
 /**
  *  __bread_gfp() - reads a specified block and returns the bh
