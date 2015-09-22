@@ -107,11 +107,7 @@ void tcf_hash_cleanup(struct tc_action *a, struct nlattr *est);
 void tcf_hash_insert(struct tc_action *a);
 
 int __tcf_hash_release(struct tc_action *a, bool bind, bool strict);
-
-static inline int tcf_hash_release(struct tc_action *a, bool bind)
-{
-	return __tcf_hash_release(a, bind, false);
-}
+int tcf_hash_release(struct tc_action *a, int bind);
 
 int tcf_register_action(struct tc_action_ops *a, unsigned int mask);
 int tcf_unregister_action(struct tc_action_ops *a);
