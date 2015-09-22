@@ -45,6 +45,12 @@ void tcf_hash_destroy(struct tc_action *a)
 }
 EXPORT_SYMBOL(tcf_hash_destroy);
 
+int tcf_hash_release(struct tc_action *a, int bind)
+{
+	return __tcf_hash_release(a, bind, false);
+}
+EXPORT_SYMBOL(tcf_hash_release);
+
 int __tcf_hash_release(struct tc_action *a, bool bind, bool strict)
 {
 	struct tcf_common *p = a->priv;
