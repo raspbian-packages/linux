@@ -1,0 +1,25 @@
+From: Alexander Graf <agraf@suse.de>
+Date: Mon, 16 Jun 2014 16:37:38 +0200
+Subject: KVM: PPC: Book3S PR: Handle hyp doorbell exits
+Origin: https://git.kernel.org/linus/568fccc43f901889b94b228cd0238916cb40e0bd
+
+If we're running PR KVM in HV mode, we may get hypervisor doorbell interrupts.
+Handle those the same way we treat normal doorbells.
+
+Signed-off-by: Alexander Graf <agraf@suse.de>
+---
+ arch/powerpc/kvm/book3s_pr.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+Index: linux-3.16.7/arch/powerpc/kvm/book3s_pr.c
+===================================================================
+--- linux-3.16.7.orig/arch/powerpc/kvm/book3s_pr.c
++++ linux-3.16.7/arch/powerpc/kvm/book3s_pr.c
+@@ -972,6 +972,7 @@ int kvmppc_handle_exit_pr(struct kvm_run
+ 	case BOOK3S_INTERRUPT_DECREMENTER:
+ 	case BOOK3S_INTERRUPT_HV_DECREMENTER:
+ 	case BOOK3S_INTERRUPT_DOORBELL:
++	case BOOK3S_INTERRUPT_H_DOORBELL:
+ 		vcpu->stat.dec_exits++;
+ 		r = RESUME_GUEST;
+ 		break;
