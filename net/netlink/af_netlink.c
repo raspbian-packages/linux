@@ -1929,6 +1929,14 @@ out:
 }
 EXPORT_SYMBOL_GPL(__netlink_alloc_skb);
 
+struct sk_buff *
+netlink_alloc_skb(struct sock *ssk, unsigned int size, u32 dst_portid,
+		  gfp_t gfp_mask)
+{
+	return __netlink_alloc_skb(ssk, size, 0, dst_portid, gfp_mask);
+}
+EXPORT_SYMBOL_GPL(netlink_alloc_skb);
+
 int netlink_has_listeners(struct sock *sk, unsigned int group)
 {
 	int res = 0;
