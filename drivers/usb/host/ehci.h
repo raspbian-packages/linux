@@ -215,7 +215,6 @@ struct ehci_hcd {			/* one per controller */
 	/* SILICON QUIRKS */
 	unsigned		no_selective_suspend:1;
 	unsigned		has_fsl_port_bug:1; /* FreeScale */
-	unsigned		has_fsl_hs_errata:1;	/* Freescale HS quirk */
 	unsigned		big_endian_mmio:1;
 	unsigned		big_endian_desc:1;
 	unsigned		big_endian_capbase:1;
@@ -227,6 +226,10 @@ struct ehci_hcd {			/* one per controller */
 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
 	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
+#ifndef __GENKSYMS__
+	unsigned		has_fsl_hs_errata:1;	/* Freescale HS quirk */
+	/* 18 bits spare */
+#endif
 
 	/* required for usb32 quirk */
 	#define OHCI_CTRL_HCFS          (3 << 6)
