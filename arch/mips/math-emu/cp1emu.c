@@ -1009,6 +1009,8 @@ emul:
 						 */
 						sig = mips_dsemul(xcp, ir,
 								  contpc);
+						if (sig < 0)
+							break;
 						if (sig)
 							xcp->cp0_epc = bcpc;
 						/*
@@ -1062,6 +1064,8 @@ emul:
 				 * instruction in the dslot
 				 */
 				sig = mips_dsemul(xcp, ir, contpc);
+				if (sig < 0)
+					break;
 				if (sig)
 					xcp->cp0_epc = bcpc;
 				/* SIGILL forces out of the emulation loop.  */
