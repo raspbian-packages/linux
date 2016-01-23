@@ -54,12 +54,20 @@ struct unix_sock {
 	struct list_head	link;
 	atomic_long_t		inflight;
 	spinlock_t		lock;
+#ifdef __GENKSYMS__
+	unsigned int		gc_candidate : 1;
+	unsigned int		gc_maybe_cycle : 1;
+#else
+	unsigned int		pad : 2;
+#endif
 	unsigned char		recursion_level;
+	struct socket_wq	peer_wq;
+#ifndef __GENKSYSMS__
+	wait_queue_t		peer_wake;
 	unsigned long		gc_flags;
 #define UNIX_GC_CANDIDATE	0
 #define UNIX_GC_MAYBE_CYCLE	1
-	struct socket_wq	peer_wq;
-	wait_queue_t		peer_wake;
+#endif
 };
 #define unix_sk(__sk) ((struct unix_sock *)__sk)
 
