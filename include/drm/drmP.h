@@ -407,11 +407,14 @@ struct drm_file {
 	 * in the plane list
 	 */
 	unsigned universal_planes:1;
+#ifndef __GENKSYMS__
 	/*
 	 * This client is allowed to gain master privileges for @master.
 	 * Protected by struct drm_device::master_mutex.
 	 */
 	unsigned allowed_master:1;
+	/* 26 spare bits left */
+#endif
 
 	struct pid *pid;
 	kuid_t uid;
