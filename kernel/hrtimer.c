@@ -1145,7 +1145,12 @@ ktime_t __hrtimer_get_remaining(const struct hrtimer *timer, bool adjust)
 
 	return rem;
 }
-EXPORT_SYMBOL_GPL(__hrtimer_get_remaining);
+
+ktime_t hrtimer_get_remaining(const struct hrtimer *timer)
+{
+	return __hrtimer_get_remaining(timer, false);
+}
+EXPORT_SYMBOL_GPL(hrtimer_get_remaining);
 
 #ifdef CONFIG_NO_HZ
 /**
