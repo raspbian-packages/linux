@@ -94,7 +94,6 @@ struct crypto_ahash {
 		      unsigned int keylen);
 
 	unsigned int reqsize;
-	bool has_setkey;
 	struct crypto_tfm base;
 };
 
@@ -185,7 +184,22 @@ int crypto_ahash_setkey(struct crypto_ahash *tfm, const u8 *key,
 
 static inline bool crypto_ahash_has_setkey(struct crypto_ahash *tfm)
 {
-	return tfm->has_setkey;
+	struct crypto_tfm *basetfm = crypto_ahash_tfm(tfm);
+
+	switch (crypto_tfm_alg_type(basetfm)) {
+	case CRYPTO_ALG_TYPE_SHASH: {
+		extern int shash_no_setkey(struct crypto_shash *tfm,
+					   const u8 *key,
+					   unsigned int keylen);
+		struct shash_alg *alg =	container_of(basetfm->__crt_alg,
+						     struct shash_alg, base);
+
+		return alg->setkey != shash_no_setkey;
+	}
+
+	default:
+		return tfm->setkey != NULL;
+	}
 }
 
 int crypto_ahash_finup(struct ahash_request *req);
