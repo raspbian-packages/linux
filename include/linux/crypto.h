@@ -346,7 +346,6 @@ struct ablkcipher_tfm {
 
 	unsigned int ivsize;
 	unsigned int reqsize;
-	bool has_setkey;
 };
 
 struct aead_tfm {
@@ -659,9 +658,25 @@ static inline int crypto_ablkcipher_setkey(struct crypto_ablkcipher *tfm,
 
 static inline bool crypto_ablkcipher_has_setkey(struct crypto_ablkcipher *tfm)
 {
-	struct ablkcipher_tfm *crt = crypto_ablkcipher_crt(tfm);
+	struct crypto_tfm *basetfm = crypto_ablkcipher_tfm(tfm);
 
-	return crt->has_setkey;
+	switch (crypto_tfm_alg_type(basetfm)) {
+	case CRYPTO_ALG_TYPE_ABLKCIPHER:
+	case CRYPTO_ALG_TYPE_GIVCIPHER: {
+		struct ablkcipher_alg *alg = &basetfm->__crt_alg->cra_ablkcipher;
+
+		return alg->max_keysize != 0;
+	}
+
+	case CRYPTO_ALG_TYPE_BLKCIPHER: {
+		struct blkcipher_alg *alg = &basetfm->__crt_alg->cra_blkcipher;
+
+		return alg->max_keysize != 0;
+	}
+
+	default:
+		return false;
+	}
 }
 
 static inline struct crypto_ablkcipher *crypto_ablkcipher_reqtfm(
