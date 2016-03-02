@@ -111,8 +111,12 @@ struct hrtimer {
 	ktime_t				_softexpires;
 	enum hrtimer_restart		(*function)(struct hrtimer *);
 	struct hrtimer_clock_base	*base;
+#ifdef CONFIG_TIME_LOW_RES
 	u8				state;
 	u8				is_rel;
+#else
+	unsigned long			state;
+#endif
 #ifdef CONFIG_TIMER_STATS
 	int				start_pid;
 	void				*start_site;
@@ -409,11 +413,7 @@ static inline int hrtimer_restart(struct hrtimer *timer)
 
 /* Query timers: */
 extern ktime_t __hrtimer_get_remaining(const struct hrtimer *timer, bool adjust);
-
-static inline ktime_t hrtimer_get_remaining(const struct hrtimer *timer)
-{
-	return __hrtimer_get_remaining(timer, false);
-}
+extern ktime_t hrtimer_get_remaining(const struct hrtimer *timer);
 extern int hrtimer_get_res(const clockid_t which_clock, struct timespec *tp);
 
 extern ktime_t hrtimer_get_next_event(void);
