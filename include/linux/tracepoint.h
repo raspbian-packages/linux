@@ -14,11 +14,15 @@
  * See the file COPYING for more details.
  */
 
+#ifndef __GENKSYMS__
 #include <linux/smp.h>
+#endif
 #include <linux/errno.h>
 #include <linux/types.h>
+#ifndef __GENKSYMS__
 #include <linux/percpu.h>
 #include <linux/cpumask.h>
+#endif
 #include <linux/rcupdate.h>
 #include <linux/static_key.h>
 
