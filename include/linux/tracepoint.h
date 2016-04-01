@@ -14,10 +14,14 @@
  * See the file COPYING for more details.
  */
 
+#ifndef __GENKSYMS__
 #include <linux/smp.h>
+#endif
 #include <linux/errno.h>
 #include <linux/types.h>
+#ifndef __GENKSYMS__
 #include <linux/cpumask.h>
+#endif
 #include <linux/rcupdate.h>
 #include <linux/jump_label.h>
 
