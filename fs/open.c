@@ -947,8 +947,8 @@ struct file *filp_open(const char *filename, int flags, umode_t mode)
 }
 EXPORT_SYMBOL(filp_open);
 
-struct file *file_open_root(struct dentry *dentry, struct vfsmount *mnt,
-			    const char *filename, int flags, umode_t mode)
+struct file *file_open_root_umode(struct dentry *dentry, struct vfsmount *mnt,
+				  const char *filename, int flags, umode_t mode)
 {
 	struct open_flags op;
 	int err = build_open_flags(flags, mode, &op);
@@ -959,7 +959,7 @@ struct file *file_open_root(struct dentry *dentry, struct vfsmount *mnt,
 			return ERR_PTR(-ENOTDIR);
 	return do_file_open_root(dentry, mnt, filename, &op);
 }
-EXPORT_SYMBOL(file_open_root);
+EXPORT_SYMBOL(file_open_root_umode);
 
 long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
@@ -1106,3 +1106,13 @@ int nonseekable_open(struct inode *inode, struct file *filp)
 }
 
 EXPORT_SYMBOL(nonseekable_open);
+
+#undef file_open_root
+struct file *file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+			    const char *filename, int flags)
+{
+	if (flags & O_CREAT)
+		return ERR_PTR(-EINVAL);
+	return file_open_root_umode(dentry, mnt, filename, flags, 0);
+}
+EXPORT_SYMBOL(file_open_root);
