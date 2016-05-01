@@ -2088,7 +2088,10 @@ extern long do_sys_open(int dfd, const char __user *filename, int flags,
 			int mode);
 extern struct file *filp_open(const char *, int, int);
 extern struct file *file_open_root(struct dentry *, struct vfsmount *,
-				   const char *, int, umode_t);
+				   const char *, int);
+extern struct file *file_open_root_umode(struct dentry *, struct vfsmount *,
+					 const char *, int, umode_t);
+#define file_open_root file_open_root_umode
 extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
 				 const struct cred *);
 extern int filp_close(struct file *, fl_owner_t id);
