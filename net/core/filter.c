@@ -1644,6 +1644,7 @@ int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
 {
 	return __sk_attach_filter(fprog, sk, sock_owned_by_user(sk));
 }
+EXPORT_SYMBOL_GPL(sk_attach_filter);
 
 int __sk_detach_filter(struct sock *sk, bool locked)
 {
@@ -1668,6 +1669,7 @@ int sk_detach_filter(struct sock *sk)
 {
 	return __sk_detach_filter(sk, sock_owned_by_user(sk));
 }
+EXPORT_SYMBOL_GPL(sk_detach_filter);
 
 int sk_get_filter(struct sock *sk, struct sock_filter __user *ubuf,
 		  unsigned int len)
