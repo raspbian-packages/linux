@@ -59,8 +59,21 @@ int setfl(int fd, struct file * filp, unsigned long arg)
 
 	if (filp->f_op->check_flags)
 		error = filp->f_op->check_flags(arg);
-	if (!error && filp->f_op->setfl)
+
+	/*
+	 * bwh: setfl() is an extension to file_operations.  For ABI
+	 * compatibility, we can't assume the pointer is even valid.
+	 * Since only aufs will implement it, check that the file ops
+	 * are implemented by a version of aufs that does.  (Ugh.)
+	 */
+#ifdef CONFIG_AUFS_FS_MODULE
+	if (!error && filp->f_op->owner &&
+	    !strcmp(filp->f_op->owner->name, "aufs") &&
+	    strstr(filp->f_op->owner->version, "+setfl") &&
+	    filp->f_op->setfl)
 		error = filp->f_op->setfl(filp, arg);
+#endif
+
 	if (error)
 		return error;
 
