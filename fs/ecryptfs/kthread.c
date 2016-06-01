@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/mount.h>
+#include <linux/file.h>
 #include "ecryptfs_kernel.h"
 
 struct kmem_cache *ecryptfs_open_req_cache;
@@ -193,5 +194,10 @@ out_unlock:
 out_free:
 	kmem_cache_free(ecryptfs_open_req_cache, req);
 out:
+	if (rc == 0 && (*lower_file)->f_op->mmap == NULL) {
+		fput(*lower_file);
+		*lower_file = NULL;
+		rc = -EMEDIUMTYPE;
+	}
 	return rc;
 }
