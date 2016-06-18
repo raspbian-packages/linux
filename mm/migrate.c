@@ -30,7 +30,9 @@
 #include <linux/mempolicy.h>
 #include <linux/vmalloc.h>
 #include <linux/security.h>
+#ifndef __GENKSYMS__
 #include <linux/backing-dev.h>
+#endif
 #include <linux/memcontrol.h>
 #include <linux/syscalls.h>
 #include <linux/hugetlb.h>
