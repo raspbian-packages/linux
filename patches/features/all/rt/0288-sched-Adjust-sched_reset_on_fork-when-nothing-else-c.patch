@@ -1,0 +1,36 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 20 Dec 2012 14:58:00 +0100
+Subject: [PATCH 288/389] sched: Adjust sched_reset_on_fork when nothing else
+ changes
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=677a5b84124794382038752e275bae7e4739999f
+
+If the policy and priority remain unchanged a possible modification of
+sched_reset_on_fork gets lost in the early exit path.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: stable@vger.kernel.org
+Cc: stable-rt@vger.kernel.org
+---
+ kernel/sched.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index b5db52991bfd..280b65237a1b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5741,11 +5741,13 @@ recheck:
+ 	}
+ 
+ 	/*
+-	 * If not changing anything there's no need to proceed further:
++	 * If not changing anything there's no need to proceed
++	 * further, but store a possible modification of
++	 * reset_on_fork.
+ 	 */
+ 	if (unlikely(policy == p->policy && (!rt_policy(policy) ||
+ 			param->sched_priority == p->rt_priority))) {
+-
++		p->sched_reset_on_fork = reset_on_fork;
+ 		__task_rq_unlock(rq);
+ 		raw_spin_unlock_irqrestore(&p->pi_lock, flags);
+ 		return 0;
