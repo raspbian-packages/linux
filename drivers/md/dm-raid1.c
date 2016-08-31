@@ -1367,7 +1367,7 @@ static char device_status_char(struct mirror *m)
 }
 
 
-static void mirror_status(struct dm_target *ti, status_type_t type,
+static int mirror_status(struct dm_target *ti, status_type_t type,
 			  char *result, unsigned maxlen)
 {
 	unsigned int m, sz = 0;
@@ -1403,6 +1403,8 @@ static void mirror_status(struct dm_target *ti, status_type_t type,
 		if (ms->features & DM_RAID1_HANDLE_ERRORS)
 			DMEMIT(" 1 handle_errors");
 	}
+
+	return 0;
 }
 
 static int mirror_iterate_devices(struct dm_target *ti,
