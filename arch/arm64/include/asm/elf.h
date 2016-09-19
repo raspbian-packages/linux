@@ -140,7 +140,6 @@ typedef struct user_fpsimd_state elf_fpregset_t;
 	current->personality &= ~READ_IMPLIES_EXEC;			\
 })
 
-/* update AT_VECTOR_SIZE_ARCH if the number of NEW_AUX_ENT entries changes */
 #define ARCH_DLINFO							\
 do {									\
 	NEW_AUX_ENT(AT_SYSINFO_EHDR,					\
