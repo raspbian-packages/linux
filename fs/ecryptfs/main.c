@@ -539,10 +539,11 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
 		ecryptfs_printk(KERN_WARNING, "kern_path() failed\n");
 		goto out1;
 	}
-	if (path.dentry->d_sb->s_type == &ecryptfs_fs_type) {
+	if (path.dentry->d_sb->s_type == &ecryptfs_fs_type ||
+	    path.dentry->d_sb->s_magic == PROC_SUPER_MAGIC) {
 		rc = -EINVAL;
 		printk(KERN_ERR "Mount on filesystem of type "
-			"eCryptfs explicitly disallowed due to "
+			"eCryptfs or procfs explicitly disallowed due to "
 			"known incompatibilities\n");
 		goto out_free;
 	}
@@ -576,13 +577,6 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
-	s->s_stack_depth = path.dentry->d_sb->s_stack_depth + 1;
-
-	rc = -EINVAL;
-	if (s->s_stack_depth > FILESYSTEM_MAX_STACK_DEPTH) {
-		pr_err("eCryptfs: maximum fs stacking depth exceeded\n");
-		goto out_free;
-	}
 
 	inode = ecryptfs_get_inode(path.dentry->d_inode, s);
 	rc = PTR_ERR(inode);
