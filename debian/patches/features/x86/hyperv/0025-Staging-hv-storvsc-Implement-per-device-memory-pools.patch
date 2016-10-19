@@ -1,0 +1,259 @@
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+Date: Thu, 1 Dec 2011 04:59:20 -0800
+Subject: [PATCH 25/77] Staging: hv: storvsc: Implement per device memory
+ pools
+
+commit ce3e301c442f7beffd049908a007697753766cf7 upstream.
+
+The current code implemented a per-HBA memory pool mechanism. For IDE disks
+managed by this driver, there is a one to one correspondance between the
+block device and the associated virtual HBA and since currently only IDE devices
+can be the boot device, this addressed the deadlock issues that were raised during
+the review process. This patch implements a per-lun memory pool mechanism.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/hv/storvsc_drv.c |  106 ++++++++++++++++++++++----------------
+ 1 file changed, 62 insertions(+), 44 deletions(-)
+
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -286,10 +286,13 @@ struct storvsc_device {
+ 	struct hv_storvsc_request reset_request;
+ };
+ 
+-struct hv_host_device {
+-	struct hv_device *dev;
++struct stor_mem_pools {
+ 	struct kmem_cache *request_pool;
+ 	mempool_t *request_mempool;
++};
++
++struct hv_host_device {
++	struct hv_device *dev;
+ 	unsigned int port;
+ 	unsigned char path;
+ 	unsigned char target;
+@@ -791,7 +794,48 @@ static void storvsc_get_ide_info(struct
+ 
+ static int storvsc_device_alloc(struct scsi_device *sdevice)
+ {
++	struct stor_mem_pools *memp;
++	int number = STORVSC_MIN_BUF_NR;
++
++	memp = kzalloc(sizeof(struct stor_mem_pools), GFP_KERNEL);
++	if (!memp)
++		return -ENOMEM;
++
++	memp->request_pool =
++		kmem_cache_create(dev_name(&sdevice->sdev_dev),
++				sizeof(struct storvsc_cmd_request), 0,
++				SLAB_HWCACHE_ALIGN, NULL);
++
++	if (!memp->request_pool)
++		goto err0;
++
++	memp->request_mempool = mempool_create(number, mempool_alloc_slab,
++						mempool_free_slab,
++						memp->request_pool);
++
++	if (!memp->request_mempool)
++		goto err1;
++
++	sdevice->hostdata = memp;
++
+ 	return 0;
++
++err1:
++	kmem_cache_destroy(memp->request_pool);
++
++err0:
++	kfree(memp);
++	return -ENOMEM;
++}
++
++static void storvsc_device_destroy(struct scsi_device *sdevice)
++{
++	struct stor_mem_pools *memp = sdevice->hostdata;
++
++	mempool_destroy(memp->request_mempool);
++	kmem_cache_destroy(memp->request_pool);
++	kfree(memp);
++	sdevice->hostdata = NULL;
+ }
+ 
+ static int storvsc_device_configure(struct scsi_device *sdevice)
+@@ -1033,19 +1077,13 @@ static int storvsc_remove(struct hv_devi
+ {
+ 	struct storvsc_device *stor_device = hv_get_drvdata(dev);
+ 	struct Scsi_Host *host = stor_device->host;
+-	struct hv_host_device *host_dev = shost_priv(host);
+ 
+ 	scsi_remove_host(host);
+ 
+ 	scsi_host_put(host);
+ 
+ 	storvsc_dev_remove(dev);
+-	if (host_dev->request_pool) {
+-		mempool_destroy(host_dev->request_mempool);
+-		kmem_cache_destroy(host_dev->request_pool);
+-		host_dev->request_pool = NULL;
+-		host_dev->request_mempool = NULL;
+-	}
++
+ 	return 0;
+ }
+ 
+@@ -1146,6 +1184,7 @@ static void storvsc_command_completion(s
+ 	struct scsi_sense_hdr sense_hdr;
+ 	struct vmscsi_request *vm_srb;
+ 	struct storvsc_scan_work *wrk;
++	struct stor_mem_pools *memp = scmnd->device->hostdata;
+ 
+ 	vm_srb = &request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+@@ -1208,7 +1247,7 @@ static void storvsc_command_completion(s
+ 
+ 	scsi_done_fn(scmnd);
+ 
+-	mempool_free(cmd_request, host_dev->request_mempool);
++	mempool_free(cmd_request, memp->request_mempool);
+ }
+ 
+ /*
+@@ -1253,6 +1292,7 @@ static int storvsc_queuecommand(struct S
+ 	struct scatterlist *sgl;
+ 	unsigned int sg_count = 0;
+ 	struct vmscsi_request *vm_srb;
++	struct stor_mem_pools *memp = scmnd->device->hostdata;
+ 
+ 	if (storvsc_check_scsi_cmd(scmnd) == false) {
+ 		scmnd->scsi_done(scmnd);
+@@ -1270,7 +1310,7 @@ static int storvsc_queuecommand(struct S
+ 
+ 	request_size = sizeof(struct storvsc_cmd_request);
+ 
+-	cmd_request = mempool_alloc(host_dev->request_mempool,
++	cmd_request = mempool_alloc(memp->request_mempool,
+ 				       GFP_ATOMIC);
+ 	if (!cmd_request)
+ 		return SCSI_MLQUEUE_DEVICE_BUSY;
+@@ -1329,7 +1369,7 @@ static int storvsc_queuecommand(struct S
+ 			if (!cmd_request->bounce_sgl) {
+ 				scmnd->host_scribble = NULL;
+ 				mempool_free(cmd_request,
+-						host_dev->request_mempool);
++						memp->request_mempool);
+ 
+ 				return SCSI_MLQUEUE_HOST_BUSY;
+ 			}
+@@ -1371,7 +1411,7 @@ retry_request:
+ 			destroy_bounce_buffer(cmd_request->bounce_sgl,
+ 					cmd_request->bounce_sgl_count);
+ 
+-		mempool_free(cmd_request, host_dev->request_mempool);
++		mempool_free(cmd_request, memp->request_mempool);
+ 
+ 		scmnd->host_scribble = NULL;
+ 
+@@ -1390,6 +1430,7 @@ static struct scsi_host_template scsi_dr
+ 	.eh_host_reset_handler =	storvsc_host_reset_handler,
+ 	.eh_timed_out =		storvsc_eh_timed_out,
+ 	.slave_alloc =		storvsc_device_alloc,
++	.slave_destroy =	storvsc_device_destroy,
+ 	.slave_configure =	storvsc_device_configure,
+ 	.cmd_per_lun =		1,
+ 	/* 64 max_queue * 1 target */
+@@ -1431,7 +1472,6 @@ static int storvsc_probe(struct hv_devic
+ 			const struct hv_vmbus_device_id *dev_id)
+ {
+ 	int ret;
+-	int number = STORVSC_MIN_BUF_NR;
+ 	struct Scsi_Host *host;
+ 	struct hv_host_device *host_dev;
+ 	bool dev_is_ide = ((dev_id->driver_data == IDE_GUID) ? true : false);
+@@ -1450,29 +1490,11 @@ static int storvsc_probe(struct hv_devic
+ 	host_dev->port = host->host_no;
+ 	host_dev->dev = device;
+ 
+-	host_dev->request_pool =
+-				kmem_cache_create(dev_name(&device->device),
+-					sizeof(struct storvsc_cmd_request), 0,
+-					SLAB_HWCACHE_ALIGN, NULL);
+-
+-	if (!host_dev->request_pool) {
+-		scsi_host_put(host);
+-		return -ENOMEM;
+-	}
+-
+-	host_dev->request_mempool = mempool_create(number, mempool_alloc_slab,
+-						mempool_free_slab,
+-						host_dev->request_pool);
+-
+-	if (!host_dev->request_mempool) {
+-		ret = -ENOMEM;
+-		goto err_out0;
+-	}
+ 
+ 	stor_device = kzalloc(sizeof(struct storvsc_device), GFP_KERNEL);
+ 	if (!stor_device) {
+ 		ret = -ENOMEM;
+-		goto err_out1;
++		goto err_out0;
+ 	}
+ 
+ 	stor_device->destroy = false;
+@@ -1484,7 +1506,7 @@ static int storvsc_probe(struct hv_devic
+ 	stor_device->port_number = host->host_no;
+ 	ret = storvsc_connect_to_vsp(device, storvsc_ringbuffer_size);
+ 	if (ret)
+-		goto err_out2;
++		goto err_out1;
+ 
+ 	if (dev_is_ide)
+ 		storvsc_get_ide_info(device, &target, &path);
+@@ -1504,7 +1526,7 @@ static int storvsc_probe(struct hv_devic
+ 	/* Register the HBA and start the scsi bus scan */
+ 	ret = scsi_add_host(host, &device->device);
+ 	if (ret != 0)
+-		goto err_out3;
++		goto err_out2;
+ 
+ 	if (!dev_is_ide) {
+ 		scsi_scan_host(host);
+@@ -1513,28 +1535,24 @@ static int storvsc_probe(struct hv_devic
+ 	ret = scsi_add_device(host, 0, target, 0);
+ 	if (ret) {
+ 		scsi_remove_host(host);
+-		goto err_out3;
++		goto err_out2;
+ 	}
+ 	return 0;
+ 
+-err_out3:
++err_out2:
+ 	/*
+ 	 * Once we have connected with the host, we would need to
+ 	 * to invoke storvsc_dev_remove() to rollback this state and
+ 	 * this call also frees up the stor_device; hence the jump around
+-	 * err_out2 label.
++	 * err_out1 label.
+ 	 */
+ 	storvsc_dev_remove(device);
+-	goto err_out1;
+-
+-err_out2:
+-	kfree(stor_device);
++	goto err_out0;
+ 
+ err_out1:
+-	mempool_destroy(host_dev->request_mempool);
++	kfree(stor_device);
+ 
+ err_out0:
+-	kmem_cache_destroy(host_dev->request_pool);
+ 	scsi_host_put(host);
+ 	return ret;
+ }
