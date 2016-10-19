@@ -76,7 +76,12 @@ struct hidraw_list {
 #ifdef CONFIG_HIDRAW
 int hidraw_init(void);
 void hidraw_exit(void);
+#ifdef __GENKSYMS__
+/* Old callers will ignore the return value even if we change the return type */
+void hidraw_report_event(struct hid_device *, u8 *, int);
+#else
 int hidraw_report_event(struct hid_device *, u8 *, int);
+#endif
 int hidraw_connect(struct hid_device *);
 void hidraw_disconnect(struct hid_device *);
 #else
