@@ -301,7 +301,7 @@ static int delay_map(struct dm_target *ti, struct bio *bio,
 	return delay_bio(dc, dc->read_delay, bio);
 }
 
-static void delay_status(struct dm_target *ti, status_type_t type,
+static int delay_status(struct dm_target *ti, status_type_t type,
 			 char *result, unsigned maxlen)
 {
 	struct delay_c *dc = ti->private;
@@ -322,6 +322,8 @@ static void delay_status(struct dm_target *ti, status_type_t type,
 			       dc->write_delay);
 		break;
 	}
+
+	return 0;
 }
 
 static int delay_iterate_devices(struct dm_target *ti,
