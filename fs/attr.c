@@ -15,6 +15,9 @@
 #include <linux/security.h>
 #include <linux/evm.h>
 
+static int __setattr_prepare(struct dentry *dentry, const struct inode *inode,
+			     struct iattr *attr);
+
 /**
  * setattr_prepare - check if attribute changes to a dentry are allowed
  * @dentry:	dentry to check
@@ -31,7 +34,35 @@
  */
 int setattr_prepare(struct dentry *dentry, struct iattr *attr)
 {
-	struct inode *inode = dentry->d_inode;
+	return __setattr_prepare(dentry, dentry->d_inode, attr);
+}
+EXPORT_SYMBOL(setattr_prepare);
+
+/* Backward-compatible version of setattr_prepare() */
+int inode_change_ok(const struct inode *inode, struct iattr *attr)
+{
+	struct dentry *dentry;
+
+	/*
+	 * If ia_file holds a dentry and it matches the inode then
+	 * pass it down.  Otherwise, pass NULL.  The dentry is only
+	 * needed if ATTR_KILL_PRIV is set in ia_flags.
+	 */
+	if ((attr->ia_valid & (ATTR_FILE | ATTR_DENTRY)) == ATTR_DENTRY) {
+		dentry = (struct dentry *)attr->ia_file;
+		if (dentry->d_inode != inode)
+			dentry = NULL;
+	} else {
+		dentry = NULL;
+	}
+
+	return __setattr_prepare(dentry, inode, attr);
+}
+EXPORT_SYMBOL(inode_change_ok);
+
+static int __setattr_prepare(struct dentry *dentry, const struct inode *inode,
+			     struct iattr *attr)
+{
 	unsigned int ia_valid = attr->ia_valid;
 
 	/*
@@ -82,6 +113,9 @@ kill_priv:
 	if (ia_valid & ATTR_KILL_PRIV) {
 		int error;
 
+		if (WARN_ON_ONCE(!dentry))
+			return -EIO;
+
 		error = security_inode_killpriv(dentry);
 		if (error)
 			return error;
@@ -89,7 +123,6 @@ kill_priv:
 
 	return 0;
 }
-EXPORT_SYMBOL(setattr_prepare);
 
 /**
  * inode_newsize_ok - may this inode be truncated to a given size
@@ -249,10 +282,22 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
 	if (error)
 		return error;
 
+	/* Smuggle the dentry through to inode_change_ok() */
+	if (!(attr->ia_valid & ATTR_FILE)) {
+		attr->ia_file = (struct file *)dentry;
+		attr->ia_valid |= ATTR_DENTRY;
+	}
+
 	if (inode->i_op->setattr)
 		error = inode->i_op->setattr(dentry, attr);
 	else
 		error = simple_setattr(dentry, attr);
+
+	if (attr->ia_valid & ATTR_DENTRY) {
+		if (!(attr->ia_valid & ATTR_FILE))
+			attr->ia_file = NULL;
+		attr->ia_valid &= ~ATTR_DENTRY;
+	}
 
 	if (!error) {
 		fsnotify_change(dentry, ia_valid);
