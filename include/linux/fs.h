@@ -223,6 +223,7 @@ typedef void (dio_iodone_t)(struct kiocb *iocb, loff_t offset,
 #define ATTR_KILL_PRIV	(1 << 14)
 #define ATTR_OPEN	(1 << 15) /* Truncating from open(O_TRUNC) */
 #define ATTR_TIMES_SET	(1 << 16)
+#define ATTR_DENTRY	(1 << 18) /* ia_file is actually a dentry */
 
 /*
  * This is the Inode Attributes structure, used for notify_change().  It
@@ -2649,6 +2650,7 @@ extern int buffer_migrate_page(struct address_space *,
 #define buffer_migrate_page NULL
 #endif
 
+extern int inode_change_ok(const struct inode *, struct iattr *);
 extern int setattr_prepare(struct dentry *, struct iattr *);
 extern int inode_newsize_ok(const struct inode *, loff_t offset);
 extern void setattr_copy(struct inode *inode, const struct iattr *attr);
