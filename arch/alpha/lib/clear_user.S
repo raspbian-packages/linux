@@ -9,7 +9,6 @@
  * a successful copy).  There is also some rather minor exception setup
  * stuff.
  */
-#include <asm/export.h>
 
 /* Allow an exception for an insn; exit if we get one.  */
 #define EX(x,y...)			\
@@ -98,4 +97,3 @@ $exception:
 	ret	$31, ($26), 1	# .. e1 :
 
 	.end __clear_user
-	EXPORT_SYMBOL(__clear_user)
