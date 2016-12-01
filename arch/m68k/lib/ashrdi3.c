@@ -14,7 +14,6 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details. */
 
 #include <linux/compiler.h>
-#include <linux/export.h>
 
 #define BITS_PER_UNIT 8
 
@@ -59,4 +58,3 @@ __ashrdi3 (DItype u, word_type b)
 
   return w.ll;
 }
-EXPORT_SYMBOL(__ashrdi3);
