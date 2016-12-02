@@ -17,6 +17,9 @@
 #include <asm/checksum.h>
 #include <linux/uaccess.h>
 #include <asm/epapr_hcalls.h>
+#include <asm/dcr.h>
+#include <asm/mmu_context.h>
+#include <asm/ftrace.h>
 
 #include <uapi/asm/ucontext.h>
 
