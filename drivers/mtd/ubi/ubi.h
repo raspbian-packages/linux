@@ -532,7 +532,9 @@ struct ubi_device {
 	void *fm_buf;
 	size_t fm_size;
 	struct work_struct fm_work;
+#ifndef __GENKSYMS__
 	int fast_attach;
+#endif
 
 	/* Wear-leveling sub-system's stuff */
 	struct rb_root used;
