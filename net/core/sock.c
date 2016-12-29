@@ -385,6 +385,12 @@ void sk_reset_txq(struct sock *sk)
 }
 EXPORT_SYMBOL(sk_reset_txq);
 
+int sk_receive_skb(struct sock *sk, struct sk_buff *skb, const int nested)
+{
+	return __sk_receive_skb(sk, skb, nested, 1);
+}
+EXPORT_SYMBOL(sk_receive_skb);
+
 struct dst_entry *__sk_dst_check(struct sock *sk, u32 cookie)
 {
 	struct dst_entry *dst = __sk_dst_get(sk);
