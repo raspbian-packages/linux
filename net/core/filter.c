@@ -97,6 +97,12 @@ int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap)
 }
 EXPORT_SYMBOL(sk_filter_trim_cap);
 
+int sk_filter(struct sock *sk, struct sk_buff *skb)
+{
+	return sk_filter_trim_cap(sk, skb, 1);
+}
+EXPORT_SYMBOL(sk_filter);
+
 /**
  *	sk_run_filter - run a filter on a socket
  *	@skb: buffer to run the filter on
