@@ -135,6 +135,12 @@ int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap)
 }
 EXPORT_SYMBOL(sk_filter_trim_cap);
 
+int sk_filter(struct sock *sk, struct sk_buff *skb)
+{
+	return sk_filter_trim_cap(sk, skb, 1);
+}
+EXPORT_SYMBOL(sk_filter);
+
 /* Base function for offset calculation. Needs to go into .text section,
  * therefore keeping it non-static as well; will also be used by JITs
  * anyway later on, so do not let the compiler omit it.
