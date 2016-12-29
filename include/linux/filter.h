@@ -347,10 +347,7 @@ static inline unsigned int sk_filter_size(unsigned int proglen)
 		(fprog->len * sizeof(fprog->filter[0]))
 
 int sk_filter_trim_cap(struct sock *sk, struct sk_buff *skb, unsigned int cap);
-static inline int sk_filter(struct sock *sk, struct sk_buff *skb)
-{
-	return sk_filter_trim_cap(sk, skb, 1);
-}
+int sk_filter(struct sock *sk, struct sk_buff *skb);
 
 void sk_filter_select_runtime(struct sk_filter *fp);
 void sk_filter_free(struct sk_filter *fp);
