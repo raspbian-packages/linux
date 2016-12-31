@@ -1737,7 +1737,7 @@ static int crypt_map(struct dm_target *ti, struct bio *bio,
 	return DM_MAPIO_SUBMITTED;
 }
 
-static void crypt_status(struct dm_target *ti, status_type_t type,
+static int crypt_status(struct dm_target *ti, status_type_t type,
 			 char *result, unsigned maxlen)
 {
 	struct crypt_config *cc = ti->private;
@@ -1765,6 +1765,7 @@ static void crypt_status(struct dm_target *ti, status_type_t type,
 
 		break;
 	}
+	return 0;
 }
 
 static void crypt_postsuspend(struct dm_target *ti)
