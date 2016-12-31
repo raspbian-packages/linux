@@ -1,0 +1,23 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 29 Jun 2011 20:06:39 +0200
+Subject: [PATCH 196/397] rtmutex-avoid-include-hell.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=31d067bdd5bd14bc975b14616edfb9f9555361c9
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/rtmutex.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index 928d93ee2635..5ebd0bbb6eaa 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -14,7 +14,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <linux/plist.h>
+-#include <linux/spinlock_types.h>
++#include <linux/spinlock_types_raw.h>
+ 
+ extern int max_lock_depth; /* for sysctl */
+ 

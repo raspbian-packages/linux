@@ -1,0 +1,48 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 4 Jul 2011 09:48:40 +0200
+Subject: [PATCH 216/397] mm-protect-activate-switch-mm.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=febe328abe0cb2713720e9e8074f57da1201d1f6
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ fs/exec.c        | 2 ++
+ mm/mmu_context.c | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index a0006d85785c..dbddb0dee796 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -840,10 +840,12 @@ static int exec_mmap(struct mm_struct *mm)
+ 		}
+ 	}
+ 	task_lock(tsk);
++	local_irq_disable_rt();
+ 	active_mm = tsk->active_mm;
+ 	tsk->mm = mm;
+ 	tsk->active_mm = mm;
+ 	activate_mm(active_mm, mm);
++	local_irq_enable_rt();
+ 	task_unlock(tsk);
+ 	arch_pick_mmap_layout(mm);
+ 	if (old_mm) {
+diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+index cf332bc0080a..64ce279a984d 100644
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -26,6 +26,7 @@ void use_mm(struct mm_struct *mm)
+ 	struct task_struct *tsk = current;
+ 
+ 	task_lock(tsk);
++	local_irq_disable_rt();
+ 	active_mm = tsk->active_mm;
+ 	if (active_mm != mm) {
+ 		atomic_inc(&mm->mm_count);
+@@ -33,6 +34,7 @@ void use_mm(struct mm_struct *mm)
+ 	}
+ 	tsk->mm = mm;
+ 	switch_mm(active_mm, mm, tsk);
++	local_irq_enable_rt();
+ 	task_unlock(tsk);
+ 
+ 	if (active_mm != mm)

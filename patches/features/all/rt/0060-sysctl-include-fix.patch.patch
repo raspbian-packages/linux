@@ -1,0 +1,22 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 14 Nov 2011 10:52:34 +0100
+Subject: [PATCH 060/397] sysctl-include-fix.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=1dea0c16c532db4a133d0ee5379d52dcc9054f0c
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/sysctl.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/sysctl.h b/include/linux/sysctl.h
+index 703cfa33a3ca..b954c4136da3 100644
+--- a/include/linux/sysctl.h
++++ b/include/linux/sysctl.h
+@@ -932,6 +932,7 @@ enum
+ #include <linux/list.h>
+ #include <linux/rcupdate.h>
+ #include <linux/wait.h>
++#include <linux/atomic.h>
+ 
+ /* For the /proc/sys support */
+ struct ctl_table;
