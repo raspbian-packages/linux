@@ -1,5 +1,4 @@
 #include <linux/linkage.h>
-#include <asm/export.h>
 
 	.text
 	.align	4
@@ -32,4 +31,3 @@ ENTRY(__multi3) /* %o0 = u, %o1 = v */
 	retl
 	 add	%g1, %o0, %o0
 ENDPROC(__multi3)
-EXPORT_SYMBOL(__multi3)
