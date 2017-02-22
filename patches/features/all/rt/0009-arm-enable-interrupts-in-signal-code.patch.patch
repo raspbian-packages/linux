@@ -1,0 +1,24 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 16 Jul 2011 16:27:13 +0200
+Subject: [PATCH 009/397] arm-enable-interrupts-in-signal-code.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=aef49dedf545e5aaa5f387e6a5577a5479bf7e8d
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/arm/kernel/signal.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index c1d9c77c3d19..f1699cf9fc1e 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -683,6 +683,9 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 	if (!user_mode(regs))
+ 		return;
+ 
++	local_irq_enable();
++	preempt_check_resched();
++
+ 	/*
+ 	 * If we were from a system call, check for system call restarting...
+ 	 */

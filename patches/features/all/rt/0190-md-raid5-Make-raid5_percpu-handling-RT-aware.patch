@@ -1,0 +1,69 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 6 Apr 2010 16:51:31 +0200
+Subject: [PATCH 190/397] md: raid5: Make raid5_percpu handling RT aware
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=6049526b3fb3c2dded2de9336aa42350cb297698
+
+__raid_run_ops() disables preemption with get_cpu() around the access
+to the raid5_percpu variables. That causes scheduling while atomic
+spews on RT.
+
+Serialize the access to the percpu data with a lock and keep the code
+preemptible.
+
+Reported-by: Udo van den Heuvel <udovdh@xs4all.nl>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Udo van den Heuvel <udovdh@xs4all.nl>
+---
+ drivers/md/raid5.c | 10 +++++++---
+ drivers/md/raid5.h |  1 +
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index 6056ee7984ac..10fbba8451b6 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1253,8 +1253,9 @@ static void __raid_run_ops(struct stripe_head *sh, unsigned long ops_request)
+ 	struct raid5_percpu *percpu;
+ 	unsigned long cpu;
+ 
+-	cpu = get_cpu();
++	cpu = get_cpu_light();
+ 	percpu = per_cpu_ptr(conf->percpu, cpu);
++	spin_lock(&percpu->lock);
+ 	if (test_bit(STRIPE_OP_BIOFILL, &ops_request)) {
+ 		ops_run_biofill(sh);
+ 		overlap_clear++;
+@@ -1306,7 +1307,8 @@ static void __raid_run_ops(struct stripe_head *sh, unsigned long ops_request)
+ 			if (test_and_clear_bit(R5_Overlap, &dev->flags))
+ 				wake_up(&sh->raid_conf->wait_for_overlap);
+ 		}
+-	put_cpu();
++	spin_unlock(&percpu->lock);
++	put_cpu_light();
+ }
+ 
+ #ifdef CONFIG_MULTICORE_RAID456
+@@ -4465,8 +4467,10 @@ static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu
+ {
+ 	if (conf->level == 6 && !percpu->spare_page)
+ 		percpu->spare_page = alloc_page(GFP_KERNEL);
+-	if (!percpu->scribble)
++	if (!percpu->scribble) {
+ 		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
++		spin_lock_init(&percpu->lock);
++	}
+ 
+ 	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
+ 		free_scratch_buffer(conf, percpu);
+diff --git a/drivers/md/raid5.h b/drivers/md/raid5.h
+index e10c5531f9c5..010a96916bc2 100644
+--- a/drivers/md/raid5.h
++++ b/drivers/md/raid5.h
+@@ -405,6 +405,7 @@ struct r5conf {
+ 	int			recovery_disabled;
+ 	/* per cpu variables */
+ 	struct raid5_percpu {
++		spinlock_t	lock;	     /* Protection for -RT */
+ 		struct page	*spare_page; /* Used when checking P/Q in raid6 */
+ 		void		*scribble;   /* space for constructing buffer
+ 					      * lists and performing address
