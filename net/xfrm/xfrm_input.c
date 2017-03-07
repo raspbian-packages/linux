@@ -102,6 +102,19 @@ int xfrm_prepare_input(struct xfrm_state *x, struct sk_buff *skb)
 }
 EXPORT_SYMBOL(xfrm_prepare_input);
 
+extern struct xfrm_replay xfrm_replay_esn;
+extern int xfrm_replay_recheck_esn(struct xfrm_state *x,
+				   struct sk_buff *skb, __be32 net_seq);
+
+static int
+xfrm_recheck(struct xfrm_state *x, struct sk_buff *skb, __be32 net_seq)
+{
+	if (x->repl == &xfrm_replay_esn)
+		return xfrm_replay_recheck_esn(x, skb, net_seq);
+	else
+		return x->repl->check(x, skb, net_seq);
+}
+
 int xfrm_input(struct sk_buff *skb, int nexthdr, __be32 spi, int encap_type)
 {
 	struct net *net = dev_net(skb->dev);
@@ -215,7 +228,7 @@ resume:
 		/* only the first xfrm gets the encap type */
 		encap_type = 0;
 
-		if (async && x->repl->recheck(x, skb, seq)) {
+		if (async && xfrm_recheck(x, skb, seq)) {
 			XFRM_INC_STATS(net, LINUX_MIB_XFRMINSTATESEQERROR);
 			goto drop_unlock;
 		}
