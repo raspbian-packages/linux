@@ -1755,11 +1755,11 @@ suppress_allocation:
 EXPORT_SYMBOL(__sk_mem_schedule);
 
 /**
- *	__sk_reclaim - reclaim memory_allocated
+ *	__sk_reclaim_amount - reclaim memory_allocated
  *	@sk: socket
  *	@amount: number of bytes (rounded down to a SK_MEM_QUANTUM multiple)
  */
-void __sk_mem_reclaim(struct sock *sk, int amount)
+void __sk_mem_reclaim_amount(struct sock *sk, int amount)
 {
 	struct proto *prot = sk->sk_prot;
 
@@ -1771,8 +1771,13 @@ void __sk_mem_reclaim(struct sock *sk, int amount)
 	    (atomic_long_read(prot->memory_allocated) < prot->sysctl_mem[0]))
 		*prot->memory_pressure = 0;
 }
-EXPORT_SYMBOL(__sk_mem_reclaim);
+EXPORT_SYMBOL(__sk_mem_reclaim_amount);
 
+void __sk_mem_reclaim(struct sock *sk)
+{
+	__sk_mem_reclaim_amount(sk, sk->sk_forward_alloc);
+}
+EXPORT_SYMBOL(__sk_mem_reclaim);
 
 /*
  * Set of default routines for initialising struct proto_ops when
