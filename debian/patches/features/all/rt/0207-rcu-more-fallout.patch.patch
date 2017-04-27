@@ -1,0 +1,27 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Mon, 14 Nov 2011 10:57:54 +0100
+Subject: [PATCH 207/397] rcu-more-fallout.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=2726120d8703d00a35c267b9ca859f106febdd54
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/rcutiny.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index bc845960c63a..724988c378ae 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -248,6 +248,7 @@ void call_rcu_sched(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_sched);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
+ /*
+  * Post an RCU bottom-half callback to be invoked after any subsequent
+  * quiescent state.
+@@ -257,3 +258,4 @@ void call_rcu_bh(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
+ 	__call_rcu(head, func, &rcu_bh_ctrlblk);
+ }
+ EXPORT_SYMBOL_GPL(call_rcu_bh);
++#endif
