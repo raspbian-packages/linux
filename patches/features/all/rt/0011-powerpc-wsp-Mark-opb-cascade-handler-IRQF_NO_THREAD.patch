@@ -1,0 +1,26 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 5 Oct 2011 14:11:24 +0200
+Subject: [PATCH 011/397] powerpc: wsp: Mark opb cascade handler IRQF_NO_THREAD
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=165238aec3d43ab7c54d92441c208cc61e4d6bee
+
+Cascade handlers must run in hard interrupt context.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/powerpc/platforms/wsp/opb_pic.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/platforms/wsp/opb_pic.c b/arch/powerpc/platforms/wsp/opb_pic.c
+index be05631a3c1c..19f353dfcd03 100644
+--- a/arch/powerpc/platforms/wsp/opb_pic.c
++++ b/arch/powerpc/platforms/wsp/opb_pic.c
+@@ -320,7 +320,8 @@ void __init opb_pic_init(void)
+ 		}
+ 
+ 		/* Attach opb interrupt handler to new virtual IRQ */
+-		rc = request_irq(virq, opb_irq_handler, 0, "OPB LS Cascade", opb);
++		rc = request_irq(virq, opb_irq_handler, IRQF_NO_THREAD,
++				 "OPB LS Cascade", opb);
+ 		if (rc) {
+ 			printk("opb: request_irq failed: %d\n", rc);
+ 			continue;

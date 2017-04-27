@@ -1,0 +1,20 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Sun, 17 Jul 2011 21:51:45 +0200
+Subject: [PATCH 180/397] mutex-no-spin-on-rt.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=fa1c35fec67ef381b9eae52a4d5b0bab95647d36
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/Kconfig.locks | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 61ebb49bdee8..a163ed59ec8f 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -203,4 +203,4 @@ config ARCH_SUPPORTS_ATOMIC_RMW
+ 
+ config MUTEX_SPIN_ON_OWNER
+ 	def_bool y
+-	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW
++	depends on SMP && !DEBUG_MUTEXES && ARCH_SUPPORTS_ATOMIC_RMW && !PREEMPT_RT_FULL
