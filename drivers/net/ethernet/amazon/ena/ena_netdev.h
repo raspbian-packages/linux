@@ -186,6 +186,7 @@ struct ena_stats_rx {
 	u64 dma_mapping_err;
 	u64 bad_desc_num;
 	u64 rx_copybreak_pkt;
+	u64 empty_rx_ring;
 };
 
 struct ena_ring {
@@ -233,6 +234,7 @@ struct ena_ring {
 		struct ena_stats_tx tx_stats;
 		struct ena_stats_rx rx_stats;
 	};
+	int empty_rx_queue;
 } ____cacheline_aligned;
 
 struct ena_stats_dev {
