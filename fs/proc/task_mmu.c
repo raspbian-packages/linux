@@ -642,6 +642,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 		seq_printf(m, "Nonlinear:      %8lu kB\n",
 				mss.nonlinear >> 10);
 
+	if (vm_is_stack(m->private, vma, is_pid))
+		seq_printf(m, "Stack_Gap:      %8lu kB\n", stack_guard_gap >>10);
+
 	show_smap_vma_flags(m, vma);
 
 	if (m->count < m->size)  /* vma is copied successfully */
