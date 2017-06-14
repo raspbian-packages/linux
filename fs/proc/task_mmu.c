@@ -234,13 +234,13 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, bool *has_gap)
 	end = vma->vm_end;
 	if (vma->vm_flags & VM_GROWSDOWN) {
 		if (stack_guard_area(vma, start)) {
-			start += stack_guard_gap;
+			start = min(end, start + stack_guard_gap);
 			if (has_gap)
 				*has_gap = true;
 		}
 	} else if (vma->vm_flags & VM_GROWSUP) {
 		if (stack_guard_area(vma, end)) {
-			end -= stack_guard_gap;
+			end = max(start, end - stack_guard_gap);
 			if (has_gap)
 				*has_gap = true;
 		}
