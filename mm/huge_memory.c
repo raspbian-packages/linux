@@ -680,6 +680,9 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	pte_t *pte;
 
 	if (haddr >= vma->vm_start && haddr + HPAGE_PMD_SIZE <= vma->vm_end) {
+		if (stack_guard_area(vma, haddr) ||
+				stack_guard_area(vma, haddr + HPAGE_PMD_SIZE))
+			goto out;
 		if (unlikely(anon_vma_prepare(vma)))
 			return VM_FAULT_OOM;
 		if (unlikely(khugepaged_enter(vma, vma->vm_flags)))
@@ -1921,6 +1924,10 @@ static void collapse_huge_page(struct mm_struct *mm,
 	if (address < hstart || address + HPAGE_PMD_SIZE > hend)
 		goto out;
 	if (!hugepage_vma_check(vma))
+		goto out;
+
+	/* never try to collapse stack gap */
+	if (stack_guard_area(vma, hstart) || stack_guard_area(vma, hend))
 		goto out;
 	pgd = pgd_offset(mm, address);
 	if (!pgd_present(*pgd))
