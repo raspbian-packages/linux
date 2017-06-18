@@ -1,0 +1,32 @@
+[abi]
+ignore-changes:
+# Inline functions, did not need to be exported at all
+ __down_read
+ __down_read_trylock
+ __down_write
+ __down_write_trylock
+ __downgrade_write
+ __up_read
+ __up_write
+
+[base]
+flavours:
+ sparc64
+ sparc64-smp
+kernel-arch: sparc
+
+[image]
+configs: sparc/config
+suggests: silo, fdutils
+
+[sparc64_description]
+hardware: uniprocessor 64-bit UltraSPARC
+
+[sparc64_image]
+configs: sparc/config.sparc64
+
+[sparc64-smp_description]
+hardware: multiprocessor 64-bit UltraSPARC
+
+[sparc64-smp_image]
+configs: sparc/config.sparc64-smp
