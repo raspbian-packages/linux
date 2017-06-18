@@ -1,0 +1,51 @@
+From: Steven Rostedt <srostedt@redhat.com>
+Date: Mon, 16 Apr 2012 21:51:54 -0400
+Subject: [PATCH 261/397] rt: Make migrate_disable/enable() and __rt_mutex_init
+ non-GPL only
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=a402d560e5c5b167f1f8d94813c8907ca98c912b
+
+Modules that load on the normal vanilla kernel should also load on
+an -rt kernel as well. This does not mean we condone non-GPL modules,
+we are only being consistent.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rtmutex.c | 2 +-
+ kernel/sched.c   | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 01284cabaac6..1042825820d6 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -1499,7 +1499,7 @@ void __rt_mutex_init(struct rt_mutex *lock, const char *name)
+ 
+ 	debug_rt_mutex_init(lock, name);
+ }
+-EXPORT_SYMBOL_GPL(__rt_mutex_init);
++EXPORT_SYMBOL(__rt_mutex_init);
+ 
+ /**
+  * rt_mutex_init_proxy_locked - initialize and lock a rt_mutex on behalf of a
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 76a3596e58df..c4307f85024c 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4649,7 +4649,7 @@ void migrate_disable(void)
+ 	p->migrate_disable = 1;
+ 	preempt_enable();
+ }
+-EXPORT_SYMBOL_GPL(migrate_disable);
++EXPORT_SYMBOL(migrate_disable);
+ 
+ void migrate_enable(void)
+ {
+@@ -4701,7 +4701,7 @@ void migrate_enable(void)
+ 	unpin_current_cpu();
+ 	preempt_enable();
+ }
+-EXPORT_SYMBOL_GPL(migrate_enable);
++EXPORT_SYMBOL(migrate_enable);
+ #else
+ static inline void update_migrate_disable(struct task_struct *p) { }
+ #define migrate_disabled_updated(p)		0
