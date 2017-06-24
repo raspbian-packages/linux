@@ -376,6 +376,13 @@ _GLOBAL(power9_idle_stop)
  */
 _GLOBAL(pnv_restore_hyp_resource)
 BEGIN_FTR_SECTION
+	/*
+	 * Workaround for POWER9, if we lost resources, the ERAT
+	 * might have been mixed up and needs flushing.
+	 */
+	blt	cr3,1f
+	PPC_INVALIDATE_ERAT
+1:
 	ld	r2,PACATOC(r13);
 	/*
 	 * POWER ISA 3. Use PSSCR to determine if we
