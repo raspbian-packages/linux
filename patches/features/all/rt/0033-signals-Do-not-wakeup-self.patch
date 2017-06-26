@@ -1,0 +1,28 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 3 Jul 2009 08:44:44 -0500
+Subject: [PATCH 033/397] signals: Do not wakeup self
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=0180bd4d36441d039b9fcbf4d2b5f2ce2048e74c
+
+Signals which are delivered by current to current can do without
+waking up current :)
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/signal.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 53c8d54a5697..3cc8b934cf93 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -682,6 +682,10 @@ int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
+ void signal_wake_up_state(struct task_struct *t, unsigned int state)
+ {
+ 	set_tsk_thread_flag(t, TIF_SIGPENDING);
++
++	if (unlikely(t == current))
++		return;
++
+ 	/*
+ 	 * TASK_WAKEKILL also means wake it up in the stopped/traced/killable
+ 	 * case. We don't check t->state here because there is a race with it

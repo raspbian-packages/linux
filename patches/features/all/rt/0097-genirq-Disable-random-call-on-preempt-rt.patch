@@ -1,0 +1,28 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 21 Jul 2009 16:07:37 +0200
+Subject: [PATCH 097/397] genirq: Disable random call on preempt-rt
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=be05c2c71e54383be46d8efe2bf0bace1b5c513a
+
+The random call introduces high latencies and is almost
+unused. Disable it for -rt.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/irq/handle.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index 10e077289c8d..a7688853397e 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -156,7 +156,10 @@ handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
+ 		action = action->next;
+ 	} while (action);
+ 
++#ifndef CONFIG_PREEMPT_RT_FULL
++	/* FIXME: Can we unbreak that ? */
+ 	add_interrupt_randomness(irq, flags);
++#endif
+ 
+ 	if (!noirqdebug)
+ 		note_interrupt(irq, desc, retval);
