@@ -1,0 +1,26 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 16 Mar 2011 14:45:31 +0100
+Subject: [PATCH 028/397] arm: Mark pmu interupt IRQF_NO_THREAD
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=a1029dd56036df626148e7f0ec4ae5f81b3de78e
+
+PMU interrupt must not be threaded. Remove IRQF_DISABLED while at it
+as we run all handlers with interrupts disabled anyway.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/arm/kernel/perf_event.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 4a2db48c148e..c00abc9ed204 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -446,7 +446,7 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+ 		}
+ 
+ 		err = request_irq(irq, handle_irq,
+-				  IRQF_DISABLED | IRQF_NOBALANCING,
++				  IRQF_NOBALANCING | IRQF_NO_THREAD,
+ 				  "arm-pmu", armpmu);
+ 		if (err) {
+ 			pr_err("unable to request IRQ%d for ARM PMU counters\n",
