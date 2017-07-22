@@ -39,7 +39,7 @@ int __get_perf_regnum_for_unw_regnum_i386(int unw_regnum __maybe_unused)
 	if (unw_regnum <  0 || unw_regnum >= (int)ARRAY_SIZE(perf_i386_regnums) ||
 	    perf_i386_regnums[unw_regnum] == 0) {
 		pr_err("unwind: invalid reg id %d\n", unw_regnum);
-		return -EINVAL;
+		return -1;
 	}
 
 	return perf_i386_regnums[unw_regnum];
