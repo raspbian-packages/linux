@@ -119,16 +119,16 @@ LDFLAGS_vmlinux		+= --defsym phys_stext=_stext-$(CONFIG_PAGE_OFFSET) \
 endif
 
 ifdef CONFIG_CPU_LITTLE_ENDIAN
-ld-bfd			:= elf32-$(UTS_MACHINE)-linux
-LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64 --oformat $(ld-bfd)
+ld_bfd			:= elf32-$(UTS_MACHINE)-linux
+LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64 --oformat $(ld_bfd)
 LDFLAGS			+= -EL
 else
-ld-bfd			:= elf32-$(UTS_MACHINE)big-linux
-LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64+4 --oformat $(ld-bfd)
+ld_bfd			:= elf32-$(UTS_MACHINE)big-linux
+LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64+4 --oformat $(ld_bfd)
 LDFLAGS			+= -EB
 endif
 
-export ld-bfd BITS
+export ld_bfd BITS
 
 head-y	:= arch/sh/kernel/head_$(BITS).o
 
