@@ -245,8 +245,12 @@ extern void ttm_base_object_unref(struct ttm_base_object **p_base);
  */
 extern int ttm_ref_object_add(struct ttm_object_file *tfile,
 			      struct ttm_base_object *base,
-			      enum ttm_ref_type ref_type, bool *existed,
-			      bool require_existed);
+			      enum ttm_ref_type ref_type, bool *existed);
+extern int ttm_ref_object_add_2(struct ttm_object_file *tfile,
+				struct ttm_base_object *base,
+				enum ttm_ref_type ref_type, bool *existed,
+				bool require_existed);
+#define ttm_ref_object_add ttm_ref_object_add_2
 
 extern bool ttm_ref_object_exists(struct ttm_object_file *tfile,
 				  struct ttm_base_object *base);

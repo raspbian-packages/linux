@@ -762,3 +762,12 @@ int ttm_prime_object_init(struct ttm_object_file *tfile, size_t size,
 				    ref_obj_release);
 }
 EXPORT_SYMBOL(ttm_prime_object_init);
+
+#undef ttm_ref_object_add
+int ttm_ref_object_add(struct ttm_object_file *tfile,
+		       struct ttm_base_object *base,
+		       enum ttm_ref_type ref_type, bool *existed)
+{
+	return ttm_ref_object_add_2(tfile, base, ref_type, existed, false);
+}
+EXPORT_SYMBOL(ttm_ref_object_add);
