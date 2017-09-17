@@ -260,6 +260,10 @@ static int __ptrace_may_access(struct task_struct *task, unsigned int mode)
 	kuid_t caller_uid;
 	kgid_t caller_gid;
 
+	/* bwh: Use old behaviour for any out-of-tree modules */
+	if ((mode & (PTRACE_MODE_FSCREDS | PTRACE_MODE_REALCREDS)) == 0) {
+		mode |= PTRACE_MODE_REALCREDS;
+	} else
 	if (!(mode & PTRACE_MODE_FSCREDS) == !(mode & PTRACE_MODE_REALCREDS)) {
 		WARN(1, "denying ptrace access check without PTRACE_MODE_*CREDS\n");
 		return -EPERM;
