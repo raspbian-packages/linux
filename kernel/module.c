@@ -64,6 +64,7 @@
 #include <linux/bsearch.h>
 #include <linux/dynamic_debug.h>
 #include <linux/audit.h>
+#include <linux/ima.h>
 #include <uapi/linux/module.h>
 #include "module-internal.h"
 
@@ -2765,7 +2766,8 @@ static inline void kmemleak_load_module(const struct module *mod,
 #endif
 
 #ifdef CONFIG_MODULE_SIG
-static int module_sig_check(struct load_info *info, int flags)
+static int module_sig_check(struct load_info *info, int flags,
+			    bool can_do_ima_check)
 {
 	int err = -ENOKEY;
 	const unsigned long markerlen = sizeof(MODULE_SIG_STRING) - 1;
@@ -2789,13 +2791,16 @@ static int module_sig_check(struct load_info *info, int flags)
 	}
 
 	/* Not having a signature is only an error if we're strict. */
-	if (err == -ENOKEY && !sig_enforce)
+	if (err == -ENOKEY && !sig_enforce &&
+	    (!can_do_ima_check || !is_ima_appraise_enabled()) &&
+	    !kernel_is_locked_down("Loading of unsigned modules"))
 		err = 0;
 
 	return err;
 }
 #else /* !CONFIG_MODULE_SIG */
-static int module_sig_check(struct load_info *info, int flags)
+static int module_sig_check(struct load_info *info, int flags,
+			    bool can_do_ima_check)
 {
 	return 0;
 }
@@ -3651,13 +3656,13 @@ static int unknown_module_param_cb(char *param, char *val, const char *modname,
 /* Allocate and load the module: note that size of section 0 is always
    zero, and we rely on this for optional sections. */
 static int load_module(struct load_info *info, const char __user *uargs,
-		       int flags)
+		       int flags, bool can_do_ima_check)
 {
 	struct module *mod;
 	long err;
 	char *after_dashes;
 
-	err = module_sig_check(info, flags);
+	err = module_sig_check(info, flags, can_do_ima_check);
 	if (err)
 		goto free_copy;
 
@@ -3851,7 +3856,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
 	if (err)
 		return err;
 
-	return load_module(&info, uargs, 0);
+	return load_module(&info, uargs, 0, false);
 }
 
 SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
@@ -3878,7 +3883,7 @@ SYSCALL_DEFINE3(finit_module, int, fd, const char __user *, uargs, int, flags)
 	info.hdr = hdr;
 	info.len = size;
 
-	return load_module(&info, uargs, flags);
+	return load_module(&info, uargs, flags, true);
 }
 
 static inline int within(unsigned long addr, void *start, unsigned long size)
