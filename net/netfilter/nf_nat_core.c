@@ -796,6 +796,11 @@ static int __init nf_nat_init(void)
 {
 	int ret;
 
+	/* bwh: Assert that nat_bysource hasn't changed size or alignment */
+	BUILD_BUG_ON(sizeof(struct hlist_node) != sizeof(struct rhlist_head));
+	BUILD_BUG_ON(__alignof__(struct hlist_node) !=
+		     __alignof__(struct rhlist_head));
+
 	/* Leave them the same for the moment. */
 	nf_nat_htable_size = nf_conntrack_htable_size;
 
