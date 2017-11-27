@@ -237,3 +237,10 @@ unsigned int cpumask_local_spread(unsigned int i, int node)
 	BUG();
 }
 EXPORT_SYMBOL(cpumask_local_spread);
+
+int cpumask_set_cpu_local_first(int i, int numa_node, cpumask_t *dstp)
+{
+	cpumask_set_cpu(cpumask_local_spread(i, numa_node), dstp);
+	return 0;
+}
+EXPORT_SYMBOL(cpumask_set_cpu_local_first);
