@@ -448,6 +448,15 @@ struct mm_struct {
 	int numa_scan_seq;
 #endif
 #if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
+#ifndef __GENKSYMS__
+	bool pad_was_tlb_flush_pending;
+#else
+	bool tlb_flush_pending;
+#endif
+#endif
+	struct uprobes_state uprobes_state;
+#ifndef __GENKSYMS__
+#if defined(CONFIG_NUMA_BALANCING) || defined(CONFIG_COMPACTION)
 	/*
 	 * An operation with batched TLB flushing is going on. Anything that
 	 * can move process memory needs to flush the TLB when moving a
@@ -455,7 +464,7 @@ struct mm_struct {
 	 */
 	atomic_t tlb_flush_pending;
 #endif
-	struct uprobes_state uprobes_state;
+#endif
 };
 
 static inline void mm_init_cpumask(struct mm_struct *mm)
