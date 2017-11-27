@@ -110,11 +110,15 @@ struct fib_info {
 	unsigned char		fib_type;
 	__be32			fib_prefsrc;
 	u32			fib_priority;
+#ifndef __GENKSYMS__
 	struct dst_metrics	*fib_metrics;
 #define fib_mtu fib_metrics->metrics[RTAX_MTU-1]
 #define fib_window fib_metrics->metrics[RTAX_WINDOW-1]
 #define fib_rtt fib_metrics->metrics[RTAX_RTT-1]
 #define fib_advmss fib_metrics->metrics[RTAX_ADVMSS-1]
+#else
+	u32			*fib_metrics;
+#endif
 	int			fib_nhs;
 #ifdef CONFIG_IP_ROUTE_MULTIPATH
 	int			fib_power;
