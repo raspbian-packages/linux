@@ -1320,11 +1320,15 @@ struct task_struct {
 				 * execve */
 	unsigned in_iowait:1;
 
+#ifndef __GENKSYMS__
+	unsigned :1;
+#else
+	unsigned no_new_privs:1;
+#endif
+
 	/* Revert to default priority/policy when forking */
 	unsigned sched_reset_on_fork:1;
 	unsigned sched_contributes_to_load:1;
-
-	unsigned long atomic_flags; /* Flags needing atomic access. */
 
 	pid_t pid;
 	pid_t tgid;
@@ -1666,6 +1670,9 @@ struct task_struct {
 #if defined(CONFIG_BCACHE) || defined(CONFIG_BCACHE_MODULE)
 	unsigned int	sequential_io;
 	unsigned int	sequential_io_avg;
+#endif
+#ifndef __GENKSYMS__
+	unsigned long atomic_flags; /* Flags needing atomic access. */
 #endif
 };
 
