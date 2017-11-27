@@ -1,13 +1,26 @@
 #ifndef __NET_FRAG_H__
 #define __NET_FRAG_H__
 
+#include <linux/percpu_counter.h>
+
 struct netns_frags {
 	int			nqueues;
 	struct list_head	lru_list;
 	spinlock_t		lru_lock;
 
+	/*
+	 * bwh: This change is hidden from genksyms, but we still make
+	 * sure to avoid an ABI mismatch for the modules that access
+	 * it (see comment below).
+	 */
+#ifndef __GENKSYMS__
 	/* Keep atomic mem on separate cachelines in structs that include it */
 	atomic_t		mem ____cacheline_aligned_in_smp;
+	char			pad[sizeof(struct percpu_counter) -
+				    sizeof(atomic_t)];
+#else
+	struct percpu_counter   mem ____cacheline_aligned_in_smp;
+#endif
 	/* sysctls */
 	int			timeout;
 	int			high_thresh;
@@ -79,6 +92,14 @@ void inet_frags_init(struct inet_frags *);
 void inet_frags_fini(struct inet_frags *);
 
 void inet_frags_init_net(struct netns_frags *nf);
+/*
+ * bwh: All modules accessing inet_frag::mem through the inline
+ * functions below also call inet_frags_exit_net().  Change the
+ * function name together with that field's type, so that all loaded
+ * code agrees on whether the type is atomic_t or struct
+ * percpu_counter.
+ */
+#define inet_frags_exit_net inet_frags_exit_net_atomic
 void inet_frags_exit_net(struct netns_frags *nf, struct inet_frags *f);
 
 void inet_frag_kill(struct inet_frag_queue *q, struct inet_frags *f);
