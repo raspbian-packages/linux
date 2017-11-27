@@ -164,12 +164,12 @@ static inline void __tlb_flush_mm(struct mm_struct * mm)
 
 static inline void __tlb_flush_mm_lazy(struct mm_struct * mm)
 {
-	spin_lock(&mm->context.lock);
+	spin_lock(&mm->s390_flush_lock);
 	if (mm->context.flush_mm) {
 		mm->context.flush_mm = 0;
 		__tlb_flush_mm(mm);
 	}
-	spin_unlock(&mm->context.lock);
+	spin_unlock(&mm->s390_flush_lock);
 }
 
 /*

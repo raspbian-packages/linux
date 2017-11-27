@@ -464,6 +464,10 @@ struct mm_struct {
 	 */
 	atomic_t tlb_flush_pending;
 #endif
+#ifdef CONFIG_S390
+	/* bwh: This should be in s390's mm_context_t but that breaks ABI */
+	spinlock_t s390_flush_lock;
+#endif
 #endif
 };
 
