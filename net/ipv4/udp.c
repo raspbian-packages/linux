@@ -90,7 +90,9 @@
 #include <linux/socket.h>
 #include <linux/sockios.h>
 #include <linux/igmp.h>
+#ifndef __GENKSYMS__
 #include <linux/inetdevice.h>
+#endif
 #include <linux/in.h>
 #include <linux/errno.h>
 #include <linux/timer.h>
