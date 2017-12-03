@@ -808,7 +808,11 @@ struct mm16_r3_format {		/* Load from global pointer format */
 struct mm16_r5_format {		/* Load/store from stack pointer format */
 	__BITFIELD_FIELD(unsigned int opcode : 6,
 	__BITFIELD_FIELD(unsigned int rt : 5,
+#if !defined(__KERNEL__) || !defined(__GENKSYMS__)
 	__BITFIELD_FIELD(unsigned int imm : 5,
+#else
+	__BITFIELD_FIELD(signed int simmediate : 5,
+#endif
 	__BITFIELD_FIELD(unsigned int : 16, /* Ignored */
 	;))))
 };
