@@ -881,8 +881,14 @@ static inline int hid_hw_power(struct hid_device *hdev, int level)
 	return hdev->ll_driver->power ? hdev->ll_driver->power(hdev, level) : 0;
 }
 
+#ifdef __GENKSYMS__
+/* Old callers will ignore the return value even if we change the return type */
+void hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
+		int interrupt);
+#else
 int hid_report_raw_event(struct hid_device *hid, int type, u8 *data, int size,
 		int interrupt);
+#endif
 
 extern int hid_generic_init(void);
 extern void hid_generic_exit(void);
