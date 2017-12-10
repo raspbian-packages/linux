@@ -63,7 +63,6 @@ int writeback_in_progress(struct backing_dev_info *bdi)
 {
 	return test_bit(BDI_writeback_running, &bdi->state);
 }
-EXPORT_SYMBOL(writeback_in_progress);
 
 static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
 {
@@ -1422,3 +1421,6 @@ int sync_inode_metadata(struct inode *inode, int wait)
 	return sync_inode(inode, &wbc);
 }
 EXPORT_SYMBOL(sync_inode_metadata);
+
+/* Placed at the bottom because it changes versions for the other symbols(!) */
+EXPORT_SYMBOL(writeback_in_progress);
