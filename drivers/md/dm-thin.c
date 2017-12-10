@@ -2096,7 +2096,7 @@ static int pool_message(struct dm_target *ti, unsigned argc, char **argv)
  *    <transaction id> <used metadata sectors>/<total metadata sectors>
  *    <used data sectors>/<total data sectors> <held metadata root>
  */
-static void pool_status(struct dm_target *ti, status_type_t type,
+static int pool_status(struct dm_target *ti, status_type_t type,
 			char *result, unsigned maxlen)
 {
 	int r;
@@ -2177,10 +2177,11 @@ static void pool_status(struct dm_target *ti, status_type_t type,
 			DMEMIT("skip_block_zeroing ");
 		break;
 	}
-	return;
+	return 0;
 
 err:
 	DMEMIT("Error");
+	return 0;
 }
 
 static int pool_iterate_devices(struct dm_target *ti,
@@ -2356,7 +2357,7 @@ static void thin_postsuspend(struct dm_target *ti)
 /*
  * <nr mapped sectors> <highest mapped sector>
  */
-static void thin_status(struct dm_target *ti, status_type_t type,
+static int thin_status(struct dm_target *ti, status_type_t type,
 			char *result, unsigned maxlen)
 {
 	int r;
@@ -2398,10 +2399,11 @@ static void thin_status(struct dm_target *ti, status_type_t type,
 		}
 	}
 
-	return;
+	return 0;
 
 err:
 	DMEMIT("Error");
+	return 0;
 }
 
 static int thin_iterate_devices(struct dm_target *ti,

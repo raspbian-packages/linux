@@ -338,7 +338,7 @@ static int flakey_end_io(struct dm_target *ti, struct bio *bio,
 	return error;
 }
 
-static void flakey_status(struct dm_target *ti, status_type_t type,
+static int flakey_status(struct dm_target *ti, status_type_t type,
 			  char *result, unsigned maxlen)
 {
 	unsigned sz = 0;
@@ -369,6 +369,7 @@ static void flakey_status(struct dm_target *ti, status_type_t type,
 
 		break;
 	}
+	return 0;
 }
 
 static int flakey_ioctl(struct dm_target *ti, unsigned int cmd, unsigned long arg)
