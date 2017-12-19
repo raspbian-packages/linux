@@ -1821,25 +1821,25 @@ static bool check_reg_sane_offset(struct bpf_verifier_env *env,
 	s64 smin = reg->smin_value;
 
 	if (known && (val >= BPF_MAX_VAR_OFF || val <= -BPF_MAX_VAR_OFF)) {
-		verbose("math between %s pointer and %lld is not allowed\n",
+		verbose(env, "math between %s pointer and %lld is not allowed\n",
 			reg_type_str[type], val);
 		return false;
 	}
 
 	if (reg->off >= BPF_MAX_VAR_OFF || reg->off <= -BPF_MAX_VAR_OFF) {
-		verbose("%s pointer offset %d is not allowed\n",
+		verbose(env, "%s pointer offset %d is not allowed\n",
 			reg_type_str[type], reg->off);
 		return false;
 	}
 
 	if (smin == S64_MIN) {
-		verbose("math between %s pointer and register with unbounded min value is not allowed\n",
+		verbose(env, "math between %s pointer and register with unbounded min value is not allowed\n",
 			reg_type_str[type]);
 		return false;
 	}
 
 	if (smin >= BPF_MAX_VAR_OFF || smin <= -BPF_MAX_VAR_OFF) {
-		verbose("value %lld makes %s pointer be out of bounds\n",
+		verbose(env, "value %lld makes %s pointer be out of bounds\n",
 			smin, reg_type_str[type]);
 		return false;
 	}
