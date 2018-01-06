@@ -1,0 +1,42 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 14 Jun 2011 17:05:09 +0200
+Subject: [PATCH 217/397] fs-block-rt-support.patch
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=b4584d78fa88e4864d84136fd1f78701ee64a084
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Forward-ported to 3.2.96: blk_start_queue() checks for !in_interrupt()]
+---
+ block/blk-core.c | 2 +-
+ fs/file.c        | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -235,7 +235,7 @@ EXPORT_SYMBOL(blk_delay_queue);
+  **/
+ void blk_start_queue(struct request_queue *q)
+ {
+-	WARN_ON(!in_interrupt() && !irqs_disabled());
++	WARN_ON_NONRT(!in_interrupt() && !irqs_disabled());
+ 
+ 	queue_flag_clear(QUEUE_FLAG_STOPPED, q);
+ 	__blk_run_queue(q);
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -105,14 +105,14 @@ void free_fdtable_rcu(struct rcu_head *r
+ 		kfree(fdt->open_fds);
+ 		kfree(fdt);
+ 	} else {
+-		fddef = &get_cpu_var(fdtable_defer_list);
++		fddef = &per_cpu(fdtable_defer_list, get_cpu_light());
+ 		spin_lock(&fddef->lock);
+ 		fdt->next = fddef->next;
+ 		fddef->next = fdt;
+ 		/* vmallocs are handled from the workqueue context */
+ 		schedule_work(&fddef->wq);
+ 		spin_unlock(&fddef->lock);
+-		put_cpu_var(fdtable_defer_list);
++		put_cpu_light();
+ 	}
+ }
+ 
