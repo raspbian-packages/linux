@@ -1,0 +1,4 @@
+[base]
+kernel-arch: arm
+featuresets:
+#empty; we build kernels from other packages.
