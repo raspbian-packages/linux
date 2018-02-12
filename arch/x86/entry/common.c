@@ -287,12 +287,21 @@ __visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
 	 * table.  The only functional difference is the x32 bit in
 	 * regs->orig_ax, which changes the behavior of some syscalls.
 	 */
-	nr &= __SYSCALL_MASK;
-	if (likely(nr < NR_syscalls)) {
+	if (x32_enabled) {
+		nr &= ~__X32_SYSCALL_BIT;
+		if (unlikely(nr >= NR_syscalls))
+			goto bad;
 		nr = array_index_nospec(nr, NR_syscalls);
+		goto good;
+	} else {
+		nr &= ~0U;
+		if (unlikely(nr >= NR_non_x32_syscalls))
+			goto bad;
+		nr = array_index_nospec(nr, NR_non_x32_syscalls);
+good:
 		regs->ax = sys_call_table[nr](regs);
 	}
-
+bad:
 	syscall_return_slowpath(regs);
 }
 #endif
