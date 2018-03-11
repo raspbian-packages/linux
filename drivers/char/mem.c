@@ -180,9 +180,6 @@ static ssize_t write_mem(struct file *file, const char __user *buf,
 	if (p != *ppos)
 		return -EFBIG;
 
-	if (kernel_is_locked_down())
-		return -EPERM;
-
 	if (!valid_phys_addr_range(p, count))
 		return -EFAULT;
 
@@ -345,6 +342,10 @@ static int mmap_mem(struct file *file, struct vm_area_struct *vma)
 {
 	size_t size = vma->vm_end - vma->vm_start;
 	phys_addr_t offset = (phys_addr_t)vma->vm_pgoff << PAGE_SHIFT;
+
+	/* Does it even fit in phys_addr_t? */
+	if (offset >> PAGE_SHIFT != vma->vm_pgoff)
+		return -EINVAL;
 
 	/* It's illegal to wrap around the end of the physical address space. */
 	if (offset + (phys_addr_t)size - 1 < offset)
@@ -543,9 +544,6 @@ static ssize_t write_kmem(struct file *file, const char __user *buf,
 	ssize_t virtr = 0;
 	char *kbuf; /* k-addr because vwrite() takes vmlist_lock rwlock */
 	int err = 0;
-
-	if (kernel_is_locked_down())
-		return -EPERM;
 
 	if (p < (unsigned long) high_memory) {
 		unsigned long to_write = min_t(unsigned long, count,
@@ -769,7 +767,7 @@ static loff_t memory_lseek(struct file *file, loff_t offset, int orig)
 
 static int open_port(struct inode *inode, struct file *filp)
 {
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("/dev/mem,kmem,port"))
 		return -EPERM;
 	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
 }

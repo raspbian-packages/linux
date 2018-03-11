@@ -205,7 +205,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
 	 * kexec can be used to circumvent module loading restrictions, so
 	 * prevent loading in that case
 	 */
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("kexec of unsigned images"))
 		return -EPERM;
 
 	/*

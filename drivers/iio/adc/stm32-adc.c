@@ -531,6 +531,7 @@ static struct stm32_adc_trig_info stm32h7_adc_trigs[] = {
 	{ TIM2_TRGO, STM32_EXT11 },
 	{ TIM4_TRGO, STM32_EXT12 },
 	{ TIM6_TRGO, STM32_EXT13 },
+	{ TIM15_TRGO, STM32_EXT14 },
 	{ TIM3_CH4, STM32_EXT15 },
 	{ LPTIM1_OUT, STM32_EXT18 },
 	{ LPTIM2_OUT, STM32_EXT19 },
@@ -1314,6 +1315,7 @@ static int stm32_adc_set_watermark(struct iio_dev *indio_dev, unsigned int val)
 {
 	struct stm32_adc *adc = iio_priv(indio_dev);
 	unsigned int watermark = STM32_DMA_BUFFER_SIZE / 2;
+	unsigned int rx_buf_sz = STM32_DMA_BUFFER_SIZE;
 
 	/*
 	 * dma cyclic transfers are used, buffer is split into two periods.
@@ -1322,7 +1324,7 @@ static int stm32_adc_set_watermark(struct iio_dev *indio_dev, unsigned int val)
 	 * - one buffer (period) driver can push with iio_trigger_poll().
 	 */
 	watermark = min(watermark, val * (unsigned)(sizeof(u16)));
-	adc->rx_buf_sz = watermark * 2;
+	adc->rx_buf_sz = min(rx_buf_sz, watermark * 2 * adc->num_conv);
 
 	return 0;
 }
@@ -1385,7 +1387,6 @@ static const struct iio_info stm32_adc_iio_info = {
 	.update_scan_mode = stm32_adc_update_scan_mode,
 	.debugfs_reg_access = stm32_adc_debugfs_reg_access,
 	.of_xlate = stm32_adc_of_xlate,
-	.driver_module = THIS_MODULE,
 };
 
 static unsigned int stm32_adc_dma_residue(struct stm32_adc *adc)

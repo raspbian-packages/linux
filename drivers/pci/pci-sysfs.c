@@ -649,6 +649,33 @@ exit:
 	return count;
 }
 
+static ssize_t sriov_offset_show(struct device *dev,
+				 struct device_attribute *attr,
+				 char *buf)
+{
+	struct pci_dev *pdev = to_pci_dev(dev);
+
+	return sprintf(buf, "%u\n", pdev->sriov->offset);
+}
+
+static ssize_t sriov_stride_show(struct device *dev,
+				 struct device_attribute *attr,
+				 char *buf)
+{
+	struct pci_dev *pdev = to_pci_dev(dev);
+
+	return sprintf(buf, "%u\n", pdev->sriov->stride);
+}
+
+static ssize_t sriov_vf_device_show(struct device *dev,
+				    struct device_attribute *attr,
+				    char *buf)
+{
+	struct pci_dev *pdev = to_pci_dev(dev);
+
+	return sprintf(buf, "%x\n", pdev->sriov->vf_device);
+}
+
 static ssize_t sriov_drivers_autoprobe_show(struct device *dev,
 					    struct device_attribute *attr,
 					    char *buf)
@@ -677,6 +704,9 @@ static struct device_attribute sriov_totalvfs_attr = __ATTR_RO(sriov_totalvfs);
 static struct device_attribute sriov_numvfs_attr =
 		__ATTR(sriov_numvfs, (S_IRUGO|S_IWUSR|S_IWGRP),
 		       sriov_numvfs_show, sriov_numvfs_store);
+static struct device_attribute sriov_offset_attr = __ATTR_RO(sriov_offset);
+static struct device_attribute sriov_stride_attr = __ATTR_RO(sriov_stride);
+static struct device_attribute sriov_vf_device_attr = __ATTR_RO(sriov_vf_device);
 static struct device_attribute sriov_drivers_autoprobe_attr =
 		__ATTR(sriov_drivers_autoprobe, (S_IRUGO|S_IWUSR|S_IWGRP),
 		       sriov_drivers_autoprobe_show, sriov_drivers_autoprobe_store);
@@ -889,7 +919,7 @@ static ssize_t pci_write_config(struct file *filp, struct kobject *kobj,
 	loff_t init_off = off;
 	u8 *data = (u8 *) buf;
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("Direct PCI access"))
 		return -EPERM;
 
 	if (off > dev->cfg_size)
@@ -1186,7 +1216,7 @@ static int pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
 	enum pci_mmap_state mmap_type;
 	struct resource *res = &pdev->resource[bar];
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("Direct PCI access"))
 		return -EPERM;
 
 	if (res->flags & IORESOURCE_MEM && iomem_is_exclusive(res->start))
@@ -1269,7 +1299,7 @@ static ssize_t pci_write_resource_io(struct file *filp, struct kobject *kobj,
 				     struct bin_attribute *attr, char *buf,
 				     loff_t off, size_t count)
 {
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("Direct PCI access"))
 		return -EPERM;
 
 	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
@@ -1758,6 +1788,9 @@ static const struct attribute_group pci_dev_hp_attr_group = {
 static struct attribute *sriov_dev_attrs[] = {
 	&sriov_totalvfs_attr.attr,
 	&sriov_numvfs_attr.attr,
+	&sriov_offset_attr.attr,
+	&sriov_stride_attr.attr,
+	&sriov_vf_device_attr.attr,
 	&sriov_drivers_autoprobe_attr.attr,
 	NULL,
 };
@@ -1805,6 +1838,6 @@ static const struct attribute_group *pci_dev_attr_groups[] = {
 	NULL,
 };
 
-struct device_type pci_dev_type = {
+const struct device_type pci_dev_type = {
 	.groups = pci_dev_attr_groups,
 };

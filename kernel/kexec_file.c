@@ -258,7 +258,9 @@ SYSCALL_DEFINE5(kexec_file_load, int, kernel_fd, int, initrd_fd,
 	/* Don't permit images to be loaded into trusted kernels if we're not
 	 * going to verify the signature on them
 	 */
-	if (!IS_ENABLED(CONFIG_KEXEC_VERIFY_SIG) && kernel_is_locked_down())
+	if (!IS_ENABLED(CONFIG_KEXEC_VERIFY_SIG) &&
+	    !is_ima_appraise_enabled() &&
+	    kernel_is_locked_down("kexec of unsigned images"))
 		return -EPERM;
 
 	/* Make sure we have a legal set of flags */
@@ -412,9 +414,10 @@ static int locate_mem_hole_bottom_up(unsigned long start, unsigned long end,
 	return 1;
 }
 
-static int locate_mem_hole_callback(u64 start, u64 end, void *arg)
+static int locate_mem_hole_callback(struct resource *res, void *arg)
 {
 	struct kexec_buf *kbuf = (struct kexec_buf *)arg;
+	u64 start = res->start, end = res->end;
 	unsigned long sz = end - start + 1;
 
 	/* Returning 0 will take to next memory range */
@@ -443,7 +446,7 @@ static int locate_mem_hole_callback(u64 start, u64 end, void *arg)
  * func returning non-zero, then zero will be returned.
  */
 int __weak arch_kexec_walk_mem(struct kexec_buf *kbuf,
-			       int (*func)(u64, u64, void *))
+			       int (*func)(struct resource *, void *))
 {
 	if (kbuf->image->type == KEXEC_TYPE_CRASH)
 		return walk_iomem_res_desc(crashk_res.desc,

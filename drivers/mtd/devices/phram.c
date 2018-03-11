@@ -226,7 +226,7 @@ static int phram_setup(const char *val)
 	uint64_t len;
 	int i, ret;
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("Command line-specified device addresses"))
 		return -EPERM;
 
 	if (strnlen(val, sizeof(buf)) >= sizeof(buf))
@@ -269,7 +269,7 @@ static int phram_setup(const char *val)
 	return ret;
 }
 
-static int phram_param_call(const char *val, struct kernel_param *kp)
+static int phram_param_call(const char *val, const struct kernel_param *kp)
 {
 #ifdef MODULE
 	return phram_setup(val);

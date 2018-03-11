@@ -253,10 +253,8 @@ void __init efi_init(void)
 	     "Unexpected EFI_MEMORY_DESCRIPTOR version %ld",
 	      efi.memmap.desc_version);
 
-#ifdef CONFIG_EFI_SECURE_BOOT_LOCK_DOWN
-	if (params.secure_boot > 0)
-		lock_kernel_down();
-#endif
+	efi_set_secure_boot(params.secure_boot);
+	init_lockdown();
 
 	if (uefi_init() < 0) {
 		efi_memmap_unmap();

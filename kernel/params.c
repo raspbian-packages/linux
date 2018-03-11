@@ -117,10 +117,9 @@ static bool param_check_unsafe(const struct kernel_param *kp,
 		add_taint(TAINT_USER, LOCKDEP_STILL_OK);
 	}
 
-	if (kp->flags & KERNEL_PARAM_FL_HWPARAM && kernel_is_locked_down()) {
-		pr_err("Command line-specified device addresses, irqs and dma channels are not permitted when the kernel is locked down (%s.%s)\n", doing, kp->name);
+	if (kp->flags & KERNEL_PARAM_FL_HWPARAM &&
+	    kernel_is_locked_down("Command line-specified device addresses, irqs and dma channels"))
 		return false;
-	}
 	return true;
 }
 

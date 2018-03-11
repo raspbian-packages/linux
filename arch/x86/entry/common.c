@@ -21,6 +21,7 @@
 #include <linux/export.h>
 #include <linux/context_tracking.h>
 #include <linux/user-return-notifier.h>
+#include <linux/nospec.h>
 #include <linux/uprobes.h>
 #include <linux/livepatch.h>
 #include <linux/syscalls.h>
@@ -75,7 +76,7 @@ static long syscall_trace_enter(struct pt_regs *regs)
 	if (IS_ENABLED(CONFIG_DEBUG_ENTRY))
 		BUG_ON(regs != task_pt_regs(current));
 
-	work = ACCESS_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY;
+	work = READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY;
 
 	if (unlikely(work & _TIF_SYSCALL_EMU))
 		emulated = true;
@@ -186,9 +187,7 @@ __visible inline void prepare_exit_to_usermode(struct pt_regs *regs)
 
 	addr_limit_user_check();
 
-	if (IS_ENABLED(CONFIG_PROVE_LOCKING) && WARN_ON(!irqs_disabled()))
-		local_irq_disable();
-
+	lockdep_assert_irqs_disabled();
 	lockdep_sys_exit();
 
 	cached_flags = READ_ONCE(ti->flags);
@@ -208,7 +207,7 @@ __visible inline void prepare_exit_to_usermode(struct pt_regs *regs)
 	 * special case only applies after poking regs and before the
 	 * very next return to user mode.
 	 */
-	current->thread.status &= ~(TS_COMPAT|TS_I386_REGS_POKED);
+	ti->status &= ~(TS_COMPAT|TS_I386_REGS_POKED);
 #endif
 
 	user_enter_irqoff();
@@ -271,7 +270,6 @@ __visible void do_syscall_64(struct pt_regs *regs)
 {
 	struct thread_info *ti = current_thread_info();
 	unsigned long nr = regs->orig_ax;
-	unsigned int syscall_mask, nr_syscalls_enabled;
 
 	enter_from_user_mode();
 	local_irq_enable();
@@ -284,19 +282,16 @@ __visible void do_syscall_64(struct pt_regs *regs)
 	 * table.  The only functional difference is the x32 bit in
 	 * regs->orig_ax, which changes the behavior of some syscalls.
 	 */
-	if (__SYSCALL_MASK == ~0U || x32_enabled) {
-		syscall_mask = __SYSCALL_MASK;
-		nr_syscalls_enabled = NR_syscalls;
-	} else {
-		/*
-		 * x32 syscalls present but not enabled.  Don't mask out
-		 * the x32 flag and don't enable any x32-specific calls.
-		 */
-		syscall_mask = ~0U;
-		nr_syscalls_enabled = 512;
-	}
-	if (likely((nr & syscall_mask) < nr_syscalls_enabled)) {
-		regs->ax = sys_call_table[nr & syscall_mask](
+	if (x32_enabled) {
+		if (likely((nr & ~__X32_SYSCALL_BIT) < NR_syscalls)) {
+			nr = array_index_nospec(nr & ~__X32_SYSCALL_BIT,
+						NR_syscalls);
+			goto good;
+		}
+	} else if (likely((nr & ~0U) < NR_non_x32_syscalls)) {
+		nr = array_index_nospec(nr & ~0U, NR_non_x32_syscalls);
+	good:
+		regs->ax = sys_call_table[nr](
 			regs->di, regs->si, regs->dx,
 			regs->r10, regs->r8, regs->r9);
 	}
@@ -318,7 +313,7 @@ static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
 	unsigned int nr = (unsigned int)regs->orig_ax;
 
 #ifdef CONFIG_IA32_EMULATION
-	current->thread.status |= TS_COMPAT;
+	ti->status |= TS_COMPAT;
 #endif
 
 	if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY) {
@@ -332,6 +327,7 @@ static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
 	}
 
 	if (likely(nr < IA32_NR_syscalls)) {
+		nr = array_index_nospec(nr, IA32_NR_syscalls);
 		/*
 		 * It's possible that a 32-bit syscall implementation
 		 * takes a 64-bit parameter but nonetheless assumes that

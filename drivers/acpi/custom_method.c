@@ -29,7 +29,7 @@ static ssize_t cm_write(struct file *file, const char __user * user_buf,
 	struct acpi_table_header table;
 	acpi_status status;
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("ACPI custom methods"))
 		return -EPERM;
 
 	if (!(*ppos)) {

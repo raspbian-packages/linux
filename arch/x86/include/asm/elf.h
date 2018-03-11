@@ -164,7 +164,8 @@ do {						\
 
 #define compat_elf_check_arch(x)					\
 	(elf_check_arch_ia32(x) ||					\
-	 (x32_enabled && (x)->e_machine == EM_X86_64))
+	 (IS_ENABLED(CONFIG_X86_X32_ABI) && x32_enabled &&		\
+	  (x)->e_machine == EM_X86_64))
 
 #if __USER32_DS != __USER_DS
 # error "The following code assumes __USER32_DS == __USER_DS"
@@ -310,6 +311,7 @@ static inline int mmap_is_ia32(void)
 extern unsigned long task_size_32bit(void);
 extern unsigned long task_size_64bit(int full_addr_space);
 extern unsigned long get_mmap_base(int is_legacy);
+extern bool mmap_address_hint_valid(unsigned long addr, unsigned long len);
 
 #ifdef CONFIG_X86_32
 

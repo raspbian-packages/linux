@@ -64,18 +64,13 @@
 #include <linux/dma-mapping.h>
 #include <linux/ctype.h>
 #include <linux/uaccess.h>
+#include <linux/security.h>
 
 #include <linux/percpu.h>
 #include <linux/crash_dump.h>
 #include <linux/tboot.h>
 #include <linux/jiffies.h>
 #include <linux/mem_encrypt.h>
-#include <linux/security.h>
-
-#include <linux/fips.h>
-#include <linux/cred.h>
-#include <linux/sysrq.h>
-#include <linux/init_task.h>
 
 #include <linux/usb/xhci-dbgp.h>
 #include <video/edid.h>
@@ -141,18 +136,6 @@ RESERVE_BRK(dmi_alloc, 65536);
 
 static __initdata unsigned long _brk_start = (unsigned long)__brk_base;
 unsigned long _brk_end = (unsigned long)__brk_base;
-
-#ifdef CONFIG_X86_64
-int default_cpu_present_to_apicid(int mps_cpu)
-{
-	return __default_cpu_present_to_apicid(mps_cpu);
-}
-
-int default_check_phys_apicid_present(int phys_apicid)
-{
-	return __default_check_phys_apicid_present(phys_apicid);
-}
-#endif
 
 struct boot_params boot_params;
 
@@ -381,14 +364,6 @@ static void __init reserve_initrd(void)
 	if (!boot_params.hdr.type_of_loader ||
 	    !ramdisk_image || !ramdisk_size)
 		return;		/* No initrd provided by bootloader */
-
-	/*
-	 * If SME is active, this memory will be marked encrypted by the
-	 * kernel when it is accessed (including relocation). However, the
-	 * ramdisk image was loaded decrypted by the bootloader, so make
-	 * sure that it is encrypted before accessing it.
-	 */
-	sme_early_encrypt(ramdisk_image, ramdisk_end - ramdisk_image);
 
 	initrd_start = 0;
 
@@ -828,26 +803,6 @@ dump_kernel_offset(struct notifier_block *self, unsigned long v, void *p)
 	return 0;
 }
 
-static void __init simple_udelay_calibration(void)
-{
-	unsigned int tsc_khz, cpu_khz;
-	unsigned long lpj;
-
-	if (!boot_cpu_has(X86_FEATURE_TSC))
-		return;
-
-	cpu_khz = x86_platform.calibrate_cpu();
-	tsc_khz = x86_platform.calibrate_tsc();
-
-	tsc_khz = tsc_khz ? : cpu_khz;
-	if (!tsc_khz)
-		return;
-
-	lpj = tsc_khz * 1000;
-	do_div(lpj, HZ);
-	loops_per_jiffy = lpj;
-}
-
 /*
  * Determine if we were loaded by an EFI loader.  If so, then we have also been
  * passed the efi memmap, systab, etc., so we should use these data structures
@@ -942,9 +897,6 @@ void __init setup_arch(char **cmdline_p)
 		set_bit(EFI_BOOT, &efi.flags);
 		set_bit(EFI_64BIT, &efi.flags);
 	}
-
-	if (efi_enabled(EFI_BOOT))
-		efi_memblock_x86_reserve_range();
 #endif
 
 	x86_init.oem.arch_setup();
@@ -998,6 +950,8 @@ void __init setup_arch(char **cmdline_p)
 
 	parse_early_param();
 
+	if (efi_enabled(EFI_BOOT))
+		efi_memblock_x86_reserve_range();
 #ifdef CONFIG_MEMORY_HOTPLUG
 	/*
 	 * Memory used by the kernel cannot be hot-removed because Linux
@@ -1045,17 +999,18 @@ void __init setup_arch(char **cmdline_p)
 	if (efi_enabled(EFI_BOOT))
 		efi_init();
 
+	efi_set_secure_boot(boot_params.secure_boot);
+	init_lockdown();
+
 	dmi_scan_machine();
 	dmi_memdev_walk();
 	dmi_set_dump_stack_arch_desc();
 
 	/*
 	 * VMware detection requires dmi to be available, so this
-	 * needs to be done after dmi_scan_machine, for the BP.
+	 * needs to be done after dmi_scan_machine(), for the boot CPU.
 	 */
 	init_hypervisor_platform();
-
-	simple_udelay_calibration();
 
 	x86_init.resources.probe_roms();
 
@@ -1141,9 +1096,6 @@ void __init setup_arch(char **cmdline_p)
 	memblock_set_current_limit(ISA_END_ADDRESS);
 	e820__memblock_setup();
 
-	if (!early_xdbc_setup_hardware())
-		early_xdbc_register_console();
-
 	reserve_bios_regions();
 
 	if (efi_enabled(EFI_MEMMAP)) {
@@ -1203,26 +1155,6 @@ void __init setup_arch(char **cmdline_p)
 	/* Allocate bigger log buffer */
 	setup_log_buf(1);
 
-	if (efi_enabled(EFI_BOOT)) {
-		switch (boot_params.secure_boot) {
-		case efi_secureboot_mode_disabled:
-			pr_info("Secure boot disabled\n");
-			break;
-		case efi_secureboot_mode_enabled:
-			set_bit(EFI_SECURE_BOOT, &efi.flags);
-			if (IS_ENABLED(CONFIG_EFI_SECURE_BOOT_LOCK_DOWN)) {
-				lock_kernel_down();
-				pr_info("Secure boot enabled and kernel locked down\n");
-			} else {
-				pr_info("Secure boot enabled\n");
-			}
-			break;
-		default:
-			pr_info("Secure boot could not be determined\n");
-			break;
-		}
-	}
-
 	reserve_initrd();
 
 	acpi_table_upgrade();
@@ -1254,6 +1186,10 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_KVM_GUEST
 	kvmclock_init();
 #endif
+
+	tsc_early_delay_calibrate();
+	if (!early_xdbc_setup_hardware())
+		early_xdbc_register_console();
 
 	x86_init.paging.pagetable_init();
 
@@ -1306,7 +1242,7 @@ void __init setup_arch(char **cmdline_p)
 
 	io_apic_init_mappings();
 
-	kvm_guest_init();
+	x86_init.hyper.guest_late_init();
 
 	e820__reserve_resources();
 	e820__register_nosave_regions(max_low_pfn);
@@ -1357,32 +1293,6 @@ void __init i386_reserve_resources(void)
 }
 
 #endif /* CONFIG_X86_32 */
-
-#ifdef CONFIG_EFI_ALLOW_SECURE_BOOT_EXIT
-
-static void sysrq_handle_secure_boot(int key)
-{
-	if (!efi_enabled(EFI_SECURE_BOOT))
-		return;
-
-	pr_info("Secure boot disabled\n");
-	lift_kernel_lockdown();
-}
-static struct sysrq_key_op secure_boot_sysrq_op = {
-	.handler	=	sysrq_handle_secure_boot,
-	.help_msg	=	"unSB(x)",
-	.action_msg	=	"Disabling Secure Boot restrictions",
-	.enable_mask	=	SYSRQ_DISABLE_USERSPACE,
-};
-static int __init secure_boot_sysrq(void)
-{
-	if (efi_enabled(EFI_SECURE_BOOT))
-		register_sysrq_key('x', &secure_boot_sysrq_op);
-	return 0;
-}
-late_initcall(secure_boot_sysrq);
-#endif /*CONFIG_EFI_ALLOW_SECURE_BOOT_EXIT*/
-
 
 static struct notifier_block kernel_offset_notifier = {
 	.notifier_call = dump_kernel_offset

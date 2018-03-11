@@ -117,7 +117,7 @@ enum kprobe_slot_state {
 	SLOT_USED = 2,
 };
 
-static void *alloc_insn_page(void)
+void __weak *alloc_insn_page(void)
 {
 	return module_alloc(PAGE_SIZE);
 }
@@ -1532,6 +1532,9 @@ int register_kprobe(struct kprobe *p)
 	struct module *probed_mod;
 	kprobe_opcode_t *addr;
 
+	if (kernel_is_locked_down("Use of kprobes"))
+		return -EPERM;
+
 	/* Adjust probe address from symbol */
 	addr = kprobe_addr(p);
 	if (IS_ERR(addr))
@@ -1771,6 +1774,7 @@ unsigned long __weak arch_deref_entry_point(void *entry)
 	return (unsigned long)entry;
 }
 
+#if 0
 int register_jprobes(struct jprobe **jps, int num)
 {
 	int ret = 0, i;
@@ -1839,6 +1843,7 @@ void unregister_jprobes(struct jprobe **jps, int num)
 	}
 }
 EXPORT_SYMBOL_GPL(unregister_jprobes);
+#endif
 
 #ifdef CONFIG_KRETPROBES
 /*

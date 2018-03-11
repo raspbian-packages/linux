@@ -487,10 +487,8 @@ try_again:
 	}
 
 	ret = nfs_page_group_lock(head);
-	if (ret < 0) {
-		nfs_unlock_and_release_request(head);
-		return ERR_PTR(ret);
-	}
+	if (ret < 0)
+		goto release_request;
 
 	/* lock each request in the page group */
 	total_bytes = head->wb_bytes;
@@ -515,8 +513,7 @@ try_again:
 			if (ret < 0) {
 				nfs_unroll_locks(inode, head, subreq);
 				nfs_release_request(subreq);
-				nfs_unlock_and_release_request(head);
-				return ERR_PTR(ret);
+				goto release_request;
 			}
 		}
 		/*
@@ -532,8 +529,8 @@ try_again:
 			nfs_page_group_unlock(head);
 			nfs_unroll_locks(inode, head, subreq);
 			nfs_unlock_and_release_request(subreq);
-			nfs_unlock_and_release_request(head);
-			return ERR_PTR(-EIO);
+			ret = -EIO;
+			goto release_request;
 		}
 	}
 
@@ -576,6 +573,10 @@ try_again:
 	/* still holds ref on head from nfs_page_find_head_request
 	 * and still has lock on head from lock loop */
 	return head;
+
+release_request:
+	nfs_unlock_and_release_request(head);
+	return ERR_PTR(ret);
 }
 
 static void nfs_write_error_remove_page(struct nfs_page *req)
@@ -1836,6 +1837,8 @@ static void nfs_commit_release_pages(struct nfs_commit_data *data)
 		set_bit(NFS_CONTEXT_RESEND_WRITES, &req->wb_context->flags);
 	next:
 		nfs_unlock_and_release_request(req);
+		/* Latency breaker */
+		cond_resched();
 	}
 	nfss = NFS_SERVER(data->inode);
 	if (atomic_long_read(&nfss->writeback) < NFS_CONGESTION_OFF_THRESH)

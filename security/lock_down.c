@@ -11,30 +11,98 @@
 
 #include <linux/security.h>
 #include <linux/export.h>
+#include <linux/sysrq.h>
+#include <linux/efi.h>
+#include <asm/setup.h>
 
+#ifdef CONFIG_ALLOW_LOCKDOWN_LIFT_BY_SYSRQ
 static __read_mostly bool kernel_locked_down;
+#else
+static __ro_after_init bool kernel_locked_down;
+#endif
 
 /*
  * Put the kernel into lock-down mode.
  */
-void lock_kernel_down(void)
+static void __init lock_kernel_down(const char *where)
 {
-	kernel_locked_down = true;
+	if (!kernel_locked_down) {
+		kernel_locked_down = true;
+		pr_notice("Kernel is locked down from %s; see man kernel_lockdown.7\n",
+			  where);
+	}
 }
 
-/*
- * Take the kernel out of lockdown mode.
- */
-void lift_kernel_lockdown(void)
+static int __init lockdown_param(char *ignored)
 {
-	kernel_locked_down = false;
+	lock_kernel_down("command line");
+	return 0;
+}
+
+early_param("lockdown", lockdown_param);
+
+/*
+ * Lock the kernel down from very early in the arch setup.  This must happen
+ * prior to things like ACPI being initialised.
+ */
+void __init init_lockdown(void)
+{
+#ifdef CONFIG_LOCK_DOWN_IN_EFI_SECURE_BOOT
+	if (efi_enabled(EFI_SECURE_BOOT))
+		lock_kernel_down("EFI secure boot");
+#endif
 }
 
 /**
  * kernel_is_locked_down - Find out if the kernel is locked down
+ * @what: Tag to use in notice generated if lockdown is in effect
  */
-bool kernel_is_locked_down(void)
+bool __kernel_is_locked_down(const char *what, bool first)
 {
+	if (what && first && kernel_locked_down)
+		pr_notice("Lockdown: %s is restricted; see man kernel_lockdown.7\n",
+			  what);
 	return kernel_locked_down;
 }
-EXPORT_SYMBOL(kernel_is_locked_down);
+EXPORT_SYMBOL(__kernel_is_locked_down);
+
+#ifdef CONFIG_ALLOW_LOCKDOWN_LIFT_BY_SYSRQ
+
+/*
+ * Take the kernel out of lockdown mode.
+ */
+static void lift_kernel_lockdown(void)
+{
+	pr_notice("Lifting lockdown\n");
+	kernel_locked_down = false;
+}
+
+/*
+ * Allow lockdown to be lifted by pressing something like SysRq+x (and not by
+ * echoing the appropriate letter into the sysrq-trigger file).
+ */
+static void sysrq_handle_lockdown_lift(int key)
+{
+	if (kernel_locked_down)
+		lift_kernel_lockdown();
+}
+
+static struct sysrq_key_op lockdown_lift_sysrq_op = {
+	.handler	= sysrq_handle_lockdown_lift,
+	.help_msg	= "unSB(x)",
+	.action_msg	= "Disabling Secure Boot restrictions",
+	.enable_mask	= SYSRQ_DISABLE_USERSPACE,
+};
+
+static int __init lockdown_lift_sysrq(void)
+{
+	if (kernel_locked_down) {
+		lockdown_lift_sysrq_op.help_msg[5] = LOCKDOWN_LIFT_KEY;
+		register_sysrq_key(LOCKDOWN_LIFT_KEY, &lockdown_lift_sysrq_op);
+	}
+	return 0;
+}
+
+late_initcall(lockdown_lift_sysrq);
+
+#endif /* CONFIG_ALLOW_LOCKDOWN_LIFT_BY_SYSRQ */

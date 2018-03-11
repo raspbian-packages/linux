@@ -52,7 +52,7 @@ static int snapshot_open(struct inode *inode, struct file *filp)
 	if (!hibernation_available())
 		return -EPERM;
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("/dev/snapshot"))
 		return -EPERM;
 
 	lock_system_sleep();

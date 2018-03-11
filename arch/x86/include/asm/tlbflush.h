@@ -81,13 +81,13 @@ static inline u16 kern_pcid(u16 asid)
 	 * Make sure that the dynamic ASID space does not confict with the
 	 * bit we are using to switch between user and kernel ASIDs.
 	 */
-	BUILD_BUG_ON(TLB_NR_DYN_ASIDS >= (1 << X86_CR3_PTI_SWITCH_BIT));
+	BUILD_BUG_ON(TLB_NR_DYN_ASIDS >= (1 << X86_CR3_PTI_PCID_USER_BIT));
 
 	/*
 	 * The ASID being passed in here should have respected the
 	 * MAX_ASID_AVAILABLE and thus never have the switch bit set.
 	 */
-	VM_WARN_ON_ONCE(asid & (1 << X86_CR3_PTI_SWITCH_BIT));
+	VM_WARN_ON_ONCE(asid & (1 << X86_CR3_PTI_PCID_USER_BIT));
 #endif
 	/*
 	 * The dynamically-assigned ASIDs that get passed in are small
@@ -112,7 +112,7 @@ static inline u16 user_pcid(u16 asid)
 {
 	u16 ret = kern_pcid(asid);
 #ifdef CONFIG_PAGE_TABLE_ISOLATION
-	ret |= 1 << X86_CR3_PTI_SWITCH_BIT;
+	ret |= 1 << X86_CR3_PTI_PCID_USER_BIT;
 #endif
 	return ret;
 }
@@ -174,6 +174,8 @@ struct tlb_state {
 	struct mm_struct *loaded_mm;
 	u16 loaded_mm_asid;
 	u16 next_asid;
+	/* last user mm's ctx id */
+	u64 last_ctx_id;
 
 	/*
 	 * We can be in one of several states:
@@ -245,40 +247,43 @@ static inline void cr4_init_shadow(void)
 	this_cpu_write(cpu_tlbstate.cr4, __read_cr4());
 }
 
+static inline void __cr4_set(unsigned long cr4)
+{
+	lockdep_assert_irqs_disabled();
+	this_cpu_write(cpu_tlbstate.cr4, cr4);
+	__write_cr4(cr4);
+}
+
 /* Set in this cpu's CR4. */
 static inline void cr4_set_bits(unsigned long mask)
 {
-	unsigned long cr4;
+	unsigned long cr4, flags;
 
+	local_irq_save(flags);
 	cr4 = this_cpu_read(cpu_tlbstate.cr4);
-	if ((cr4 | mask) != cr4) {
-		cr4 |= mask;
-		this_cpu_write(cpu_tlbstate.cr4, cr4);
-		__write_cr4(cr4);
-	}
+	if ((cr4 | mask) != cr4)
+		__cr4_set(cr4 | mask);
+	local_irq_restore(flags);
 }
 
 /* Clear in this cpu's CR4. */
 static inline void cr4_clear_bits(unsigned long mask)
 {
-	unsigned long cr4;
+	unsigned long cr4, flags;
 
+	local_irq_save(flags);
 	cr4 = this_cpu_read(cpu_tlbstate.cr4);
-	if ((cr4 & ~mask) != cr4) {
-		cr4 &= ~mask;
-		this_cpu_write(cpu_tlbstate.cr4, cr4);
-		__write_cr4(cr4);
-	}
+	if ((cr4 & ~mask) != cr4)
+		__cr4_set(cr4 & ~mask);
+	local_irq_restore(flags);
 }
 
-static inline void cr4_toggle_bits(unsigned long mask)
+static inline void cr4_toggle_bits_irqsoff(unsigned long mask)
 {
 	unsigned long cr4;
 
 	cr4 = this_cpu_read(cpu_tlbstate.cr4);
-	cr4 ^= mask;
-	this_cpu_write(cpu_tlbstate.cr4, cr4);
-	__write_cr4(cr4);
+	__cr4_set(cr4 ^ mask);
 }
 
 /* Read the CR4 shadow. */

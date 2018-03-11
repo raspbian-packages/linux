@@ -518,7 +518,7 @@ static int einj_error_inject(u32 type, u32 flags, u64 param1, u64 param2,
 	int rc;
 	u64 base_addr, size;
 
-	if (kernel_is_locked_down())
+	if (kernel_is_locked_down("ACPI error injection"))
 		return -EPERM;
 
 	/* If user manually set "flags", make sure it is legal */

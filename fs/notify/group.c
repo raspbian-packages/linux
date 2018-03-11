@@ -108,7 +108,7 @@ void fsnotify_destroy_group(struct fsnotify_group *group)
  */
 void fsnotify_get_group(struct fsnotify_group *group)
 {
-	atomic_inc(&group->refcnt);
+	refcount_inc(&group->refcnt);
 }
 EXPORT_SYMBOL_GPL(fsnotify_get_group);
 
@@ -117,7 +117,7 @@ EXPORT_SYMBOL_GPL(fsnotify_get_group);
  */
 void fsnotify_put_group(struct fsnotify_group *group)
 {
-	if (atomic_dec_and_test(&group->refcnt))
+	if (refcount_dec_and_test(&group->refcnt))
 		fsnotify_final_destroy_group(group);
 }
 EXPORT_SYMBOL_GPL(fsnotify_put_group);
@@ -134,7 +134,7 @@ struct fsnotify_group *fsnotify_alloc_group(const struct fsnotify_ops *ops)
 		return ERR_PTR(-ENOMEM);
 
 	/* set to 0 when there a no external references to this group */
-	atomic_set(&group->refcnt, 1);
+	refcount_set(&group->refcnt, 1);
 	atomic_set(&group->num_marks, 0);
 	atomic_set(&group->user_waits, 0);
 

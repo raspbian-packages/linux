@@ -132,6 +132,7 @@ struct cpuinfo_x86 {
 	/* Index into per_cpu list: */
 	u16			cpu_index;
 	u32			microcode;
+	unsigned		initialized : 1;
 } __randomize_layout;
 
 struct cpuid_regs {
@@ -458,8 +459,6 @@ struct thread_struct {
 	unsigned short		fsindex;
 	unsigned short		gsindex;
 #endif
-
-	u32			status;		/* thread synchronous flags */
 
 #ifdef CONFIG_X86_64
 	unsigned long		fsbase;
@@ -970,4 +969,7 @@ bool xen_set_default_idle(void);
 
 void stop_this_cpu(void *dummy);
 void df_debug(struct pt_regs *regs, long error_code);
+
+void __ibp_barrier(void);
+
 #endif /* _ASM_X86_PROCESSOR_H */
