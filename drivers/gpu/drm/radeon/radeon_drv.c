@@ -381,6 +381,7 @@ static int radeon_pci_probe(struct pci_dev *pdev,
 	if ((ent->driver_data & RADEON_FAMILY_MASK) >= CHIP_R600 &&
 	    !radeon_firmware_installed()) {
 		DRM_ERROR("radeon kernel modesetting for R600 or later requires firmware installed\n");
+		pr_err_once("See https://wiki.debian.org/Firmware for information about missing firmware\n");
 		return -ENODEV;
 	}
 
