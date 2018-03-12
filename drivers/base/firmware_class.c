@@ -430,9 +430,12 @@ fw_get_filesystem_firmware(struct device *device, struct firmware_buf *buf)
 	}
 	__putname(path);
 
-	if (rc)
+	if (rc) {
 		dev_err(device, "firmware: failed to load %s (%d)\n",
 			buf->fw_id, rc);
+		if (rc == -ENOENT)
+			pr_err_once("See https://wiki.debian.org/Firmware for information about missing firmware\n");
+	}
 
 	return rc;
 }
