@@ -148,8 +148,8 @@ static int __init load_uefi_certs(void)
 {
 	efi_guid_t secure_var = EFI_IMAGE_SECURITY_DATABASE_GUID;
 	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
-	void *db = NULL, *dbx = NULL, *mok = NULL;
-	unsigned long dbsize = 0, dbxsize = 0, moksize = 0;
+	void *db = NULL, *dbx = NULL, *mok = NULL, *mokx = NULL;
+	unsigned long dbsize = 0, dbxsize = 0, moksize = 0, mokxsize = 0;
 	int rc = 0;
 
 	if (!efi.get_variable)
@@ -183,7 +183,7 @@ static int __init load_uefi_certs(void)
 		kfree(dbx);
 	}
 
-	/* the MOK can not be trusted when secure boot is disabled */
+	/* the MOK and MOKx can not be trusted when secure boot is disabled */
 	if (!efi_enabled(EFI_SECURE_BOOT))
 		return 0;
 
@@ -196,6 +196,18 @@ static int __init load_uefi_certs(void)
 		if (rc)
 			pr_err("Couldn't parse MokListRT signatures: %d\n", rc);
 		kfree(mok);
+	}
+
+	rc = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &mokx);
+	if (rc < 0) {
+		pr_info("MODSIGN: Couldn't get UEFI MokListXRT\n");
+	} else if (mokxsize != 0) {
+		rc = parse_efi_signature_list("UEFI:mokx",
+					      mokx, mokxsize,
+					      get_handler_for_dbx);
+		if (rc)
+			pr_err("Couldn't parse MokListXRT signatures: %d\n", rc);
+		kfree(mokx);
 	}
 
 	return rc;
