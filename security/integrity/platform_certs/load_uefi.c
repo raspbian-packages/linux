@@ -191,6 +191,10 @@ static int __init load_uefi_certs(void)
 		kfree(mokx);
 	}
 
+	/* the MOK can not be trusted when secure boot is disabled */
+	if (!efi_enabled(EFI_SECURE_BOOT))
+		return 0;
+
 	/* Load the MokListRT certs */
 	rc = load_moklist_certs();
 
