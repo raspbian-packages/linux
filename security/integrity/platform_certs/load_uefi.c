@@ -62,11 +62,13 @@ static __init bool uefi_check_ignore_db(void)
  * Get a certificate list blob from the named EFI variable.
  */
 static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
-				  unsigned long *size, efi_status_t *status)
+				  unsigned long *size, efi_status_t *status,
+				  u32 pos_attr, u32 neg_attr)
 {
 	unsigned long lsize = 4;
 	unsigned long tmpdb[4];
 	void *db;
+	u32 attr = 0;
 
 	*status = efi.get_variable(name, guid, NULL, &lsize, &tmpdb);
 	if (*status == EFI_NOT_FOUND)
@@ -81,10 +83,19 @@ static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
 	if (!db)
 		return NULL;
 
-	*status = efi.get_variable(name, guid, NULL, &lsize, db);
+	*status = efi.get_variable(name, guid, &attr, &lsize, db);
 	if (*status != EFI_SUCCESS) {
 		kfree(db);
 		pr_err("Error reading db var: 0x%lx\n", *status);
+		return NULL;
+	}
+
+	/* must have positive attributes and no negative attributes */
+	if ((pos_attr && !(attr & pos_attr)) ||
+	    (neg_attr && (attr & neg_attr))) {
+		kfree(db);
+		pr_err("Error reading db var attributes: 0x%016x\n", attr);
+		*status = EFI_SECURITY_VIOLATION;
 		return NULL;
 	}
 
@@ -133,7 +144,8 @@ static int __init load_moklist_certs(void)
 	/* Get MokListRT. It might not exist, so it isn't an error
 	 * if we can't get it.
 	 */
-	mok = get_cert_list(L"MokListRT", &mok_var, &moksize, &status);
+	mok = get_cert_list(L"MokListRT", &mok_var, &moksize, &status,
+				0, EFI_VARIABLE_NON_VOLATILE);
 	if (mok) {
 		rc = parse_efi_signature_list("UEFI:MokListRT",
 					      mok, moksize, get_handler_for_db);
@@ -179,7 +191,8 @@ static int __init load_uefi_certs(void)
 	 * if we can't get them.
 	 */
 	if (!uefi_check_ignore_db()) {
-		db = get_cert_list(L"db", &secure_var, &dbsize, &status);
+		db = get_cert_list(L"db", &secure_var, &dbsize, &status,
+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS, 0);
 		if (!db) {
 			if (status == EFI_NOT_FOUND)
 				pr_debug("MODSIGN: db variable wasn't found\n");
@@ -195,7 +208,8 @@ static int __init load_uefi_certs(void)
 		}
 	}
 
-	dbx = get_cert_list(L"dbx", &secure_var, &dbxsize, &status);
+	dbx = get_cert_list(L"dbx", &secure_var, &dbxsize, &status,
+		EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS, 0);
 	if (!dbx) {
 		if (status == EFI_NOT_FOUND)
 			pr_debug("dbx variable wasn't found\n");
@@ -214,7 +228,8 @@ static int __init load_uefi_certs(void)
 	if (!efi_enabled(EFI_SECURE_BOOT))
 		return 0;
 
-	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status);
+	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status,
+							0, EFI_VARIABLE_NON_VOLATILE);
 	if (!mokx) {
 		if (status == EFI_NOT_FOUND)
 			pr_debug("mokx variable wasn't found\n");
