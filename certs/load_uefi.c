@@ -36,12 +36,14 @@ static __init bool uefi_check_ignore_db(void)
  * Get a certificate list blob from the named EFI variable.
  */
 static __init int get_cert_list(efi_char16_t *name, efi_guid_t *guid,
-				unsigned long *size, void **cert_list)
+				unsigned long *size, void **cert_list,
+				u32 pos_attr, u32 neg_attr)
 {
 	efi_status_t status;
 	unsigned long lsize = 4;
 	unsigned long tmpdb[4];
 	void *db;
+	u32 attr = 0;
 
 	status = efi.get_variable(name, guid, NULL, &lsize, &tmpdb);
 	if (status == EFI_NOT_FOUND) {
@@ -61,11 +63,18 @@ static __init int get_cert_list(efi_char16_t *name, efi_guid_t *guid,
 		return -ENOMEM;
 	}
 
-	status = efi.get_variable(name, guid, NULL, &lsize, db);
+	status = efi.get_variable(name, guid, &attr, &lsize, db);
 	if (status != EFI_SUCCESS) {
 		kfree(db);
 		pr_err("Error reading db var: 0x%lx\n", status);
 		return efi_status_to_err(status);
+	}
+	/* must have positive attributes and no negative attributes */
+	if ((pos_attr && !(attr & pos_attr)) ||
+	    (neg_attr && (attr & neg_attr))) {
+		kfree(db);
+		pr_err("Error reading db var attributes: 0x%016x\n", attr);
+		return -1;
 	}
 
 	*size = lsize;
@@ -159,7 +168,8 @@ static int __init load_uefi_certs(void)
 	 * an error if we can't get them.
 	 */
 	if (!uefi_check_ignore_db()) {
-		rc = get_cert_list(L"db", &secure_var, &dbsize, &db);
+		rc = get_cert_list(L"db", &secure_var, &dbsize, &db,
+			EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS, 0);
 		if (rc < 0) {
 			pr_err("MODSIGN: Couldn't get UEFI db list\n");
 		} else if (dbsize != 0) {
@@ -171,7 +181,8 @@ static int __init load_uefi_certs(void)
 		}
 	}
 
-	rc = get_cert_list(L"dbx", &secure_var, &dbxsize, &dbx);
+	rc = get_cert_list(L"dbx", &secure_var, &dbxsize, &dbx,
+		EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS, 0);
 	if (rc < 0) {
 		pr_info("MODSIGN: Couldn't get UEFI dbx list\n");
 	} else if (dbxsize != 0) {
@@ -187,7 +198,8 @@ static int __init load_uefi_certs(void)
 	if (!efi_enabled(EFI_SECURE_BOOT))
 		return 0;
 
-	rc = get_cert_list(L"MokListRT", &mok_var, &moksize, &mok);
+	rc = get_cert_list(L"MokListRT", &mok_var, &moksize, &mok,
+				0, EFI_VARIABLE_NON_VOLATILE);
 	if (rc < 0) {
 		pr_info("MODSIGN: Couldn't get UEFI MokListRT\n");
 	} else if (moksize != 0) {
@@ -198,7 +210,8 @@ static int __init load_uefi_certs(void)
 		kfree(mok);
 	}
 
-	rc = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &mokx);
+	rc = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &mokx,
+				0, EFI_VARIABLE_NON_VOLATILE);
 	if (rc < 0) {
 		pr_info("MODSIGN: Couldn't get UEFI MokListXRT\n");
 	} else if (mokxsize != 0) {
