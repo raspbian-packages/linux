@@ -1511,14 +1511,15 @@ static int assign_thread_tidr(void)
 {
 	int index;
 	int err;
+	unsigned long flags;
 
 again:
 	if (!ida_pre_get(&vas_thread_ida, GFP_KERNEL))
 		return -ENOMEM;
 
-	spin_lock(&vas_thread_id_lock);
+	spin_lock_irqsave(&vas_thread_id_lock, flags);
 	err = ida_get_new_above(&vas_thread_ida, 1, &index);
-	spin_unlock(&vas_thread_id_lock);
+	spin_unlock_irqrestore(&vas_thread_id_lock, flags);
 
 	if (err == -EAGAIN)
 		goto again;
@@ -1526,9 +1527,9 @@ again:
 		return err;
 
 	if (index > MAX_THREAD_CONTEXT) {
-		spin_lock(&vas_thread_id_lock);
+		spin_lock_irqsave(&vas_thread_id_lock, flags);
 		ida_remove(&vas_thread_ida, index);
-		spin_unlock(&vas_thread_id_lock);
+		spin_unlock_irqrestore(&vas_thread_id_lock, flags);
 		return -ENOMEM;
 	}
 
@@ -1537,9 +1538,11 @@ again:
 
 static void free_thread_tidr(int id)
 {
-	spin_lock(&vas_thread_id_lock);
+	unsigned long flags;
+
+	spin_lock_irqsave(&vas_thread_id_lock, flags);
 	ida_remove(&vas_thread_ida, id);
-	spin_unlock(&vas_thread_id_lock);
+	spin_unlock_irqrestore(&vas_thread_id_lock, flags);
 }
 
 /*

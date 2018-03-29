@@ -315,8 +315,7 @@ bool radeon_device_is_virtual(void);
 
 /* Test that /lib/firmware/radeon is a directory (or symlink to a
  * directory).  We could try to match the udev search path, but let's
- * assume people take the easy route and install
- * firmware-linux-nonfree.
+ * keep it simple.
  */
 static bool radeon_firmware_installed(void)
 {
@@ -367,7 +366,8 @@ static int radeon_pci_probe(struct pci_dev *pdev,
 
 	if ((ent->driver_data & RADEON_FAMILY_MASK) >= CHIP_R600 &&
 	    !radeon_firmware_installed()) {
-		DRM_ERROR("radeon kernel modesetting for R600 or later requires firmware-amd-graphics.\n");
+		DRM_ERROR("radeon kernel modesetting for R600 or later requires firmware installed\n");
+		pr_err_once("See https://wiki.debian.org/Firmware for information about missing firmware\n");
 		return -ENODEV;
 	}
 

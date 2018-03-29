@@ -1,5 +1,5 @@
 48e48b23af97cce8069f0eaed1bfa016  debian/bin/gencontrol.py
-188ae0c156bc4ccdb5dfaa0ef231430a  debian/changelog
+49f7ecd7370a4c3e487ce1b69145151c  debian/changelog
 e492c730e8bc71cc52aa5315391e587e  debian/templates/control.main.in
 8ff553ff7232b003c35bdd074913bc8a  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
@@ -12,7 +12,7 @@ ae49ef5fe8221e8aa846a8dd8faaed0e  debian/templates/control.image.in
 0d7f6ea42f52d0a6013535a80111ee3e  debian/templates/headers.postinst.in
 51797b6c275eb14e99009e78553904cc  debian/templates/perf.lintian-overrides.in
 2e5bb43f2fceef492df4dc5ce5d3dddc  debian/templates/control.image-dbg.in
-00e32632de69d29febd3ff7c50a3d4a0  debian/templates/control.source.in
+90de2613b09ea9a6893779a35a4deb05  debian/templates/control.source.in
 46cc93799a6214c79efea8084bc9a329  debian/templates/control.headers.featureset.in
 814dda166c7e3ef02e6e259e805ac66a  debian/templates/tests-control.main.in
 0327750d6696dee915a532aec73a0fd6  debian/templates/image.postinst.in
@@ -20,7 +20,7 @@ ace097cb8de5c9e3bdd84e6d5d503298  debian/templates/control.headers.in
 5624089e4c363b524dccb00d28e57336  debian/templates/control.extra.in
 3ad9d915221b575d758fc3acfd3f89c2  debian/templates/control.docs.in
 5f1df5cd150d7663b81f5c54a604a766  debian/templates/control.headers.arch.in
-bb0a7914e3f5e77800e64b1f0dfd80b5  debian/config/defines
+d3a994975693ab676d0eba56f779465a  debian/config/defines
 ef94db796045bf7d721d349b75789a27  debian/config/i386/defines
 6f7d102847d8168a3c71c044ea7127ac  debian/config/tilegx/defines
 6efeb6f3f8ad4ecef3fff0d012fabad0  debian/config/mips64el/defines
@@ -50,14 +50,14 @@ c638a9aa39b4381c3d1e4e10edcc97d4  debian/config/m68k/defines
 4069594eeb2a1856c6806812055249b2  debian/config/alpha/defines
 73e2f095b2485f95bc164bf685684a47  debian/config/mipsn32r6el/defines
 07a18ea6a8a40898c680905e01c56623  debian/config/hppa/defines
-4a58506ae5006b044e1838664e07a8d4  debian/config/armel/defines
+0670284b2d7ac08444107763fa38312e  debian/config/armel/defines
 98673c303524a87722b25c9e6b8cdd81  debian/config/mips64r6/defines
 3e673c1434c6132c73c0cfb4bfe38763  debian/config/arm64ilp32/defines
 8f8f7ed35c8dafdc5c6d4ded40bf5920  debian/config/mips64r6el/defines
 9462622a41b618007bf9e8343f2fb3ce  debian/config/s390/defines
-f4c0f31783984e0a9a5b7091200b80fc  debian/config/i386/none/defines
+10ca069c87c1150c5d2d010a72a90e36  debian/config/i386/none/defines
 7146ff53fc4f9fbb49948225d8589b69  debian/config/i386/rt/defines
-0026b3e444bfbdb810f9ac01088240ea  debian/config/amd64/none/defines
+d5cd6e820002011c1183909686eca2a2  debian/config/amd64/none/defines
 7dc981827930ed6844a731ed954b9b9d  debian/config/amd64/rt/defines
 d3c04182d8746e4871de922a63f03f97  debian/config/arm64/none/defines
 a1f1e1c8213e10fb3a416d58fb61bc3c  debian/installer/i386/kernel-versions
