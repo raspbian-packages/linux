@@ -475,6 +475,7 @@ static void reg_regdb_apply(struct work_struct *work)
 
 static DECLARE_WORK(reg_regdb_work, reg_regdb_apply);
 
+#if 0
 static int reg_schedule_apply(const struct ieee80211_regdomain *regdom)
 {
 	struct reg_regdb_apply_request *request;
@@ -494,6 +495,7 @@ static int reg_schedule_apply(const struct ieee80211_regdomain *regdom)
 	schedule_work(&reg_regdb_work);
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_CFG80211_CRDA_SUPPORT
 /* Max number of consecutive attempts to communicate with CRDA  */
@@ -572,6 +574,29 @@ static inline int call_crda(const char *alpha2)
 
 /* code to directly load a firmware database through request_firmware */
 static const struct fwdb_header *regdb;
+
+#if 1
+
+static int load_builtin_regdb_keys(void)
+{
+	return 0;
+}
+
+static void free_regdb_keyring(void)
+{
+}
+
+static int query_regdb_file(const char *alpha2)
+{
+	return -ENOENT;
+}
+
+int reg_reload_regdb(void)
+{
+	return -ENOENT;
+}
+
+#else /* disabled until we update wireless-regdb */
 
 struct fwdb_country {
 	u8 alpha2[2];
@@ -962,6 +987,8 @@ int reg_reload_regdb(void)
 	release_firmware(fw);
 	return err;
 }
+
+#endif
 
 static bool reg_query_database(struct regulatory_request *request)
 {
