@@ -1,5 +1,5 @@
 48e48b23af97cce8069f0eaed1bfa016  debian/bin/gencontrol.py
-49f7ecd7370a4c3e487ce1b69145151c  debian/changelog
+7a3d75d738c25ab51fd4dbca06881227  debian/changelog
 e492c730e8bc71cc52aa5315391e587e  debian/templates/control.main.in
 8ff553ff7232b003c35bdd074913bc8a  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
@@ -20,7 +20,7 @@ ace097cb8de5c9e3bdd84e6d5d503298  debian/templates/control.headers.in
 5624089e4c363b524dccb00d28e57336  debian/templates/control.extra.in
 3ad9d915221b575d758fc3acfd3f89c2  debian/templates/control.docs.in
 5f1df5cd150d7663b81f5c54a604a766  debian/templates/control.headers.arch.in
-d3a994975693ab676d0eba56f779465a  debian/config/defines
+5f81507e55c47bb2346e1108543e9b8c  debian/config/defines
 ef94db796045bf7d721d349b75789a27  debian/config/i386/defines
 6f7d102847d8168a3c71c044ea7127ac  debian/config/tilegx/defines
 6efeb6f3f8ad4ecef3fff0d012fabad0  debian/config/mips64el/defines
@@ -50,7 +50,7 @@ c638a9aa39b4381c3d1e4e10edcc97d4  debian/config/m68k/defines
 4069594eeb2a1856c6806812055249b2  debian/config/alpha/defines
 73e2f095b2485f95bc164bf685684a47  debian/config/mipsn32r6el/defines
 07a18ea6a8a40898c680905e01c56623  debian/config/hppa/defines
-0670284b2d7ac08444107763fa38312e  debian/config/armel/defines
+f1ba038db5958cfd771bb9b305328232  debian/config/armel/defines
 98673c303524a87722b25c9e6b8cdd81  debian/config/mips64r6/defines
 3e673c1434c6132c73c0cfb4bfe38763  debian/config/arm64ilp32/defines
 8f8f7ed35c8dafdc5c6d4ded40bf5920  debian/config/mips64r6el/defines
@@ -79,7 +79,7 @@ cc12b5c69d0930a4400e9ec072d9f915  debian/installer/arm64/kernel-versions
 f8348b90fe2b9e1e75bddda4dbb832c4  debian/installer/s390x/kernel-versions
 1306c7e5b695c185d3193774b566e9e8  debian/installer/alpha/kernel-versions
 8512485f3a856fe5225fa9c74ea32d5a  debian/installer/hppa/kernel-versions
-1c3a63f0f785539444a4e348d5588719  debian/installer/armel/kernel-versions
+de8f39f8b1f1f8a34db1ca2920796b0d  debian/installer/armel/kernel-versions
 bb7aa9ad2c62b074f1c2258a02c5d76c  debian/installer/mips64r6/kernel-versions
 35e1ed0ef705c3d60069ac8f13af000d  debian/installer/mips64r6el/kernel-versions
 a7421d0f16ac8a0fb443591062293101  debian/installer/i386/package-list
@@ -101,7 +101,7 @@ b9df39e550a637012ccd5b1ddaa4b74a  debian/installer/sparc64/package-list
 4b8bb8b0eef18506eef56754ceeeeceb  debian/installer/s390x/package-list
 7f3b9396be74d9a40cfb6db48847a5dc  debian/installer/alpha/package-list
 42f64d483c9033b8af2bf2761a4a62fc  debian/installer/hppa/package-list
-2cbb54dee5b4512d847c67b20bb35caa  debian/installer/armel/package-list
+36f719bb832b03e88cdffa5750b34210  debian/installer/armel/package-list
 0fc827f651bf58416e4e2231b01f6908  debian/installer/mips64r6/package-list
 0fc827f651bf58416e4e2231b01f6908  debian/installer/mips64r6el/package-list
-bdb0c90ec38cca092e2e303d8b30f4e0  debian/installer/package-list
+e0456e60a820f3aad1d30c8e94ef611a  debian/installer/package-list
