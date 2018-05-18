@@ -8,7 +8,7 @@
 #include <asm/required-features.h>
 #endif
 
-#define NCAPINTS	12	/* N 32-bit words worth of info */
+#define NCAPINTS	10	/* N 32-bit words worth of info */
 #define NBUGINTS	1	/* N 32-bit bug flags */
 
 /*
@@ -191,6 +191,13 @@
 
 #define X86_FEATURE_USE_IBPB	(7*32+12) /* "" Indirect Branch Prediction Barrier enabled */
 #define X86_FEATURE_USE_IBRS_FW (7*32+13) /* "" Use IBRS during runtime firmware calls */
+#define X86_FEATURE_IBPB	(7*32+16) /* Indirect Branch Prediction Barrier */
+#define X86_FEATURE_IBRS	(7*32+17) /* Indirect Branch Restricted Speculation */
+#define X86_FEATURE_STIBP	(7*32+18) /* Single Thread Indirect Branch Predictors */
+
+#define X86_FEATURE_SPEC_CTRL	(7*32+24) /* "" Speculation Control (IBRS + IBPB) */
+#define X86_FEATURE_INTEL_STIBP	(7*32+25) /* "" Single Thread Indirect Branch Predictors */
+#define X86_FEATURE_ARCH_CAPABILITIES (7*32+26) /* IA32_ARCH_CAPABILITIES MSR (Intel) */
 
 #define X86_FEATURE_RETPOLINE	(7*32+29) /* "" Generic Retpoline mitigation for Spectre variant 2 */
 #define X86_FEATURE_RETPOLINE_AMD (7*32+30) /* "" AMD Retpoline mitigation for Spectre variant 2 */
@@ -236,16 +243,6 @@
 #define X86_FEATURE_AVX512PF	(9*32+26) /* AVX-512 Prefetch */
 #define X86_FEATURE_AVX512ER	(9*32+27) /* AVX-512 Exponential and Reciprocal */
 #define X86_FEATURE_AVX512CD	(9*32+28) /* AVX-512 Conflict Detection */
-
-/* Intel-defined CPU features, CPUID level 0x00000007:0 (EDX), word 10 */
-#define X86_FEATURE_SPEC_CTRL		(10*32+26) /* "" Speculation Control (IBRS + IBPB) */
-#define X86_FEATURE_INTEL_STIBP		(10*32+27) /* "" Single Thread Indirect Branch Predictors */
-#define X86_FEATURE_ARCH_CAPABILITIES	(10*32+29) /* IA32_ARCH_CAPABILITIES MSR (Intel) */
-
-/* AMD-defined CPU features, CPUID level 0x80000008 (EBX), word 11 */
-#define X86_FEATURE_IBPB		(11*32+12) /* Indirect Branch Prediction Barrier */
-#define X86_FEATURE_IBRS		(11*32+14) /* Indirect Branch Restricted Speculation */
-#define X86_FEATURE_STIBP		(11*32+15) /* Single Thread Indirect Branch Predictors */
 
 /*
  * BUG word(s)
