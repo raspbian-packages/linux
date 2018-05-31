@@ -5876,5 +5876,6 @@ MODULE_LICENSE("GPL");
 #endif
 MODULE_SOFTDEP("pre: crypto-crc32c" EXT4_ENC_EXTRA_SOFTDEPS);
 
+MODULE_SOFTDEP("pre: crc32c");
 module_init(ext4_init_fs)
 module_exit(ext4_exit_fs)

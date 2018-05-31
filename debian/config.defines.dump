@@ -106,7 +106,7 @@ tp54
 (dp55
 Venabled
 p56
-I00
+I01
 ss(Vdescription
 p57
 tp58
@@ -152,7 +152,7 @@ tp81
 (dp82
 Vabiname
 p83
-V1
+V2
 p84
 sVignore-changes
 p85
@@ -2690,11 +2690,11 @@ V4.16
 p1434
 sVsource
 p1435
-V4.16.5-1+rpi1
+V4.16.12-1+rpi1
 p1436
 sVabiname
 p1437
-V4.16.0-1
+V4.16.0-2
 p1438
 sVabiname_base
 p1439
