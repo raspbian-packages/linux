@@ -922,7 +922,7 @@ static inline void maybe_reseed_primary_crng(void)
 
 static inline void crng_wait_ready(void)
 {
-	wait_event_interruptible(crng_init_wait, crng_ready());
+	wait_event_interruptible(crng_init_wait, crng_init > 0);
 }
 
 static void _extract_crng(struct crng_state *crng,
@@ -1955,7 +1955,7 @@ SYSCALL_DEFINE3(getrandom, char __user *, buf, size_t, count,
 	if (flags & GRND_RANDOM)
 		return _random_read(flags & GRND_NONBLOCK, buf, count);
 
-	if (!crng_ready()) {
+	if (crng_init == 0) {
 		if (flags & GRND_NONBLOCK)
 			return -EAGAIN;
 		crng_wait_ready();
