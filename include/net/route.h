@@ -35,6 +35,7 @@
 #include <linux/ip.h>
 #include <linux/cache.h>
 #include <linux/security.h>
+#include <asm/byteorder.h>
 
 /* IPv4 datagram length is stored into 16bit field (tot_len) */
 #define IP_MAX_MTU	0xFFFFU
@@ -61,8 +62,17 @@ struct rtable {
 	__be32			rt_gateway;
 
 	/* Miscellaneous cached information */
+#ifndef __GENKSYMS__
+#ifdef __LITTLE_ENDIAN_BITFIELD
+	u32			rt_pmtu:31,
+				rt_mtu_locked:1;
+#else
 	u32			rt_mtu_locked:1,
 				rt_pmtu:31;
+#endif
+#else
+	u32			rt_pmtu;
+#endif
 
 	struct list_head	rt_uncached;
 };
