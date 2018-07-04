@@ -126,8 +126,10 @@ static int netvsc_open(struct net_device *net)
 	}
 
 	rdev = nvdev->extension;
-	if (!rdev->link_state)
+	if (!rdev->link_state) {
 		netif_carrier_on(net);
+		netif_tx_wake_all_queues(net);
+	}
 
 	if (vf_netdev) {
 		/* Setting synthetic device up transparently sets
@@ -831,7 +833,7 @@ int netvsc_recv_callback(struct net_device *net,
 	u64_stats_update_end(&rx_stats->syncp);
 
 	napi_gro_receive(&nvchan->napi, skb);
-	return 0;
+	return NVSP_STAT_SUCCESS;
 }
 
 static void netvsc_get_drvinfo(struct net_device *net,

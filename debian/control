@@ -5105,7 +5105,7 @@ Architecture: ia64
 Section: debian-installer
 Priority: optional
 Provides: btrfs-modules
-Depends: kernel-image-4.16.0-2-itanium-di, crc-modules-4.16.0-2-itanium-di, md-modules-4.16.0-2-itanium-di
+Depends: kernel-image-4.16.0-2-itanium-di, crc-modules-4.16.0-2-itanium-di, compress-modules-4.16.0-2-itanium-di, md-modules-4.16.0-2-itanium-di
 Description: BTRFS filesystem support
  This package contains the BTRFS filesystem module for the kernel.
 Build-Profiles: <!stage1>
@@ -5396,7 +5396,7 @@ Architecture: ia64
 Section: debian-installer
 Priority: optional
 Provides: squashfs-modules
-Depends: kernel-image-4.16.0-2-itanium-di
+Depends: kernel-image-4.16.0-2-itanium-di, compress-modules-4.16.0-2-itanium-di
 Description: squashfs modules
  This package contains squashfs modules.
 Build-Profiles: <!stage1>
@@ -5411,6 +5411,18 @@ Provides: uinput-modules
 Depends: kernel-image-4.16.0-2-itanium-di
 Description: uinput support
  This package contains the uinput module.
+Build-Profiles: <!stage1>
+Kernel-Version: 4.16.0-2-itanium
+Package-Type: udeb
+
+Package: compress-modules-4.16.0-2-itanium-di
+Architecture: ia64
+Section: debian-installer
+Priority: optional
+Provides: compress-modules
+Depends: kernel-image-4.16.0-2-itanium-di
+Description: lzo modules
+ This package contains lzo modules.
 Build-Profiles: <!stage1>
 Kernel-Version: 4.16.0-2-itanium
 Package-Type: udeb
