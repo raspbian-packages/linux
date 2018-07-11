@@ -1929,6 +1929,34 @@ static int hid_bus_match(struct device *dev, struct device_driver *drv)
 	return hid_match_device(hdev, hdrv) != NULL;
 }
 
+static void clear_status_flag(unsigned int flag, unsigned int *status)
+{
+	unsigned int expect, old;
+
+	expect = READ_ONCE(*status);
+	for (;;) {
+		old = cmpxchg(status, expect, expect & ~flag);
+		if (old == expect)
+			break;
+		expect = old;
+	}
+}
+
+static bool test_and_set_status_flag(unsigned int flag, unsigned int *status)
+{
+	unsigned int expect, old;
+
+	expect = READ_ONCE(*status);
+	for (;;) {
+		old = cmpxchg(status, expect, expect | flag);
+		if (old == expect)
+			break;
+		expect = old;
+	}
+
+	return old & flag;
+}
+
 static int hid_device_probe(struct device *dev)
 {
 	struct hid_driver *hdrv = to_hid_driver(dev->driver);
@@ -1942,7 +1970,7 @@ static int hid_device_probe(struct device *dev)
 	}
 	hdev->io_started = false;
 
-	clear_bit(ffs(HID_STAT_REPROBED), &hdev->status);
+	clear_status_flag(HID_STAT_REPROBED, &hdev->status);
 
 	if (!hdev->driver) {
 		id = hid_match_device(hdev, hdrv);
@@ -2208,7 +2236,7 @@ static int __hid_bus_reprobe_drivers(struct device *dev, void *data)
 
 	if (hdev->driver == hdrv &&
 	    !hdrv->match(hdev, hid_ignore_special_drivers) &&
-	    !test_and_set_bit(ffs(HID_STAT_REPROBED), &hdev->status))
+	    !test_and_set_status_flag(HID_STAT_REPROBED, &hdev->status))
 		return device_reprobe(dev);
 
 	return 0;
