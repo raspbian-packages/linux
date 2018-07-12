@@ -64,7 +64,9 @@ static inline bool dax_write_cache_enabled(struct dax_device *dax_dev)
 struct writeback_control;
 int bdev_dax_pgoff(struct block_device *, sector_t, size_t, pgoff_t *pgoff);
 #if IS_ENABLED(CONFIG_FS_DAX)
-bool __bdev_dax_supported(struct block_device *bdev, int blocksize);
+int __bdev_dax_supported(struct super_block *sb, int blocksize);
+bool __bdev_dax_supported_new(struct block_device *bdev, int blocksize);
+#define __bdev_dax_supported __bdev_dax_supported_new
 static inline bool bdev_dax_supported(struct block_device *bdev, int blocksize)
 {
 	return __bdev_dax_supported(bdev, blocksize);
