@@ -7,7 +7,9 @@
  */
 
 #include <generated/compile.h>
+#ifndef __GENKSYMS__
 #include <linux/build-salt.h>
+#endif
 #include <linux/export.h>
 #include <linux/uts.h>
 #include <linux/utsname.h>
