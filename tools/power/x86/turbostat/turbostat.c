@@ -2582,7 +2582,8 @@ int get_thread_siblings(struct cpu_topology *thiscpu)
 	filep = fopen_or_die(path, "r");
 	do {
 		offset -= BITMASK_SIZE;
-		fscanf(filep, "%lx%c", &map, &character);
+		if (fscanf(filep, "%lx%c", &map, &character) != 2)
+			err(1, "%s: failed to parse file", path);
 		for (shift = 0; shift < BITMASK_SIZE; shift++) {
 			if ((map >> shift) & 0x1) {
 				so = shift + offset;
@@ -3430,14 +3431,14 @@ dump_sysfs_cstate_config(void)
 		input = fopen(path, "r");
 		if (input == NULL)
 			continue;
-		fgets(name_buf, sizeof(name_buf), input);
+		if (!fgets(name_buf, sizeof(name_buf), input))
+			err(1, "%s: failed to read file", path);
 
 		 /* truncate "C1-HSW\n" to "C1", or truncate "C1\n" to "C1" */
 		sp = strchr(name_buf, '-');
 		if (!sp)
 			sp = strchrnul(name_buf, '\n');
 		*sp = '\0';
-
 		fclose(input);
 
 		sprintf(path, "/sys/devices/system/cpu/cpu%d/cpuidle/state%d/desc",
@@ -3445,7 +3446,8 @@ dump_sysfs_cstate_config(void)
 		input = fopen(path, "r");
 		if (input == NULL)
 			continue;
-		fgets(desc, sizeof(desc), input);
+		if (!fgets(desc, sizeof(desc), input))
+			err(1, "%s: failed to read file", path);
 
 		fprintf(outf, "cpu%d: %s: %s", base_cpu, name_buf, desc);
 		fclose(input);
@@ -3467,7 +3469,8 @@ dump_sysfs_pstate_config(void)
 		fprintf(stderr, "NSFOD %s\n", path);
 		return;
 	}
-	fgets(driver_buf, sizeof(driver_buf), input);
+	if (!fgets(driver_buf, sizeof(driver_buf), input))
+		err(1, "%s: failed to read file", path);
 	fclose(input);
 
 	sprintf(path, "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_governor",
@@ -3477,7 +3480,8 @@ dump_sysfs_pstate_config(void)
 		fprintf(stderr, "NSFOD %s\n", path);
 		return;
 	}
-	fgets(governor_buf, sizeof(governor_buf), input);
+	if (!fgets(governor_buf, sizeof(governor_buf), input))
+		err(1, "%s: failed to read file", path);
 	fclose(input);
 
 	fprintf(outf, "cpu%d: cpufreq driver: %s", base_cpu, driver_buf);
@@ -3486,7 +3490,8 @@ dump_sysfs_pstate_config(void)
 	sprintf(path, "/sys/devices/system/cpu/cpufreq/boost");
 	input = fopen(path, "r");
 	if (input != NULL) {
-		fscanf(input, "%d", &turbo);
+		if (fscanf(input, "%d", &turbo) != 1)
+			err(1, "%s: failed to parse number from file", path);
 		fprintf(outf, "cpufreq boost: %d\n", turbo);
 		fclose(input);
 	}
@@ -3494,7 +3499,8 @@ dump_sysfs_pstate_config(void)
 	sprintf(path, "/sys/devices/system/cpu/intel_pstate/no_turbo");
 	input = fopen(path, "r");
 	if (input != NULL) {
-		fscanf(input, "%d", &turbo);
+		if (fscanf(input, "%d", &turbo) != 1)
+			err(1, "%s: failed to parse number from file", path);
 		fprintf(outf, "cpufreq intel_pstate no_turbo: %d\n", turbo);
 		fclose(input);
 	}
@@ -5329,7 +5335,8 @@ void probe_sysfs(void)
 		input = fopen(path, "r");
 		if (input == NULL)
 			continue;
-		fgets(name_buf, sizeof(name_buf), input);
+		if (!fgets(name_buf, sizeof(name_buf), input))
+			err(1, "%s: failed to read file", path);
 
 		 /* truncate "C1-HSW\n" to "C1", or truncate "C1\n" to "C1" */
 		sp = strchr(name_buf, '-');
@@ -5356,7 +5363,8 @@ void probe_sysfs(void)
 		input = fopen(path, "r");
 		if (input == NULL)
 			continue;
-		fgets(name_buf, sizeof(name_buf), input);
+		if (!fgets(name_buf, sizeof(name_buf), input))
+			err(1, "%s: failed to read file", path);
 		 /* truncate "C1-HSW\n" to "C1", or truncate "C1\n" to "C1" */
 		sp = strchr(name_buf, '-');
 		if (!sp)
