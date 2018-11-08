@@ -358,7 +358,8 @@ static int ipoib_cm_nonsrq_init_rx(struct net_device *dev, struct ib_cm_id *cm_i
 	int ret;
 	int i;
 
-	rx->rx_ring = vzalloc(ipoib_recvq_size * sizeof *rx->rx_ring);
+	rx->rx_ring = vzalloc(array_size(ipoib_recvq_size,
+					 sizeof(*rx->rx_ring)));
 	if (!rx->rx_ring)
 		return -ENOMEM;
 
@@ -1027,12 +1028,14 @@ static int ipoib_cm_rep_handler(struct ib_cm_id *cm_id, struct ib_cm_event *even
 
 	skb_queue_head_init(&skqueue);
 
+	netif_tx_lock_bh(p->dev);
 	spin_lock_irq(&priv->lock);
 	set_bit(IPOIB_FLAG_OPER_UP, &p->flags);
 	if (p->neigh)
 		while ((skb = __skb_dequeue(&p->neigh->queue)))
 			__skb_queue_tail(&skqueue, skb);
 	spin_unlock_irq(&priv->lock);
+	netif_tx_unlock_bh(p->dev);
 
 	while ((skb = __skb_dequeue(&skqueue))) {
 		skb->dev = p->dev;
@@ -1145,7 +1148,7 @@ static int ipoib_cm_tx_init(struct ipoib_cm_tx *p, u32 qpn,
 	int ret;
 
 	noio_flag = memalloc_noio_save();
-	p->tx_ring = vzalloc(ipoib_sendq_size * sizeof(*p->tx_ring));
+	p->tx_ring = vzalloc(array_size(ipoib_sendq_size, sizeof(*p->tx_ring)));
 	if (!p->tx_ring) {
 		memalloc_noio_restore(noio_flag);
 		ret = -ENOMEM;
@@ -1570,7 +1573,8 @@ static void ipoib_cm_create_srq(struct net_device *dev, int max_sge)
 		return;
 	}
 
-	priv->cm.srq_ring = vzalloc(ipoib_recvq_size * sizeof *priv->cm.srq_ring);
+	priv->cm.srq_ring = vzalloc(array_size(ipoib_recvq_size,
+					       sizeof(*priv->cm.srq_ring)));
 	if (!priv->cm.srq_ring) {
 		ib_destroy_srq(priv->cm.srq);
 		priv->cm.srq = NULL;

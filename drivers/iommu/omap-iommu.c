@@ -550,7 +550,7 @@ static u32 *iopte_alloc(struct omap_iommu *obj, u32 *iopgd,
 
 pte_ready:
 	iopte = iopte_offset(iopgd, da);
-	*pt_dma = virt_to_phys(iopte);
+	*pt_dma = iopgd_page_paddr(iopgd);
 	dev_vdbg(obj->dev,
 		 "%s: da:%08x pgd:%p *pgd:%08x pte:%p *pte:%08x\n",
 		 __func__, da, iopgd, *iopgd, iopte, *iopte);
@@ -738,7 +738,7 @@ static size_t iopgtable_clear_entry_core(struct omap_iommu *obj, u32 da)
 		}
 		bytes *= nent;
 		memset(iopte, 0, nent * sizeof(*iopte));
-		pt_dma = virt_to_phys(iopte);
+		pt_dma = iopgd_page_paddr(iopgd);
 		flush_iopte_range(obj->dev, pt_dma, pt_offset, nent);
 
 		/*
@@ -1455,7 +1455,7 @@ static int omap_iommu_add_device(struct device *dev)
 	if (num_iommus < 0)
 		return 0;
 
-	arch_data = kzalloc((num_iommus + 1) * sizeof(*arch_data), GFP_KERNEL);
+	arch_data = kcalloc(num_iommus + 1, sizeof(*arch_data), GFP_KERNEL);
 	if (!arch_data)
 		return -ENOMEM;
 
@@ -1536,7 +1536,7 @@ static struct iommu_group *omap_iommu_device_group(struct device *dev)
 	struct iommu_group *group = ERR_PTR(-EINVAL);
 
 	if (arch_data->iommu_dev)
-		group = arch_data->iommu_dev->group;
+		group = iommu_group_ref_get(arch_data->iommu_dev->group);
 
 	return group;
 }

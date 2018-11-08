@@ -290,6 +290,8 @@ extern struct device_node *of_get_next_child(const struct device_node *node,
 extern struct device_node *of_get_next_available_child(
 	const struct device_node *node, struct device_node *prev);
 
+extern struct device_node *of_get_compatible_child(const struct device_node *parent,
+					const char *compatible);
 extern struct device_node *of_get_child_by_name(const struct device_node *node,
 					const char *name);
 
@@ -362,6 +364,9 @@ extern struct device_node *of_parse_phandle(const struct device_node *np,
 					    int index);
 extern int of_parse_phandle_with_args(const struct device_node *np,
 	const char *list_name, const char *cells_name, int index,
+	struct of_phandle_args *out_args);
+extern int of_parse_phandle_with_args_map(const struct device_node *np,
+	const char *list_name, const char *stem_name, int index,
 	struct of_phandle_args *out_args);
 extern int of_parse_phandle_with_fixed_args(const struct device_node *np,
 	const char *list_name, int cells_count, int index,
@@ -629,6 +634,12 @@ static inline bool of_have_populated_dt(void)
 	return false;
 }
 
+static inline struct device_node *of_get_compatible_child(const struct device_node *parent,
+					const char *compatible)
+{
+	return NULL;
+}
+
 static inline struct device_node *of_get_child_by_name(
 					const struct device_node *node,
 					const char *name)
@@ -811,6 +822,15 @@ static inline int of_parse_phandle_with_args(const struct device_node *np,
 					     const char *cells_name,
 					     int index,
 					     struct of_phandle_args *out_args)
+{
+	return -ENOSYS;
+}
+
+static inline int of_parse_phandle_with_args_map(const struct device_node *np,
+						 const char *list_name,
+						 const char *stem_name,
+						 int index,
+						 struct of_phandle_args *out_args)
 {
 	return -ENOSYS;
 }
@@ -1359,8 +1379,8 @@ struct of_overlay_notify_data {
 
 #ifdef CONFIG_OF_OVERLAY
 
-/* ID based overlays; the API for external users */
-int of_overlay_apply(struct device_node *tree, int *ovcs_id);
+int of_overlay_fdt_apply(const void *overlay_fdt, u32 overlay_fdt_size,
+			 int *ovcs_id);
 int of_overlay_remove(int *ovcs_id);
 int of_overlay_remove_all(void);
 
@@ -1369,7 +1389,7 @@ int of_overlay_notifier_unregister(struct notifier_block *nb);
 
 #else
 
-static inline int of_overlay_apply(struct device_node *tree, int *ovcs_id)
+static inline int of_overlay_fdt_apply(void *overlay_fdt, int *ovcs_id)
 {
 	return -ENOTSUPP;
 }

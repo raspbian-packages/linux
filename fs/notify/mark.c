@@ -108,7 +108,6 @@ void fsnotify_get_mark(struct fsnotify_mark *mark)
 	WARN_ON_ONCE(!refcount_read(&mark->refcnt));
 	refcount_inc(&mark->refcnt);
 }
-EXPORT_SYMBOL_GPL(fsnotify_put_mark);
 
 static void __fsnotify_recalc_mask(struct fsnotify_mark_connector *conn)
 {
@@ -120,9 +119,9 @@ static void __fsnotify_recalc_mask(struct fsnotify_mark_connector *conn)
 		if (mark->flags & FSNOTIFY_MARK_FLAG_ATTACHED)
 			new_mask |= mark->mask;
 	}
-	if (conn->flags & FSNOTIFY_OBJ_TYPE_INODE)
+	if (conn->type == FSNOTIFY_OBJ_TYPE_INODE)
 		conn->inode->i_fsnotify_mask = new_mask;
-	else if (conn->flags & FSNOTIFY_OBJ_TYPE_VFSMOUNT)
+	else if (conn->type == FSNOTIFY_OBJ_TYPE_VFSMOUNT)
 		real_mount(conn->mnt)->mnt_fsnotify_mask = new_mask;
 }
 
@@ -140,7 +139,7 @@ void fsnotify_recalc_mask(struct fsnotify_mark_connector *conn)
 	spin_lock(&conn->lock);
 	__fsnotify_recalc_mask(conn);
 	spin_unlock(&conn->lock);
-	if (conn->flags & FSNOTIFY_OBJ_TYPE_INODE)
+	if (conn->type == FSNOTIFY_OBJ_TYPE_INODE)
 		__fsnotify_update_child_dentry_flags(conn->inode);
 }
 
@@ -167,18 +166,18 @@ static struct inode *fsnotify_detach_connector_from_object(
 {
 	struct inode *inode = NULL;
 
-	if (conn->flags & FSNOTIFY_OBJ_TYPE_INODE) {
+	if (conn->type == FSNOTIFY_OBJ_TYPE_INODE) {
 		inode = conn->inode;
 		rcu_assign_pointer(inode->i_fsnotify_marks, NULL);
 		inode->i_fsnotify_mask = 0;
 		conn->inode = NULL;
-		conn->flags &= ~FSNOTIFY_OBJ_TYPE_INODE;
-	} else if (conn->flags & FSNOTIFY_OBJ_TYPE_VFSMOUNT) {
+		conn->type = FSNOTIFY_OBJ_TYPE_DETACHED;
+	} else if (conn->type == FSNOTIFY_OBJ_TYPE_VFSMOUNT) {
 		rcu_assign_pointer(real_mount(conn->mnt)->mnt_fsnotify_marks,
 				   NULL);
 		real_mount(conn->mnt)->mnt_fsnotify_mask = 0;
 		conn->mnt = NULL;
-		conn->flags &= ~FSNOTIFY_OBJ_TYPE_VFSMOUNT;
+		conn->type = FSNOTIFY_OBJ_TYPE_DETACHED;
 	}
 
 	return inode;
@@ -246,6 +245,7 @@ void fsnotify_put_mark(struct fsnotify_mark *mark)
 	queue_delayed_work(system_unbound_wq, &reaper_work,
 			   FSNOTIFY_REAPER_DELAY);
 }
+EXPORT_SYMBOL_GPL(fsnotify_put_mark);
 
 /*
  * Get mark reference when we found the mark via lockless traversal of object
@@ -295,12 +295,12 @@ static void fsnotify_put_mark_wake(struct fsnotify_mark *mark)
 
 bool fsnotify_prepare_user_wait(struct fsnotify_iter_info *iter_info)
 {
-	/* This can fail if mark is being removed */
-	if (!fsnotify_get_mark_safe(iter_info->inode_mark))
-		return false;
-	if (!fsnotify_get_mark_safe(iter_info->vfsmount_mark)) {
-		fsnotify_put_mark_wake(iter_info->inode_mark);
-		return false;
+	int type;
+
+	fsnotify_foreach_obj_type(type) {
+		/* This can fail if mark is being removed */
+		if (!fsnotify_get_mark_safe(iter_info->marks[type]))
+			goto fail;
 	}
 
 	/*
@@ -311,13 +311,20 @@ bool fsnotify_prepare_user_wait(struct fsnotify_iter_info *iter_info)
 	srcu_read_unlock(&fsnotify_mark_srcu, iter_info->srcu_idx);
 
 	return true;
+
+fail:
+	for (type--; type >= 0; type--)
+		fsnotify_put_mark_wake(iter_info->marks[type]);
+	return false;
 }
 
 void fsnotify_finish_user_wait(struct fsnotify_iter_info *iter_info)
 {
+	int type;
+
 	iter_info->srcu_idx = srcu_read_lock(&fsnotify_mark_srcu);
-	fsnotify_put_mark_wake(iter_info->inode_mark);
-	fsnotify_put_mark_wake(iter_info->vfsmount_mark);
+	fsnotify_foreach_obj_type(type)
+		fsnotify_put_mark_wake(iter_info->marks[type]);
 }
 
 /*
@@ -444,10 +451,10 @@ static int fsnotify_attach_connector_to_object(
 	spin_lock_init(&conn->lock);
 	INIT_HLIST_HEAD(&conn->list);
 	if (inode) {
-		conn->flags = FSNOTIFY_OBJ_TYPE_INODE;
+		conn->type = FSNOTIFY_OBJ_TYPE_INODE;
 		conn->inode = igrab(inode);
 	} else {
-		conn->flags = FSNOTIFY_OBJ_TYPE_VFSMOUNT;
+		conn->type = FSNOTIFY_OBJ_TYPE_VFSMOUNT;
 		conn->mnt = mnt;
 	}
 	/*
@@ -481,8 +488,7 @@ static struct fsnotify_mark_connector *fsnotify_grab_connector(
 	if (!conn)
 		goto out;
 	spin_lock(&conn->lock);
-	if (!(conn->flags & (FSNOTIFY_OBJ_TYPE_INODE |
-			     FSNOTIFY_OBJ_TYPE_VFSMOUNT))) {
+	if (conn->type == FSNOTIFY_OBJ_TYPE_DETACHED) {
 		spin_unlock(&conn->lock);
 		srcu_read_unlock(&fsnotify_mark_srcu, idx);
 		return NULL;
@@ -608,7 +614,6 @@ err:
 	fsnotify_put_mark(mark);
 	return ret;
 }
-EXPORT_SYMBOL_GPL(fsnotify_add_mark);
 
 int fsnotify_add_mark(struct fsnotify_mark *mark, struct inode *inode,
 		      struct vfsmount *mnt, int allow_dups)
@@ -621,6 +626,7 @@ int fsnotify_add_mark(struct fsnotify_mark *mark, struct inode *inode,
 	mutex_unlock(&group->mark_mutex);
 	return ret;
 }
+EXPORT_SYMBOL_GPL(fsnotify_add_mark);
 
 /*
  * Given a list of marks, find the mark associated with given group. If found
@@ -649,16 +655,16 @@ struct fsnotify_mark *fsnotify_find_mark(
 	return NULL;
 }
 
-/* Clear any marks in a group with given type */
+/* Clear any marks in a group with given type mask */
 void fsnotify_clear_marks_by_group(struct fsnotify_group *group,
-				   unsigned int type)
+				   unsigned int type_mask)
 {
 	struct fsnotify_mark *lmark, *mark;
 	LIST_HEAD(to_free);
 	struct list_head *head = &to_free;
 
 	/* Skip selection step if we want to clear all marks. */
-	if (type == FSNOTIFY_OBJ_ALL_TYPES) {
+	if (type_mask == FSNOTIFY_OBJ_ALL_TYPES_MASK) {
 		head = &group->marks_list;
 		goto clear;
 	}
@@ -673,7 +679,7 @@ void fsnotify_clear_marks_by_group(struct fsnotify_group *group,
 	 */
 	mutex_lock_nested(&group->mark_mutex, SINGLE_DEPTH_NESTING);
 	list_for_each_entry_safe(mark, lmark, &group->marks_list, g_list) {
-		if (mark->connector->flags & type)
+		if ((1U << mark->connector->type) & type_mask)
 			list_move(&mark->g_list, &to_free);
 	}
 	mutex_unlock(&group->mark_mutex);

@@ -26,7 +26,8 @@
  * POSIX_FADV_WILLNEED could set PG_Referenced, and POSIX_FADV_NOREUSE could
  * deactivate the pages and clear PG_Referenced.
  */
-SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
+
+int ksys_fadvise64_64(int fd, loff_t offset, loff_t len, int advice)
 {
 	struct fd f = fdget(fd);
 	struct inode *inode;
@@ -71,8 +72,12 @@ SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
 		goto out;
 	}
 
-	/* Careful about overflows. Len == 0 means "as much as possible" */
-	endbyte = offset + len;
+	/*
+	 * Careful about overflows. Len == 0 means "as much as possible".  Use
+	 * unsigned math because signed overflows are undefined and UBSan
+	 * complains.
+	 */
+	endbyte = (u64)offset + (u64)len;
 	if (!len || endbyte < len)
 		endbyte = -1;
 	else
@@ -185,11 +190,16 @@ out:
 	return ret;
 }
 
+SYSCALL_DEFINE4(fadvise64_64, int, fd, loff_t, offset, loff_t, len, int, advice)
+{
+	return ksys_fadvise64_64(fd, offset, len, advice);
+}
+
 #ifdef __ARCH_WANT_SYS_FADVISE64
 
 SYSCALL_DEFINE4(fadvise64, int, fd, loff_t, offset, size_t, len, int, advice)
 {
-	return sys_fadvise64_64(fd, offset, len, advice);
+	return ksys_fadvise64_64(fd, offset, len, advice);
 }
 
 #endif

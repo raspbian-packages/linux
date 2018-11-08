@@ -18,6 +18,8 @@
 #define HOST1X_DEV_H
 
 #include <linux/device.h>
+#include <linux/iommu.h>
+#include <linux/iova.h>
 #include <linux/platform_device.h>
 #include <linux/reset.h>
 
@@ -76,7 +78,6 @@ struct host1x_syncpt_ops {
 	void (*load_wait_base)(struct host1x_syncpt *syncpt);
 	u32 (*load)(struct host1x_syncpt *syncpt);
 	int (*cpu_incr)(struct host1x_syncpt *syncpt);
-	int (*patch_wait)(struct host1x_syncpt *syncpt, void *patch_addr);
 	void (*assign_to_channel)(struct host1x_syncpt *syncpt,
 	                          struct host1x_channel *channel);
 	void (*enable_protection)(struct host1x *host);
@@ -114,6 +115,11 @@ struct host1x {
 	struct device *dev;
 	struct clk *clk;
 	struct reset_control *rst;
+
+	struct iommu_group *group;
+	struct iommu_domain *domain;
+	struct iova_domain iova;
+	dma_addr_t iova_end;
 
 	struct mutex intr_mutex;
 	int intr_syncpt_irq;
@@ -174,13 +180,6 @@ static inline int host1x_hw_syncpt_cpu_incr(struct host1x *host,
 					    struct host1x_syncpt *sp)
 {
 	return host->syncpt_op->cpu_incr(sp);
-}
-
-static inline int host1x_hw_syncpt_patch_wait(struct host1x *host,
-					      struct host1x_syncpt *sp,
-					      void *patch_addr)
-{
-	return host->syncpt_op->patch_wait(sp, patch_addr);
 }
 
 static inline void host1x_hw_syncpt_assign_to_channel(

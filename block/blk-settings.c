@@ -128,7 +128,7 @@ void blk_set_stacking_limits(struct queue_limits *lim)
 
 	/* Inherit limits from component devices */
 	lim->max_segments = USHRT_MAX;
-	lim->max_discard_segments = 1;
+	lim->max_discard_segments = USHRT_MAX;
 	lim->max_hw_sectors = UINT_MAX;
 	lim->max_segment_size = UINT_MAX;
 	lim->max_sectors = UINT_MAX;
@@ -859,12 +859,10 @@ EXPORT_SYMBOL(blk_queue_update_dma_alignment);
 
 void blk_queue_flush_queueable(struct request_queue *q, bool queueable)
 {
-	spin_lock_irq(q->queue_lock);
 	if (queueable)
-		clear_bit(QUEUE_FLAG_FLUSH_NQ, &q->queue_flags);
+		blk_queue_flag_clear(QUEUE_FLAG_FLUSH_NQ, q);
 	else
-		set_bit(QUEUE_FLAG_FLUSH_NQ, &q->queue_flags);
-	spin_unlock_irq(q->queue_lock);
+		blk_queue_flag_set(QUEUE_FLAG_FLUSH_NQ, q);
 }
 EXPORT_SYMBOL_GPL(blk_queue_flush_queueable);
 

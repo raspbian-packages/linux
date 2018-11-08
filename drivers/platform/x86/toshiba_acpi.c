@@ -34,6 +34,7 @@
 #define TOSHIBA_ACPI_VERSION	"0.24"
 #define PROC_INTERFACE_VERSION	1
 
+#include <linux/compiler.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -1682,25 +1683,12 @@ static const struct file_operations keys_proc_fops = {
 	.write		= keys_proc_write,
 };
 
-static int version_proc_show(struct seq_file *m, void *v)
+static int __maybe_unused version_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "driver:                  %s\n", TOSHIBA_ACPI_VERSION);
 	seq_printf(m, "proc_interface:          %d\n", PROC_INTERFACE_VERSION);
 	return 0;
 }
-
-static int version_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, version_proc_show, PDE_DATA(inode));
-}
-
-static const struct file_operations version_proc_fops = {
-	.owner		= THIS_MODULE,
-	.open		= version_proc_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
 
 /*
  * Proc and module init
@@ -1722,8 +1710,8 @@ static void create_toshiba_proc_entries(struct toshiba_acpi_dev *dev)
 	if (dev->hotkey_dev)
 		proc_create_data("keys", S_IRUGO | S_IWUSR, toshiba_proc_dir,
 				 &keys_proc_fops, dev);
-	proc_create_data("version", S_IRUGO, toshiba_proc_dir,
-			 &version_proc_fops, dev);
+	proc_create_single_data("version", S_IRUGO, toshiba_proc_dir,
+			version_proc_show, dev);
 }
 
 static void remove_toshiba_proc_entries(struct toshiba_acpi_dev *dev)

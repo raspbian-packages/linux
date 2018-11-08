@@ -831,17 +831,12 @@ out:
 	of_node_put(rtas);
 }
 
-void __init initmem_init(void)
+void __init mem_topology_setup(void)
 {
-	int nid, cpu;
-
-	max_low_pfn = memblock_end_of_DRAM() >> PAGE_SHIFT;
-	max_pfn = max_low_pfn;
+	int cpu;
 
 	if (parse_numa_properties())
 		setup_nonnuma();
-
-	memblock_dump_all();
 
 	/*
 	 * Modify the set of possible NUMA nodes to reflect information
@@ -853,6 +848,23 @@ void __init initmem_init(void)
 
 	find_possible_nodes();
 
+	setup_node_to_cpumask_map();
+
+	reset_numa_cpu_lookup_table();
+
+	for_each_present_cpu(cpu)
+		numa_setup_cpu(cpu);
+}
+
+void __init initmem_init(void)
+{
+	int nid;
+
+	max_low_pfn = memblock_end_of_DRAM() >> PAGE_SHIFT;
+	max_pfn = max_low_pfn;
+
+	memblock_dump_all();
+
 	for_each_online_node(nid) {
 		unsigned long start_pfn, end_pfn;
 
@@ -863,10 +875,6 @@ void __init initmem_init(void)
 
 	sparse_init();
 
-	setup_node_to_cpumask_map();
-
-	reset_numa_cpu_lookup_table();
-
 	/*
 	 * We need the numa_cpu_lookup_table to be accurate for all CPUs,
 	 * even before we online them, so that we can use cpu_to_{node,mem}
@@ -876,8 +884,6 @@ void __init initmem_init(void)
 	 */
 	cpuhp_setup_state_nocalls(CPUHP_POWER_NUMA_PREPARE, "powerpc/numa:prepare",
 				  ppc_numa_cpu_prepare, ppc_numa_cpu_dead);
-	for_each_present_cpu(cpu)
-		numa_setup_cpu(cpu);
 }
 
 static int __init early_numa(char *p)
@@ -1072,7 +1078,6 @@ static int prrn_enabled;
 static void reset_topology_timer(void);
 static int topology_timer_secs = 1;
 static int topology_inited;
-static int topology_update_needed;
 
 /*
  * Change polling interval for associativity changes.
@@ -1105,7 +1110,7 @@ static void setup_cpu_associativity_change_counters(void)
 	for_each_possible_cpu(cpu) {
 		int i;
 		u8 *counts = vphn_cpu_change_counts[cpu];
-		volatile u8 *hypervisor_counts = lppaca[cpu].vphn_assoc_counts;
+		volatile u8 *hypervisor_counts = lppaca_of(cpu).vphn_assoc_counts;
 
 		for (i = 0; i < distance_ref_points_depth; i++)
 			counts[i] = hypervisor_counts[i];
@@ -1131,7 +1136,7 @@ static int update_cpu_associativity_changes_mask(void)
 	for_each_possible_cpu(cpu) {
 		int i, changed = 0;
 		u8 *counts = vphn_cpu_change_counts[cpu];
-		volatile u8 *hypervisor_counts = lppaca[cpu].vphn_assoc_counts;
+		volatile u8 *hypervisor_counts = lppaca_of(cpu).vphn_assoc_counts;
 
 		for (i = 0; i < distance_ref_points_depth; i++) {
 			if (hypervisor_counts[i] != counts[i]) {
@@ -1300,17 +1305,14 @@ int numa_update_cpu_topology(bool cpus_locked)
 	struct device *dev;
 	int weight, new_nid, i = 0;
 
-	if (!prrn_enabled && !vphn_enabled) {
-		if (!topology_inited)
-			topology_update_needed = 1;
+	if (!prrn_enabled && !vphn_enabled && topology_inited)
 		return 0;
-	}
 
 	weight = cpumask_weight(&cpu_associativity_changes_mask);
 	if (!weight)
 		return 0;
 
-	updates = kzalloc(weight * (sizeof(*updates)), GFP_KERNEL);
+	updates = kcalloc(weight, sizeof(*updates), GFP_KERNEL);
 	if (!updates)
 		return 0;
 
@@ -1417,7 +1419,6 @@ int numa_update_cpu_topology(bool cpus_locked)
 
 out:
 	kfree(updates);
-	topology_update_needed = 0;
 	return changed;
 }
 
@@ -1545,6 +1546,15 @@ int prrn_is_enabled(void)
 	return prrn_enabled;
 }
 
+void __init shared_proc_topology_init(void)
+{
+	if (lppaca_shared_proc(get_lppaca())) {
+		bitmap_fill(cpumask_bits(&cpu_associativity_changes_mask),
+			    nr_cpumask_bits);
+		numa_update_cpu_topology(false);
+	}
+}
+
 static int topology_read(struct seq_file *file, void *v)
 {
 	if (vphn_enabled || prrn_enabled)
@@ -1602,10 +1612,6 @@ static int topology_update_init(void)
 		return -ENOMEM;
 
 	topology_inited = 1;
-	if (topology_update_needed)
-		bitmap_fill(cpumask_bits(&cpu_associativity_changes_mask),
-					nr_cpumask_bits);
-
 	return 0;
 }
 device_initcall(topology_update_init);

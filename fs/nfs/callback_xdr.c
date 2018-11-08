@@ -535,35 +535,10 @@ static __be32 encode_string(struct xdr_stream *xdr, unsigned int len, const char
 	return 0;
 }
 
-#define CB_SUPPORTED_ATTR0 (FATTR4_WORD0_CHANGE|FATTR4_WORD0_SIZE)
-#define CB_SUPPORTED_ATTR1 (FATTR4_WORD1_TIME_METADATA|FATTR4_WORD1_TIME_MODIFY)
-static __be32 encode_attr_bitmap(struct xdr_stream *xdr, const uint32_t *bitmap, __be32 **savep)
+static __be32 encode_attr_bitmap(struct xdr_stream *xdr, const uint32_t *bitmap, size_t sz)
 {
-	__be32 bm[2];
-	__be32 *p;
-
-	bm[0] = htonl(bitmap[0] & CB_SUPPORTED_ATTR0);
-	bm[1] = htonl(bitmap[1] & CB_SUPPORTED_ATTR1);
-	if (bm[1] != 0) {
-		p = xdr_reserve_space(xdr, 16);
-		if (unlikely(p == NULL))
-			return htonl(NFS4ERR_RESOURCE);
-		*p++ = htonl(2);
-		*p++ = bm[0];
-		*p++ = bm[1];
-	} else if (bm[0] != 0) {
-		p = xdr_reserve_space(xdr, 12);
-		if (unlikely(p == NULL))
-			return htonl(NFS4ERR_RESOURCE);
-		*p++ = htonl(1);
-		*p++ = bm[0];
-	} else {
-		p = xdr_reserve_space(xdr, 8);
-		if (unlikely(p == NULL))
-			return htonl(NFS4ERR_RESOURCE);
-		*p++ = htonl(0);
-	}
-	*savep = p;
+	if (xdr_stream_encode_uint32_array(xdr, bitmap, sz) < 0)
+		return cpu_to_be32(NFS4ERR_RESOURCE);
 	return 0;
 }
 
@@ -656,8 +631,12 @@ static __be32 encode_getattr_res(struct svc_rqst *rqstp, struct xdr_stream *xdr,
 	
 	if (unlikely(status != 0))
 		goto out;
-	status = encode_attr_bitmap(xdr, res->bitmap, &savep);
+	status = encode_attr_bitmap(xdr, res->bitmap, ARRAY_SIZE(res->bitmap));
 	if (unlikely(status != 0))
+		goto out;
+	status = cpu_to_be32(NFS4ERR_RESOURCE);
+	savep = xdr_reserve_space(xdr, sizeof(*savep));
+	if (unlikely(!savep))
 		goto out;
 	status = encode_attr_change(xdr, res->bitmap, res->change_attr);
 	if (unlikely(status != 0))
@@ -904,16 +883,21 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp)
 
 	if (hdr_arg.minorversion == 0) {
 		cps.clp = nfs4_find_client_ident(SVC_NET(rqstp), hdr_arg.cb_ident);
-		if (!cps.clp || !check_gss_callback_principal(cps.clp, rqstp))
+		if (!cps.clp || !check_gss_callback_principal(cps.clp, rqstp)) {
+			if (cps.clp)
+				nfs_put_client(cps.clp);
 			goto out_invalidcred;
+		}
 	}
 
 	cps.minorversion = hdr_arg.minorversion;
 	hdr_res.taglen = hdr_arg.taglen;
 	hdr_res.tag = hdr_arg.tag;
-	if (encode_compound_hdr_res(&xdr_out, &hdr_res) != 0)
+	if (encode_compound_hdr_res(&xdr_out, &hdr_res) != 0) {
+		if (cps.clp)
+			nfs_put_client(cps.clp);
 		return rpc_system_err;
-
+	}
 	while (status == 0 && nops != hdr_arg.nops) {
 		status = process_op(nops, rqstp, &xdr_in,
 				    rqstp->rq_argp, &xdr_out, rqstp->rq_resp,

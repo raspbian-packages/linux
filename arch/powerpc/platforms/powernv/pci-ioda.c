@@ -46,6 +46,7 @@
 
 #include "powernv.h"
 #include "pci.h"
+#include "../../../../drivers/pci/pci.h"
 
 #define PNV_IODA1_M64_NUM	16	/* Number of M64 BARs	*/
 #define PNV_IODA1_M64_SEGS	8	/* Segments per M64 BAR	*/
@@ -1976,9 +1977,10 @@ static void pnv_pci_p7ioc_tce_invalidate(struct iommu_table *tbl,
         mb(); /* Ensure above stores are visible */
         while (start <= end) {
 		if (rm)
-			__raw_rm_writeq(cpu_to_be64(start), invalidate);
+			__raw_rm_writeq_be(start, invalidate);
 		else
-			__raw_writeq(cpu_to_be64(start), invalidate);
+			__raw_writeq_be(start, invalidate);
+
                 start += inc;
         }
 
@@ -2055,9 +2057,9 @@ static void pnv_pci_phb3_tce_invalidate_entire(struct pnv_phb *phb, bool rm)
 
 	mb(); /* Ensure previous TCE table stores are visible */
 	if (rm)
-		__raw_rm_writeq(cpu_to_be64(val), invalidate);
+		__raw_rm_writeq_be(val, invalidate);
 	else
-		__raw_writeq(cpu_to_be64(val), invalidate);
+		__raw_writeq_be(val, invalidate);
 }
 
 static inline void pnv_pci_phb3_tce_invalidate_pe(struct pnv_ioda_pe *pe)
@@ -2067,7 +2069,7 @@ static inline void pnv_pci_phb3_tce_invalidate_pe(struct pnv_ioda_pe *pe)
 	unsigned long val = PHB3_TCE_KILL_INVAL_PE | (pe->pe_number & 0xFF);
 
 	mb(); /* Ensure above stores are visible */
-	__raw_writeq(cpu_to_be64(val), invalidate);
+	__raw_writeq_be(val, invalidate);
 }
 
 static void pnv_pci_phb3_tce_invalidate(struct pnv_ioda_pe *pe, bool rm,
@@ -2090,9 +2092,9 @@ static void pnv_pci_phb3_tce_invalidate(struct pnv_ioda_pe *pe, bool rm,
 
 	while (start <= end) {
 		if (rm)
-			__raw_rm_writeq(cpu_to_be64(start), invalidate);
+			__raw_rm_writeq_be(start, invalidate);
 		else
-			__raw_writeq(cpu_to_be64(start), invalidate);
+			__raw_writeq_be(start, invalidate);
 		start += inc;
 	}
 }
@@ -2681,14 +2683,23 @@ static struct pnv_ioda_pe *gpe_table_group_to_npe(
 static long pnv_pci_ioda2_npu_set_window(struct iommu_table_group *table_group,
 		int num, struct iommu_table *tbl)
 {
+	struct pnv_ioda_pe *npe = gpe_table_group_to_npe(table_group);
+	int num2 = (num == 0) ? 1 : 0;
 	long ret = pnv_pci_ioda2_set_window(table_group, num, tbl);
 
 	if (ret)
 		return ret;
 
-	ret = pnv_npu_set_window(gpe_table_group_to_npe(table_group), num, tbl);
-	if (ret)
+	if (table_group->tables[num2])
+		pnv_npu_unset_window(npe, num2);
+
+	ret = pnv_npu_set_window(npe, num, tbl);
+	if (ret) {
 		pnv_pci_ioda2_unset_window(table_group, num);
+		if (table_group->tables[num2])
+			pnv_npu_set_window(npe, num2,
+					table_group->tables[num2]);
+	}
 
 	return ret;
 }
@@ -2697,12 +2708,24 @@ static long pnv_pci_ioda2_npu_unset_window(
 		struct iommu_table_group *table_group,
 		int num)
 {
+	struct pnv_ioda_pe *npe = gpe_table_group_to_npe(table_group);
+	int num2 = (num == 0) ? 1 : 0;
 	long ret = pnv_pci_ioda2_unset_window(table_group, num);
 
 	if (ret)
 		return ret;
 
-	return pnv_npu_unset_window(gpe_table_group_to_npe(table_group), num);
+	if (!npe->table_group.tables[num])
+		return 0;
+
+	ret = pnv_npu_unset_window(npe, num);
+	if (ret)
+		return ret;
+
+	if (table_group->tables[num2])
+		ret = pnv_npu_set_window(npe, num2, table_group->tables[num2]);
+
+	return ret;
 }
 
 static void pnv_ioda2_npu_take_ownership(struct iommu_table_group *table_group)
@@ -2889,6 +2912,34 @@ static void pnv_pci_ioda2_table_free_pages(struct iommu_table *tbl)
 			tbl->it_indirect_levels);
 }
 
+static unsigned long pnv_ioda_parse_tce_sizes(struct pnv_phb *phb)
+{
+	struct pci_controller *hose = phb->hose;
+	struct device_node *dn = hose->dn;
+	unsigned long mask = 0;
+	int i, rc, count;
+	u32 val;
+
+	count = of_property_count_u32_elems(dn, "ibm,supported-tce-sizes");
+	if (count <= 0) {
+		mask = SZ_4K | SZ_64K;
+		/* Add 16M for POWER8 by default */
+		if (cpu_has_feature(CPU_FTR_ARCH_207S) &&
+				!cpu_has_feature(CPU_FTR_ARCH_300))
+			mask |= SZ_16M;
+		return mask;
+	}
+
+	for (i = 0; i < count; i++) {
+		rc = of_property_read_u32_index(dn, "ibm,supported-tce-sizes",
+						i, &val);
+		if (rc == 0)
+			mask |= 1ULL << val;
+	}
+
+	return mask;
+}
+
 static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
 				       struct pnv_ioda_pe *pe)
 {
@@ -2913,7 +2964,7 @@ static void pnv_pci_ioda2_setup_dma_pe(struct pnv_phb *phb,
 	pe->table_group.max_dynamic_windows_supported =
 			IOMMU_TABLE_GROUP_MAX_TABLES;
 	pe->table_group.max_levels = POWERNV_IOMMU_MAX_LEVELS;
-	pe->table_group.pgsizes = SZ_4K | SZ_64K | SZ_16M;
+	pe->table_group.pgsizes = pnv_ioda_parse_tce_sizes(phb);
 #ifdef CONFIG_IOMMU_API
 	pe->table_group.ops = &pnv_pci_ioda2_ops;
 #endif
@@ -3088,7 +3139,7 @@ static void pnv_pci_ioda_fixup_iov_resources(struct pci_dev *pdev)
 	struct pci_dn *pdn;
 	int mul, total_vfs;
 
-	if (!pdev->is_physfn || pdev->is_added)
+	if (!pdev->is_physfn || pci_dev_is_added(pdev))
 		return;
 
 	pdn = pci_get_pdn(pdev);
@@ -3317,11 +3368,48 @@ static void pnv_pci_ioda_create_dbgfs(void)
 #endif /* CONFIG_DEBUG_FS */
 }
 
+static void pnv_pci_enable_bridge(struct pci_bus *bus)
+{
+	struct pci_dev *dev = bus->self;
+	struct pci_bus *child;
+
+	/* Empty bus ? bail */
+	if (list_empty(&bus->devices))
+		return;
+
+	/*
+	 * If there's a bridge associated with that bus enable it. This works
+	 * around races in the generic code if the enabling is done during
+	 * parallel probing. This can be removed once those races have been
+	 * fixed.
+	 */
+	if (dev) {
+		int rc = pci_enable_device(dev);
+		if (rc)
+			pci_err(dev, "Error enabling bridge (%d)\n", rc);
+		pci_set_master(dev);
+	}
+
+	/* Perform the same to child busses */
+	list_for_each_entry(child, &bus->children, node)
+		pnv_pci_enable_bridge(child);
+}
+
+static void pnv_pci_enable_bridges(void)
+{
+	struct pci_controller *hose;
+
+	list_for_each_entry(hose, &hose_list, list_node)
+		pnv_pci_enable_bridge(hose->bus);
+}
+
 static void pnv_pci_ioda_fixup(void)
 {
 	pnv_pci_ioda_setup_PEs();
 	pnv_pci_ioda_setup_iommu_api();
 	pnv_pci_ioda_create_dbgfs();
+
+	pnv_pci_enable_bridges();
 
 #ifdef CONFIG_EEH
 	pnv_eeh_post_init();
@@ -3621,7 +3709,6 @@ static void pnv_pci_ioda2_release_pe_dma(struct pnv_ioda_pe *pe)
 		WARN_ON(pe->table_group.group);
 	}
 
-	pnv_pci_ioda2_table_free_pages(tbl);
 	iommu_tce_table_put(tbl);
 }
 
@@ -3843,7 +3930,7 @@ static void __init pnv_pci_init_ioda_phb(struct device_node *np,
 	phb_id = be64_to_cpup(prop64);
 	pr_debug("  PHB-ID  : 0x%016llx\n", phb_id);
 
-	phb = memblock_virt_alloc(sizeof(struct pnv_phb), 0);
+	phb = memblock_virt_alloc(sizeof(*phb), 0);
 
 	/* Allocate PCI controller */
 	phb->hose = hose = pcibios_alloc_controller(np);

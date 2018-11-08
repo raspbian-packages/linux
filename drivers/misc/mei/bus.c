@@ -74,6 +74,23 @@ ssize_t __mei_cl_send(struct mei_cl *cl, u8 *buf, size_t length,
 		goto out;
 	}
 
+	while (cl->tx_cb_queued >= bus->tx_queue_limit) {
+		mutex_unlock(&bus->device_lock);
+		rets = wait_event_interruptible(cl->tx_wait,
+				cl->writing_state == MEI_WRITE_COMPLETE ||
+				(!mei_cl_is_connected(cl)));
+		mutex_lock(&bus->device_lock);
+		if (rets) {
+			if (signal_pending(current))
+				rets = -EINTR;
+			goto out;
+		}
+		if (!mei_cl_is_connected(cl)) {
+			rets = -ENODEV;
+			goto out;
+		}
+	}
+
 	cb = mei_cl_alloc_cb(cl, length, MEI_FOP_WRITE, NULL);
 	if (!cb) {
 		rets = -ENOMEM;
@@ -450,6 +467,29 @@ bool mei_cldev_enabled(struct mei_cl_device *cldev)
 EXPORT_SYMBOL_GPL(mei_cldev_enabled);
 
 /**
+ * mei_cl_bus_module_get - acquire module of the underlying
+ *    hw driver.
+ *
+ * @cldev: mei client device
+ *
+ * Return: true on success; false if the module was removed.
+ */
+static bool mei_cl_bus_module_get(struct mei_cl_device *cldev)
+{
+	return try_module_get(cldev->bus->dev->driver->owner);
+}
+
+/**
+ * mei_cl_bus_module_put -  release the underlying hw module.
+ *
+ * @cldev: mei client device
+ */
+static void mei_cl_bus_module_put(struct mei_cl_device *cldev)
+{
+	module_put(cldev->bus->dev->driver->owner);
+}
+
+/**
  * mei_cldev_enable - enable me client device
  *     create connection with me client
  *
@@ -465,17 +505,15 @@ int mei_cldev_enable(struct mei_cl_device *cldev)
 
 	cl = cldev->cl;
 
+	mutex_lock(&bus->device_lock);
 	if (cl->state == MEI_FILE_UNINITIALIZED) {
-		mutex_lock(&bus->device_lock);
 		ret = mei_cl_link(cl);
-		mutex_unlock(&bus->device_lock);
 		if (ret)
-			return ret;
+			goto out;
 		/* update pointers */
 		cl->cldev = cldev;
 	}
 
-	mutex_lock(&bus->device_lock);
 	if (mei_cl_is_connected(cl)) {
 		ret = 0;
 		goto out;
@@ -487,9 +525,17 @@ int mei_cldev_enable(struct mei_cl_device *cldev)
 		goto out;
 	}
 
+	if (!mei_cl_bus_module_get(cldev)) {
+		dev_err(&cldev->dev, "get hw module failed");
+		ret = -ENODEV;
+		goto out;
+	}
+
 	ret = mei_cl_connect(cl, cldev->me_cl, NULL);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_err(&cldev->dev, "cannot connect\n");
+		mei_cl_bus_module_put(cldev);
+	}
 
 out:
 	mutex_unlock(&bus->device_lock);
@@ -552,6 +598,7 @@ int mei_cldev_disable(struct mei_cl_device *cldev)
 	if (err < 0)
 		dev_err(bus->dev, "Could not disconnect from the ME client\n");
 
+	mei_cl_bus_module_put(cldev);
 out:
 	/* Flush queues and remove any pending read */
 	mei_cl_flush_queues(cl, NULL);
@@ -561,37 +608,6 @@ out:
 	return err;
 }
 EXPORT_SYMBOL_GPL(mei_cldev_disable);
-
-/**
- * mei_cl_bus_module_get - acquire module of the underlying
- *    hw module.
- *
- * @cl: host client
- *
- * Return: true on success; false if the module was removed.
- */
-bool mei_cl_bus_module_get(struct mei_cl *cl)
-{
-	struct mei_cl_device *cldev = cl->cldev;
-
-	if (!cldev)
-		return true;
-
-	return try_module_get(cldev->bus->dev->driver->owner);
-}
-
-/**
- * mei_cl_bus_module_put -  release the underlying hw module.
- *
- * @cl: host client
- */
-void mei_cl_bus_module_put(struct mei_cl *cl)
-{
-	struct mei_cl_device *cldev = cl->cldev;
-
-	if (cldev)
-		module_put(cldev->bus->dev->driver->owner);
-}
 
 /**
  * mei_cl_device_find - find matching entry in the driver id table
@@ -841,12 +857,13 @@ static void mei_cl_bus_dev_release(struct device *dev)
 
 	mei_me_cl_put(cldev->me_cl);
 	mei_dev_bus_put(cldev->bus);
+	mei_cl_unlink(cldev->cl);
 	kfree(cldev->cl);
 	kfree(cldev);
 }
 
 static const struct device_type mei_cl_device_type = {
-	.release	= mei_cl_bus_dev_release,
+	.release = mei_cl_bus_dev_release,
 };
 
 /**

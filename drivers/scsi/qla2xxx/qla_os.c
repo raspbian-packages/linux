@@ -303,6 +303,7 @@ static void qla2x00_free_device(scsi_qla_host_t *);
 static int qla2xxx_map_queues(struct Scsi_Host *shost);
 static void qla2x00_destroy_deferred_work(struct qla_hw_data *);
 
+
 struct scsi_host_template qla2xxx_driver_template = {
 	.module			= THIS_MODULE,
 	.name			= QLA2XXX_DRIVER_NAME,
@@ -397,7 +398,6 @@ static void qla_init_base_qpair(struct scsi_qla_host *vha, struct req_que *req,
 	ha->base_qpair->use_shadow_reg = IS_SHADOW_REG_CAPABLE(ha) ? 1 : 0;
 	ha->base_qpair->msix = &ha->msix_entries[QLA_MSIX_RSP_Q];
 	INIT_LIST_HEAD(&ha->base_qpair->hints_list);
-	INIT_LIST_HEAD(&ha->base_qpair->nvme_done_list);
 	ha->base_qpair->enable_class_2 = ql2xenableclass2;
 	/* init qpair to this cpu. Will adjust at run time. */
 	qla_cpu_update(rsp->qpair, raw_smp_processor_id());
@@ -411,7 +411,7 @@ static int qla2x00_alloc_queues(struct qla_hw_data *ha, struct req_que *req,
 				struct rsp_que *rsp)
 {
 	scsi_qla_host_t *vha = pci_get_drvdata(ha->pdev);
-	ha->req_q_map = kzalloc(sizeof(struct req_que *) * ha->max_req_queues,
+	ha->req_q_map = kcalloc(ha->max_req_queues, sizeof(struct req_que *),
 				GFP_KERNEL);
 	if (!ha->req_q_map) {
 		ql_log(ql_log_fatal, vha, 0x003b,
@@ -419,7 +419,7 @@ static int qla2x00_alloc_queues(struct qla_hw_data *ha, struct req_que *req,
 		goto fail_req_map;
 	}
 
-	ha->rsp_q_map = kzalloc(sizeof(struct rsp_que *) * ha->max_rsp_queues,
+	ha->rsp_q_map = kcalloc(ha->max_rsp_queues, sizeof(struct rsp_que *),
 				GFP_KERNEL);
 	if (!ha->rsp_q_map) {
 		ql_log(ql_log_fatal, vha, 0x003c,
@@ -490,7 +490,7 @@ static void qla2x00_free_req_que(struct qla_hw_data *ha, struct req_que *req)
 static void qla2x00_free_rsp_que(struct qla_hw_data *ha, struct rsp_que *rsp)
 {
 	if (IS_QLAFX00(ha)) {
-		if (rsp && rsp->ring)
+		if (rsp && rsp->ring_fx00)
 			dma_free_coherent(&ha->pdev->dev,
 			    (rsp->length_fx00 + 1) * sizeof(request_t),
 			    rsp->ring_fx00, rsp->dma_fx00);
@@ -1148,7 +1148,7 @@ static inline int test_fcport_count(scsi_qla_host_t *vha)
  * qla2x00_wait_for_sess_deletion can only be called from remove_one.
  * it has dependency on UNLOADING flag to stop device discovery
  */
-static void
+void
 qla2x00_wait_for_sess_deletion(scsi_qla_host_t *vha)
 {
 	qla2x00_mark_all_devices_lost(vha, 0);
@@ -1737,7 +1737,7 @@ __qla2x00_abort_all_cmds(struct qla_qpair *qp, int res)
 					sp_get(sp);
 					spin_unlock_irqrestore(qp->qp_lock_ptr,
 					    flags);
-					qla_nvme_abort(ha, sp);
+					qla_nvme_abort(ha, sp, res);
 					spin_lock_irqsave(qp->qp_lock_ptr,
 					    flags);
 				} else if (GET_CMD_SP(sp) &&
@@ -3181,6 +3181,8 @@ qla2x00_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	    "req->req_q_in=%p req->req_q_out=%p rsp->rsp_q_in=%p rsp->rsp_q_out=%p.\n",
 	    req->req_q_in, req->req_q_out, rsp->rsp_q_in, rsp->rsp_q_out);
 
+	ha->wq = alloc_workqueue("qla2xxx_wq", 0, 0);
+
 	if (ha->isp_ops->initialize_adapter(base_vha)) {
 		ql_log(ql_log_fatal, base_vha, 0x00d6,
 		    "Failed to initialize adapter - Adapter flags %x.\n",
@@ -3216,8 +3218,6 @@ qla2x00_probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	    "can_queue=%d, req=%p, mgmt_svr_loop_id=%d, sg_tablesize=%d.\n",
 	    host->can_queue, base_vha->req,
 	    base_vha->mgmt_svr_loop_id, host->sg_tablesize);
-
-	ha->wq = alloc_workqueue("qla2xxx_wq", 0, 0);
 
 	if (ha->mqenable) {
 		bool mq = false;
@@ -3604,6 +3604,8 @@ qla2x00_remove_one(struct pci_dev *pdev)
 
 	base_vha = pci_get_drvdata(pdev);
 	ha = base_vha->hw;
+	ql_log(ql_log_info, base_vha, 0xb079,
+	    "Removing driver\n");
 
 	/* Indicate device removal to prevent future board_disable and wait
 	 * until any pending board_disable has completed. */
@@ -3625,6 +3627,21 @@ qla2x00_remove_one(struct pci_dev *pdev)
 		return;
 	}
 	qla2x00_wait_for_hba_ready(base_vha);
+
+	if (IS_QLA25XX(ha) || IS_QLA2031(ha) || IS_QLA27XX(ha)) {
+		if (ha->flags.fw_started)
+			qla2x00_abort_isp_cleanup(base_vha);
+	} else if (!IS_QLAFX00(ha)) {
+		if (IS_QLA8031(ha)) {
+			ql_dbg(ql_dbg_p3p, base_vha, 0xb07e,
+			    "Clearing fcoe driver presence.\n");
+			if (qla83xx_clear_drv_presence(base_vha) != QLA_SUCCESS)
+				ql_dbg(ql_dbg_p3p, base_vha, 0xb079,
+				    "Error while clearing DRV-Presence.\n");
+		}
+
+		qla2x00_try_to_stop_firmware(base_vha);
+	}
 
 	qla2x00_wait_for_sess_deletion(base_vha);
 
@@ -3648,14 +3665,6 @@ qla2x00_remove_one(struct pci_dev *pdev)
 		qlafx00_driver_shutdown(base_vha, 20);
 
 	qla2x00_delete_all_vps(ha, base_vha);
-
-	if (IS_QLA8031(ha)) {
-		ql_dbg(ql_dbg_p3p, base_vha, 0xb07e,
-		    "Clearing fcoe driver presence.\n");
-		if (qla83xx_clear_drv_presence(base_vha) != QLA_SUCCESS)
-			ql_dbg(ql_dbg_p3p, base_vha, 0xb079,
-			    "Error while clearing DRV-Presence.\n");
-	}
 
 	qla2x00_abort_all_cmds(base_vha, DID_NO_CONNECT << 16);
 
@@ -3716,24 +3725,6 @@ qla2x00_free_device(scsi_qla_host_t *vha)
 		qla2x00_stop_timer(vha);
 
 	qla25xx_delete_queues(vha);
-
-	if (ha->flags.fce_enabled)
-		qla2x00_disable_fce_trace(vha, NULL, NULL);
-
-	if (ha->eft)
-		qla2x00_disable_eft_trace(vha);
-
-	if (IS_QLA25XX(ha) ||  IS_QLA2031(ha) || IS_QLA27XX(ha)) {
-		if (ha->flags.fw_started)
-			qla2x00_abort_isp_cleanup(vha);
-	} else {
-		if (ha->flags.fw_started) {
-			/* Stop currently executing firmware. */
-			qla2x00_try_to_stop_firmware(vha);
-			ha->flags.fw_started = 0;
-		}
-	}
-
 	vha->flags.online = 0;
 
 	/* turn-off interrupts on the card */
@@ -4046,8 +4037,9 @@ qla2x00_mem_alloc(struct qla_hw_data *ha, uint16_t req_len, uint16_t rsp_len,
 	    (*rsp)->ring);
 	/* Allocate memory for NVRAM data for vports */
 	if (ha->nvram_npiv_size) {
-		ha->npiv_info = kzalloc(sizeof(struct qla_npiv_entry) *
-		    ha->nvram_npiv_size, GFP_KERNEL);
+		ha->npiv_info = kcalloc(ha->nvram_npiv_size,
+					sizeof(struct qla_npiv_entry),
+					GFP_KERNEL);
 		if (!ha->npiv_info) {
 			ql_log_pci(ql_log_fatal, ha->pdev, 0x002d,
 			    "Failed to allocate memory for npiv_info.\n");
@@ -4081,8 +4073,9 @@ qla2x00_mem_alloc(struct qla_hw_data *ha, uint16_t req_len, uint16_t rsp_len,
 	INIT_LIST_HEAD(&ha->vp_list);
 
 	/* Allocate memory for our loop_id bitmap */
-	ha->loop_id_map = kzalloc(BITS_TO_LONGS(LOOPID_MAP_SIZE) * sizeof(long),
-	    GFP_KERNEL);
+	ha->loop_id_map = kcalloc(BITS_TO_LONGS(LOOPID_MAP_SIZE),
+				  sizeof(long),
+				  GFP_KERNEL);
 	if (!ha->loop_id_map)
 		goto fail_loop_id_map;
 	else {
@@ -4820,12 +4813,14 @@ void qla24xx_create_new_sess(struct scsi_qla_host *vha, struct qla_work_evt *e)
 			fcport->d_id = e->u.new_sess.id;
 			fcport->flags |= FCF_FABRIC_DEVICE;
 			fcport->fw_login_state = DSC_LS_PLOGI_PEND;
-			if (e->u.new_sess.fc4_type == FC4_TYPE_FCP_SCSI) {
+			if (e->u.new_sess.fc4_type & FS_FC4TYPE_FCP)
 				fcport->fc4_type = FC4_TYPE_FCP_SCSI;
-			} else if (e->u.new_sess.fc4_type == FC4_TYPE_NVME) {
+
+			if (e->u.new_sess.fc4_type & FS_FC4TYPE_NVME) {
 				fcport->fc4_type = FC4_TYPE_OTHER;
 				fcport->fc4f_nvme = FC4_TYPE_NVME;
 			}
+
 			memcpy(fcport->port_name, e->u.new_sess.port_name,
 			    WWN_SIZE);
 		} else {
@@ -5045,7 +5040,8 @@ qla2x00_do_work(struct scsi_qla_host *vha)
 			    e->u.logio.data);
 			break;
 		case QLA_EVT_GPNFT:
-			qla24xx_async_gpnft(vha, e->u.gpnft.fc4_type);
+			qla24xx_async_gpnft(vha, e->u.gpnft.fc4_type,
+			    e->u.gpnft.sp);
 			break;
 		case QLA_EVT_GPNFT_DONE:
 			qla24xx_async_gpnft_done(vha, e->u.iosb.sp);
@@ -5061,6 +5057,10 @@ qla2x00_do_work(struct scsi_qla_host *vha)
 			break;
 		case QLA_EVT_SP_RETRY:
 			qla_sp_retry(vha, e);
+			break;
+		case QLA_EVT_IIDMA:
+			qla_do_iidma_work(vha, e->u.fcport.fcport);
+			break;
 		}
 		if (e->flags & QLA_EVT_FLAG_FREE)
 			kfree(e);
@@ -6020,8 +6020,9 @@ qla2x00_do_dpc(void *data)
 				set_bit(ISP_ABORT_NEEDED, &base_vha->dpc_flags);
 		}
 
-		if (test_and_clear_bit(ISP_ABORT_NEEDED,
-						&base_vha->dpc_flags)) {
+		if (test_and_clear_bit
+		    (ISP_ABORT_NEEDED, &base_vha->dpc_flags) &&
+		    !test_bit(UNLOADING, &base_vha->dpc_flags)) {
 
 			ql_dbg(ql_dbg_dpc, base_vha, 0x4007,
 			    "ISP abort scheduled.\n");
@@ -6826,7 +6827,7 @@ static int qla2xxx_map_queues(struct Scsi_Host *shost)
 	if (USER_CTRL_IRQ(vha->hw))
 		rc = blk_mq_map_queues(&shost->tag_set);
 	else
-		rc = blk_mq_pci_map_queues(&shost->tag_set, vha->hw->pdev);
+		rc = blk_mq_pci_map_queues(&shost->tag_set, vha->hw->pdev, 0);
 	return rc;
 }
 

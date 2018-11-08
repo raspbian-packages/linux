@@ -348,8 +348,7 @@ static int iscsi_login_zero_tsih_s1(
 		pr_err("idr_alloc() for sess_idr failed\n");
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		kfree(sess);
-		return -ENOMEM;
+		goto free_sess;
 	}
 
 	sess->creation_time = get_jiffies_64();
@@ -365,20 +364,28 @@ static int iscsi_login_zero_tsih_s1(
 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
 		pr_err("Unable to allocate memory for"
 				" struct iscsi_sess_ops.\n");
-		kfree(sess);
-		return -ENOMEM;
+		goto remove_idr;
 	}
 
 	sess->se_sess = transport_init_session(TARGET_PROT_NORMAL);
 	if (IS_ERR(sess->se_sess)) {
 		iscsit_tx_login_rsp(conn, ISCSI_STATUS_CLS_TARGET_ERR,
 				ISCSI_LOGIN_STATUS_NO_RESOURCES);
-		kfree(sess->sess_ops);
-		kfree(sess);
-		return -ENOMEM;
+		goto free_ops;
 	}
 
 	return 0;
+
+free_ops:
+	kfree(sess->sess_ops);
+remove_idr:
+	spin_lock_bh(&sess_idr_lock);
+	idr_remove(&sess_idr, sess->session_index);
+	spin_unlock_bh(&sess_idr_lock);
+free_sess:
+	kfree(sess);
+	conn->sess = NULL;
+	return -ENOMEM;
 }
 
 static int iscsi_login_zero_tsih_s2(
@@ -1020,7 +1027,7 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
 	struct socket *new_sock, *sock = np->np_socket;
 	struct sockaddr_in sock_in;
 	struct sockaddr_in6 sock_in6;
-	int rc, err;
+	int rc;
 
 	rc = kernel_accept(sock, &new_sock, 0);
 	if (rc < 0)
@@ -1033,8 +1040,8 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
 		memset(&sock_in6, 0, sizeof(struct sockaddr_in6));
 
 		rc = conn->sock->ops->getname(conn->sock,
-				(struct sockaddr *)&sock_in6, &err, 1);
-		if (!rc) {
+				(struct sockaddr *)&sock_in6, 1);
+		if (rc >= 0) {
 			if (!ipv6_addr_v4mapped(&sock_in6.sin6_addr)) {
 				memcpy(&conn->login_sockaddr, &sock_in6, sizeof(sock_in6));
 			} else {
@@ -1047,8 +1054,8 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
 		}
 
 		rc = conn->sock->ops->getname(conn->sock,
-				(struct sockaddr *)&sock_in6, &err, 0);
-		if (!rc) {
+				(struct sockaddr *)&sock_in6, 0);
+		if (rc >= 0) {
 			if (!ipv6_addr_v4mapped(&sock_in6.sin6_addr)) {
 				memcpy(&conn->local_sockaddr, &sock_in6, sizeof(sock_in6));
 			} else {
@@ -1063,13 +1070,13 @@ int iscsit_accept_np(struct iscsi_np *np, struct iscsi_conn *conn)
 		memset(&sock_in, 0, sizeof(struct sockaddr_in));
 
 		rc = conn->sock->ops->getname(conn->sock,
-				(struct sockaddr *)&sock_in, &err, 1);
-		if (!rc)
+				(struct sockaddr *)&sock_in, 1);
+		if (rc >= 0)
 			memcpy(&conn->login_sockaddr, &sock_in, sizeof(sock_in));
 
 		rc = conn->sock->ops->getname(conn->sock,
-				(struct sockaddr *)&sock_in, &err, 0);
-		if (!rc)
+				(struct sockaddr *)&sock_in, 0);
+		if (rc >= 0)
 			memcpy(&conn->local_sockaddr, &sock_in, sizeof(sock_in));
 	}
 
@@ -1161,13 +1168,13 @@ void iscsi_target_login_sess_out(struct iscsi_conn *conn,
 				   ISCSI_LOGIN_STATUS_INIT_ERR);
 	if (!zero_tsih || !conn->sess)
 		goto old_sess_out;
-	if (conn->sess->se_sess)
-		transport_free_session(conn->sess->se_sess);
-	if (conn->sess->session_index != 0) {
-		spin_lock_bh(&sess_idr_lock);
-		idr_remove(&sess_idr, conn->sess->session_index);
-		spin_unlock_bh(&sess_idr_lock);
-	}
+
+	transport_free_session(conn->sess->se_sess);
+
+	spin_lock_bh(&sess_idr_lock);
+	idr_remove(&sess_idr, conn->sess->session_index);
+	spin_unlock_bh(&sess_idr_lock);
+
 	kfree(conn->sess->sess_ops);
 	kfree(conn->sess);
 	conn->sess = NULL;

@@ -227,6 +227,45 @@ done:
 	spin_unlock_bh(&nn->reconfig_lock);
 }
 
+static void nfp_net_reconfig_sync_enter(struct nfp_net *nn)
+{
+	bool cancelled_timer = false;
+	u32 pre_posted_requests;
+
+	spin_lock_bh(&nn->reconfig_lock);
+
+	nn->reconfig_sync_present = true;
+
+	if (nn->reconfig_timer_active) {
+		nn->reconfig_timer_active = false;
+		cancelled_timer = true;
+	}
+	pre_posted_requests = nn->reconfig_posted;
+	nn->reconfig_posted = 0;
+
+	spin_unlock_bh(&nn->reconfig_lock);
+
+	if (cancelled_timer) {
+		del_timer_sync(&nn->reconfig_timer);
+		nfp_net_reconfig_wait(nn, nn->reconfig_timer.expires);
+	}
+
+	/* Run the posted reconfigs which were issued before we started */
+	if (pre_posted_requests) {
+		nfp_net_reconfig_start(nn, pre_posted_requests);
+		nfp_net_reconfig_wait(nn, jiffies + HZ * NFP_NET_POLL_TIMEOUT);
+	}
+}
+
+static void nfp_net_reconfig_wait_posted(struct nfp_net *nn)
+{
+	nfp_net_reconfig_sync_enter(nn);
+
+	spin_lock_bh(&nn->reconfig_lock);
+	nn->reconfig_sync_present = false;
+	spin_unlock_bh(&nn->reconfig_lock);
+}
+
 /**
  * nfp_net_reconfig() - Reconfigure the firmware
  * @nn:      NFP Net device to reconfigure
@@ -240,32 +279,9 @@ done:
  */
 int nfp_net_reconfig(struct nfp_net *nn, u32 update)
 {
-	bool cancelled_timer = false;
-	u32 pre_posted_requests;
 	int ret;
 
-	spin_lock_bh(&nn->reconfig_lock);
-
-	nn->reconfig_sync_present = true;
-
-	if (nn->reconfig_timer_active) {
-		del_timer(&nn->reconfig_timer);
-		nn->reconfig_timer_active = false;
-		cancelled_timer = true;
-	}
-	pre_posted_requests = nn->reconfig_posted;
-	nn->reconfig_posted = 0;
-
-	spin_unlock_bh(&nn->reconfig_lock);
-
-	if (cancelled_timer)
-		nfp_net_reconfig_wait(nn, nn->reconfig_timer.expires);
-
-	/* Run the posted reconfigs which were issued before we started */
-	if (pre_posted_requests) {
-		nfp_net_reconfig_start(nn, pre_posted_requests);
-		nfp_net_reconfig_wait(nn, jiffies + HZ * NFP_NET_POLL_TIMEOUT);
-	}
+	nfp_net_reconfig_sync_enter(nn);
 
 	nfp_net_reconfig_start(nn, update);
 	ret = nfp_net_reconfig_wait(nn, jiffies + HZ * NFP_NET_POLL_TIMEOUT);
@@ -1077,7 +1093,7 @@ static bool nfp_net_xdp_complete(struct nfp_net_tx_ring *tx_ring)
  * @dp:		NFP Net data path struct
  * @tx_ring:	TX ring structure
  *
- * Assumes that the device is stopped
+ * Assumes that the device is stopped, must be idempotent.
  */
 static void
 nfp_net_tx_ring_reset(struct nfp_net_dp *dp, struct nfp_net_tx_ring *tx_ring)
@@ -1279,12 +1295,17 @@ static void nfp_net_rx_give_one(const struct nfp_net_dp *dp,
  * nfp_net_rx_ring_reset() - Reflect in SW state of freelist after disable
  * @rx_ring:	RX ring structure
  *
- * Warning: Do *not* call if ring buffers were never put on the FW freelist
- *	    (i.e. device was not enabled)!
+ * Assumes that the device is stopped, must be idempotent.
  */
 static void nfp_net_rx_ring_reset(struct nfp_net_rx_ring *rx_ring)
 {
 	unsigned int wr_idx, last_idx;
+
+	/* wr_p == rd_p means ring was never fed FL bufs.  RX rings are always
+	 * kept at cnt - 1 FL bufs.
+	 */
+	if (rx_ring->wr_p == 0 && rx_ring->rd_p == 0)
+		return;
 
 	/* Move the empty entry to the end of the list */
 	wr_idx = D_IDX(rx_ring, rx_ring->wr_p);
@@ -1406,7 +1427,7 @@ static void nfp_net_rx_csum(struct nfp_net_dp *dp,
 		skb->ip_summed = meta->csum_type;
 		skb->csum = meta->csum;
 		u64_stats_update_begin(&r_vec->rx_sync);
-		r_vec->hw_csum_rx_ok++;
+		r_vec->hw_csum_rx_complete++;
 		u64_stats_update_end(&r_vec->rx_sync);
 		return;
 	}
@@ -1722,7 +1743,7 @@ static int nfp_net_rx(struct nfp_net_rx_ring *rx_ring, int budget)
 
 			act = bpf_prog_run_xdp(xdp_prog, &xdp);
 
-			pkt_len -= xdp.data - orig_data;
+			pkt_len = xdp.data_end - xdp.data;
 			pkt_off += xdp.data - orig_data;
 
 			switch (act) {
@@ -2508,6 +2529,8 @@ static void nfp_net_vec_clear_ring_data(struct nfp_net *nn, unsigned int idx)
 /**
  * nfp_net_clear_config_and_disable() - Clear control BAR and disable NFP
  * @nn:      NFP Net device to reconfigure
+ *
+ * Warning: must be fully idempotent.
  */
 static void nfp_net_clear_config_and_disable(struct nfp_net *nn)
 {
@@ -3066,7 +3089,7 @@ static int nfp_net_change_mtu(struct net_device *netdev, int new_mtu)
 	struct nfp_net_dp *dp;
 	int err;
 
-	err = nfp_app_change_mtu(nn->app, netdev, new_mtu);
+	err = nfp_app_check_mtu(nn->app, netdev, new_mtu);
 	if (err)
 		return err;
 
@@ -3121,7 +3144,7 @@ static void nfp_net_stat64(struct net_device *netdev,
 	struct nfp_net *nn = netdev_priv(netdev);
 	int r;
 
-	for (r = 0; r < nn->dp.num_r_vecs; r++) {
+	for (r = 0; r < nn->max_r_vecs; r++) {
 		struct nfp_net_r_vector *r_vec = &nn->r_vecs[r];
 		u64 data[3];
 		unsigned int start;
@@ -3275,6 +3298,25 @@ nfp_net_features_check(struct sk_buff *skb, struct net_device *dev,
 		return features & ~(NETIF_F_CSUM_MASK | NETIF_F_GSO_MASK);
 
 	return features;
+}
+
+static int
+nfp_net_get_phys_port_name(struct net_device *netdev, char *name, size_t len)
+{
+	struct nfp_net *nn = netdev_priv(netdev);
+	int n;
+
+	if (nn->port)
+		return nfp_port_get_phys_port_name(netdev, name, len);
+
+	if (nn->dp.is_vf || nn->vnic_no_name)
+		return -EOPNOTSUPP;
+
+	n = snprintf(name, len, "n%d", nn->id);
+	if (n >= len)
+		return -EINVAL;
+
+	return 0;
 }
 
 /**
@@ -3475,7 +3517,7 @@ const struct net_device_ops nfp_net_netdev_ops = {
 	.ndo_set_mac_address	= nfp_net_set_mac_address,
 	.ndo_set_features	= nfp_net_set_features,
 	.ndo_features_check	= nfp_net_features_check,
-	.ndo_get_phys_port_name	= nfp_port_get_phys_port_name,
+	.ndo_get_phys_port_name	= nfp_net_get_phys_port_name,
 	.ndo_udp_tunnel_add	= nfp_net_add_vxlan_port,
 	.ndo_udp_tunnel_del	= nfp_net_del_vxlan_port,
 	.ndo_bpf		= nfp_net_xdp,
@@ -3590,6 +3632,7 @@ struct nfp_net *nfp_net_alloc(struct pci_dev *pdev, bool needs_netdev,
  */
 void nfp_net_free(struct nfp_net *nn)
 {
+	WARN_ON(timer_pending(&nn->reconfig_timer) || nn->reconfig_posted);
 	if (nn->dp.netdev)
 		free_netdev(nn->dp.netdev);
 	else
@@ -3874,4 +3917,5 @@ void nfp_net_clean(struct nfp_net *nn)
 		return;
 
 	unregister_netdev(nn->dp.netdev);
+	nfp_net_reconfig_wait_posted(nn);
 }

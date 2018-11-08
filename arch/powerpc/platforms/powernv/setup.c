@@ -124,6 +124,7 @@ static void pnv_setup_rfi_flush(void)
 		  security_ftr_enabled(SEC_FTR_L1D_FLUSH_HV));
 
 	setup_rfi_flush(type, enable);
+	setup_barrier_nospec();
 }
 
 static void __init pnv_setup_arch(void)
@@ -202,17 +203,12 @@ static void pnv_prepare_going_down(void)
 	 */
 	opal_event_shutdown();
 
-	/* Soft disable interrupts */
-	local_irq_disable();
+	/* Print flash update message if one is scheduled. */
+	opal_flash_update_print_message();
 
-	/*
-	 * Return secondary CPUs to firwmare if a flash update
-	 * is pending otherwise we will get all sort of error
-	 * messages about CPU being stuck etc.. This will also
-	 * have the side effect of hard disabling interrupts so
-	 * past this point, the kernel is effectively dead.
-	 */
-	opal_flash_term_callback();
+	smp_send_stop();
+
+	hard_irq_disable();
 }
 
 static void  __noreturn pnv_restart(char *cmd)
@@ -294,7 +290,7 @@ static void pnv_kexec_wait_secondaries_down(void)
 			if (i != notified) {
 				printk(KERN_INFO "kexec: waiting for cpu %d "
 				       "(physical %d) to enter OPAL\n",
-				       i, paca[i].hw_cpu_id);
+				       i, paca_ptrs[i]->hw_cpu_id);
 				notified = i;
 			}
 
@@ -306,7 +302,7 @@ static void pnv_kexec_wait_secondaries_down(void)
 			if (timeout-- == 0) {
 				printk(KERN_ERR "kexec: timed out waiting for "
 				       "cpu %d (physical %d) to enter OPAL\n",
-				       i, paca[i].hw_cpu_id);
+				       i, paca_ptrs[i]->hw_cpu_id);
 				break;
 			}
 		}
@@ -362,15 +358,7 @@ static void pnv_kexec_cpu_down(int crash_shutdown, int secondary)
 #ifdef CONFIG_MEMORY_HOTPLUG_SPARSE
 static unsigned long pnv_memory_block_size(void)
 {
-	/*
-	 * We map the kernel linear region with 1GB large pages on radix. For
-	 * memory hot unplug to work our memory block size must be at least
-	 * this size.
-	 */
-	if (radix_enabled())
-		return 1UL * 1024 * 1024 * 1024;
-	else
-		return 256UL * 1024 * 1024;
+	return 256UL * 1024 * 1024;
 }
 #endif
 

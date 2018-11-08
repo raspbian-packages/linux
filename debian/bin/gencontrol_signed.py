@@ -9,7 +9,7 @@ from debian_linux.debian import Changelog, PackageDescription, VersionLinux, \
 from debian_linux.gencontrol import Gencontrol as Base, merge_packages
 from debian_linux.utils import Templates, read_control
 
-import os.path, re, codecs, io, json, subprocess, time
+import os.path, re, codecs, io, json, subprocess, time, ssl, hashlib
 
 class Gencontrol(Base):
     def __init__(self, arch):
@@ -131,14 +131,28 @@ class Gencontrol(Base):
 
         image_suffix = '%(abiname)s%(localversion)s' % vars
         image_package_name = 'linux-image-%s-unsigned' % image_suffix
-        self.image_packages.append((image_suffix, image_package_name))
 
-        # Verify that this flavour is configured to support Secure Boot
+        # Verify that this flavour is configured to support Secure Boot,
+        # and get the trusted certificates filename.
         with open('debian/%s/boot/config-%s' %
                   (image_package_name, image_suffix)) as f:
             kconfig = f.readlines()
         assert 'CONFIG_EFI_STUB=y\n' in kconfig
         assert 'CONFIG_LOCK_DOWN_IN_EFI_SECURE_BOOT=y\n' in kconfig
+        cert_re = re.compile(r'CONFIG_SYSTEM_TRUSTED_KEYS="(.*)"$')
+        cert_file_name = None
+        for line in kconfig:
+            match = cert_re.match(line)
+            if match:
+                cert_file_name = match.group(1)
+                break
+        assert cert_file_name
+        if featureset != "none":
+            cert_file_name = os.path.join('debian/build/source_%s' % featureset,
+                                          cert_file_name)
+
+        self.image_packages.append((image_suffix, image_package_name,
+                                    cert_file_name))
 
         packages['source']['Build-Depends'].append(
             image_package_name +
@@ -176,42 +190,68 @@ class Gencontrol(Base):
         self.write_files_json()
 
     def write_changelog(self):
-        changelog_text = self.substitute(self.templates['changelog.in'],
-                                         self.vars)
-        changelog = Changelog(file=io.StringIO(changelog_text))
-
         # We need to insert a new version entry.
         # Take the distribution and urgency from the linux changelog, and
         # the base version from the changelog template.
         vars = self.vars.copy()
+        vars['source'] = self.changelog[0].source
         vars['distribution'] = self.changelog[0].distribution
         vars['urgency'] = self.changelog[0].urgency
-        vars['maintainer'] = self.changelog[0].maintainer
-        vars['date'] = self.changelog[0].date
-        vars['signedsourceversion'] = (changelog[0].version.complete + '+' +
-                                       re.sub(r'-', r'+',
-                                              vars['imagebinaryversion']))
+        vars['signedsourceversion'] = (re.sub(r'-', r'+', vars['imagebinaryversion']))
 
         with codecs.open(self.template_debian_dir + '/changelog', 'w', 'utf-8') as f:
             f.write(self.substitute('''\
 linux-signed-@arch@ (@signedsourceversion@) @distribution@; urgency=@urgency@
 
-  * Update to linux @imagebinaryversion@
-
- -- @maintainer@  @date@
+  * Sign kernel from @source@ @imagebinaryversion@
 
 ''',
-                                    vars))
-            f.write(changelog_text)
+                vars))
+
+            with codecs.open('debian/changelog', 'r', 'utf-8') as changelog_in:
+                # Ignore first two header lines
+                changelog_in.readline()
+                changelog_in.readline()
+
+                for d in changelog_in.read():
+                    f.write(d)
 
     def write_files_json(self):
         # Can't raise from a lambda function :-(
         def raise_func(e):
             raise e
 
+        # Some functions in openssl work with multiple concatenated
+        # PEM-format certificates, but others do not.
+        def get_certs(file_name):
+            certs = []
+            BEGIN, MIDDLE = 0, 1
+            state = BEGIN
+            with open(file_name) as f:
+                for line in f:
+                    if line == '-----BEGIN CERTIFICATE-----\n':
+                        assert state == BEGIN
+                        certs.append([])
+                        state = MIDDLE
+                    elif line == '-----END CERTIFICATE-----\n':
+                        assert state == MIDDLE
+                        state = BEGIN
+                    else:
+                        assert line[0] != '-'
+                        assert state == MIDDLE
+                    certs[-1].append(line)
+            assert state == BEGIN
+            return [''.join(cert_lines) for cert_lines in certs]
+
+        def get_cert_fingerprint(cert, algo):
+            hasher = hashlib.new(algo)
+            hasher.update(ssl.PEM_cert_to_DER_cert(cert))
+            return hasher.hexdigest()
+
         all_files = {}
 
-        for image_suffix, image_package_name in self.image_packages:
+        for image_suffix, image_package_name, cert_file_name in \
+            self.image_packages:
             package_dir = 'debian/%s' % image_package_name
             package_files = []
             package_files.append({'sig_type': 'efi',
@@ -224,7 +264,13 @@ linux-signed-@arch@ (@signedsourceversion@) @distribution@; urgency=@urgency@
                             {'sig_type': 'linux-module',
                              'file': '%s/%s' %
                              (root[len(package_dir) + 1 :], name)})
-            all_files[image_package_name] = {'files': package_files}
+            package_certs = [get_cert_fingerprint(cert, 'sha256')
+                             for cert in get_certs(cert_file_name)]
+            assert len(package_certs) >= 1
+            all_files[image_package_name] = {
+                'trusted_certs': package_certs,
+                'files': package_files
+            }
 
         with codecs.open(self.template_top_dir + '/files.json', 'w') as f:
             json.dump(all_files, f)

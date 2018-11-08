@@ -45,6 +45,7 @@
 #include <asm/pgalloc.h>
 #include <asm/tlbflush.h>
 #include <asm/desc.h>
+#include <asm/sections.h>
 
 #undef pr_fmt
 #define pr_fmt(fmt)     "Kernel/User page tables isolation: " fmt
@@ -66,12 +67,22 @@ static void __init pti_print_if_secure(const char *reason)
 		pr_info("%s\n", reason);
 }
 
+enum pti_mode {
+	PTI_AUTO = 0,
+	PTI_FORCE_OFF,
+	PTI_FORCE_ON
+} pti_mode;
+
 void __init pti_check_boottime_disable(void)
 {
 	char arg[5];
 	int ret;
 
+	/* Assume mode is auto unless overridden. */
+	pti_mode = PTI_AUTO;
+
 	if (hypervisor_is_type(X86_HYPER_XEN_PV)) {
+		pti_mode = PTI_FORCE_OFF;
 		pti_print_if_insecure("disabled on XEN PV.");
 		return;
 	}
@@ -79,18 +90,23 @@ void __init pti_check_boottime_disable(void)
 	ret = cmdline_find_option(boot_command_line, "pti", arg, sizeof(arg));
 	if (ret > 0)  {
 		if (ret == 3 && !strncmp(arg, "off", 3)) {
+			pti_mode = PTI_FORCE_OFF;
 			pti_print_if_insecure("disabled on command line.");
 			return;
 		}
 		if (ret == 2 && !strncmp(arg, "on", 2)) {
+			pti_mode = PTI_FORCE_ON;
 			pti_print_if_secure("force enabled on command line.");
 			goto enable;
 		}
-		if (ret == 4 && !strncmp(arg, "auto", 4))
+		if (ret == 4 && !strncmp(arg, "auto", 4)) {
+			pti_mode = PTI_AUTO;
 			goto autosel;
+		}
 	}
 
 	if (cmdline_find_option_bool(boot_command_line, "nopti")) {
+		pti_mode = PTI_FORCE_OFF;
 		pti_print_if_insecure("disabled on command line.");
 		return;
 	}
@@ -149,7 +165,7 @@ pgd_t __pti_set_user_pgd(pgd_t *pgdp, pgd_t pgd)
  *
  * Returns a pointer to a P4D on success, or NULL on failure.
  */
-static __init p4d_t *pti_user_pagetable_walk_p4d(unsigned long address)
+static p4d_t *pti_user_pagetable_walk_p4d(unsigned long address)
 {
 	pgd_t *pgd = kernel_to_user_pgdp(pgd_offset_k(address));
 	gfp_t gfp = (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO);
@@ -161,7 +177,7 @@ static __init p4d_t *pti_user_pagetable_walk_p4d(unsigned long address)
 
 	if (pgd_none(*pgd)) {
 		unsigned long new_p4d_page = __get_free_page(gfp);
-		if (!new_p4d_page)
+		if (WARN_ON_ONCE(!new_p4d_page))
 			return NULL;
 
 		set_pgd(pgd, __pgd(_KERNPG_TABLE | __pa(new_p4d_page)));
@@ -177,16 +193,20 @@ static __init p4d_t *pti_user_pagetable_walk_p4d(unsigned long address)
  *
  * Returns a pointer to a PMD on success, or NULL on failure.
  */
-static __init pmd_t *pti_user_pagetable_walk_pmd(unsigned long address)
+static pmd_t *pti_user_pagetable_walk_pmd(unsigned long address)
 {
 	gfp_t gfp = (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO);
-	p4d_t *p4d = pti_user_pagetable_walk_p4d(address);
+	p4d_t *p4d;
 	pud_t *pud;
+
+	p4d = pti_user_pagetable_walk_p4d(address);
+	if (!p4d)
+		return NULL;
 
 	BUILD_BUG_ON(p4d_large(*p4d) != 0);
 	if (p4d_none(*p4d)) {
 		unsigned long new_pud_page = __get_free_page(gfp);
-		if (!new_pud_page)
+		if (WARN_ON_ONCE(!new_pud_page))
 			return NULL;
 
 		set_p4d(p4d, __p4d(_KERNPG_TABLE | __pa(new_pud_page)));
@@ -200,7 +220,7 @@ static __init pmd_t *pti_user_pagetable_walk_pmd(unsigned long address)
 	}
 	if (pud_none(*pud)) {
 		unsigned long new_pmd_page = __get_free_page(gfp);
-		if (!new_pmd_page)
+		if (WARN_ON_ONCE(!new_pmd_page))
 			return NULL;
 
 		set_pud(pud, __pud(_KERNPG_TABLE | __pa(new_pmd_page)));
@@ -222,8 +242,12 @@ static __init pmd_t *pti_user_pagetable_walk_pmd(unsigned long address)
 static __init pte_t *pti_user_pagetable_walk_pte(unsigned long address)
 {
 	gfp_t gfp = (GFP_KERNEL | __GFP_NOTRACK | __GFP_ZERO);
-	pmd_t *pmd = pti_user_pagetable_walk_pmd(address);
+	pmd_t *pmd;
 	pte_t *pte;
+
+	pmd = pti_user_pagetable_walk_pmd(address);
+	if (!pmd)
+		return NULL;
 
 	/* We can't do anything sensible if we hit a large mapping. */
 	if (pmd_large(*pmd)) {
@@ -267,7 +291,7 @@ static void __init pti_setup_vsyscall(void)
 static void __init pti_setup_vsyscall(void) { }
 #endif
 
-static void __init
+static void
 pti_clone_pmds(unsigned long start, unsigned long end, pmdval_t clear)
 {
 	unsigned long addr;
@@ -281,6 +305,10 @@ pti_clone_pmds(unsigned long start, unsigned long end, pmdval_t clear)
 		pgd_t *pgd;
 		p4d_t *p4d;
 		pud_t *pud;
+
+		/* Overflow check */
+		if (addr < start)
+			break;
 
 		pgd = pgd_offset_k(addr);
 		if (WARN_ON(pgd_none(*pgd)))
@@ -298,6 +326,27 @@ pti_clone_pmds(unsigned long start, unsigned long end, pmdval_t clear)
 		target_pmd = pti_user_pagetable_walk_pmd(addr);
 		if (WARN_ON(!target_pmd))
 			return;
+
+		/*
+		 * Only clone present PMDs.  This ensures only setting
+		 * _PAGE_GLOBAL on present PMDs.  This should only be
+		 * called on well-known addresses anyway, so a non-
+		 * present PMD would be a surprise.
+		 */
+		if (WARN_ON(!(pmd_flags(*pmd) & _PAGE_PRESENT)))
+			return;
+
+		/*
+		 * Setting 'target_pmd' below creates a mapping in both
+		 * the user and kernel page tables.  It is effectively
+		 * global, so set it as global in both copies.  Note:
+		 * the X86_FEATURE_PGE check is not _required_ because
+		 * the CPU ignores _PAGE_GLOBAL when PGE is not
+		 * supported.  The check keeps consistentency with
+		 * code that only set this bit when supported.
+		 */
+		if (boot_cpu_has(X86_FEATURE_PGE))
+			*pmd = pmd_set_flags(*pmd, _PAGE_GLOBAL);
 
 		/*
 		 * Copy the PMD.  That is, the kernelmode and usermode
@@ -318,6 +367,9 @@ static void __init pti_clone_p4d(unsigned long addr)
 	pgd_t *kernel_pgd;
 
 	user_p4d = pti_user_pagetable_walk_p4d(addr);
+	if (!user_p4d)
+		return;
+
 	kernel_pgd = pgd_offset_k(addr);
 	kernel_p4d = p4d_offset(kernel_pgd, addr);
 	*user_p4d = *kernel_p4d;
@@ -348,7 +400,117 @@ static void __init pti_clone_entry_text(void)
 {
 	pti_clone_pmds((unsigned long) __entry_text_start,
 			(unsigned long) __irqentry_text_end,
-		       _PAGE_RW | _PAGE_GLOBAL);
+		       _PAGE_RW);
+}
+
+/*
+ * Global pages and PCIDs are both ways to make kernel TLB entries
+ * live longer, reduce TLB misses and improve kernel performance.
+ * But, leaving all kernel text Global makes it potentially accessible
+ * to Meltdown-style attacks which make it trivial to find gadgets or
+ * defeat KASLR.
+ *
+ * Only use global pages when it is really worth it.
+ */
+static inline bool pti_kernel_image_global_ok(void)
+{
+	/*
+	 * Systems with PCIDs get litlle benefit from global
+	 * kernel text and are not worth the downsides.
+	 */
+	if (cpu_feature_enabled(X86_FEATURE_PCID))
+		return false;
+
+	/*
+	 * Only do global kernel image for pti=auto.  Do the most
+	 * secure thing (not global) if pti=on specified.
+	 */
+	if (pti_mode != PTI_AUTO)
+		return false;
+
+	/*
+	 * K8 may not tolerate the cleared _PAGE_RW on the userspace
+	 * global kernel image pages.  Do the safe thing (disable
+	 * global kernel image).  This is unlikely to ever be
+	 * noticed because PTI is disabled by default on AMD CPUs.
+	 */
+	if (boot_cpu_has(X86_FEATURE_K8))
+		return false;
+
+	/*
+	 * RANDSTRUCT derives its hardening benefits from the
+	 * attacker's lack of knowledge about the layout of kernel
+	 * data structures.  Keep the kernel image non-global in
+	 * cases where RANDSTRUCT is in use to help keep the layout a
+	 * secret.
+	 */
+	if (IS_ENABLED(CONFIG_GCC_PLUGIN_RANDSTRUCT))
+		return false;
+
+	return true;
+}
+
+/*
+ * This is the only user for these and it is not arch-generic
+ * like the other set_memory.h functions.  Just extern them.
+ */
+extern int set_memory_nonglobal(unsigned long addr, int numpages);
+extern int set_memory_global(unsigned long addr, int numpages);
+
+/*
+ * For some configurations, map all of kernel text into the user page
+ * tables.  This reduces TLB misses, especially on non-PCID systems.
+ */
+void pti_clone_kernel_text(void)
+{
+	/*
+	 * rodata is part of the kernel image and is normally
+	 * readable on the filesystem or on the web.  But, do not
+	 * clone the areas past rodata, they might contain secrets.
+	 */
+	unsigned long start = PFN_ALIGN(_text);
+	unsigned long end_clone  = (unsigned long)__end_rodata_hpage_align;
+	unsigned long end_global = PFN_ALIGN((unsigned long)__stop___ex_table);
+
+	if (!pti_kernel_image_global_ok())
+		return;
+
+	pr_debug("mapping partial kernel image into user address space\n");
+
+	/*
+	 * Note that this will undo _some_ of the work that
+	 * pti_set_kernel_image_nonglobal() did to clear the
+	 * global bit.
+	 */
+	pti_clone_pmds(start, end_clone, _PAGE_RW);
+
+	/*
+	 * pti_clone_pmds() will set the global bit in any PMDs
+	 * that it clones, but we also need to get any PTEs in
+	 * the last level for areas that are not huge-page-aligned.
+	 */
+
+	/* Set the global bit for normal non-__init kernel text: */
+	set_memory_global(start, (end_global - start) >> PAGE_SHIFT);
+}
+
+void pti_set_kernel_image_nonglobal(void)
+{
+	/*
+	 * The identity map is created with PMDs, regardless of the
+	 * actual length of the kernel.  We need to clear
+	 * _PAGE_GLOBAL up to a PMD boundary, not just to the end
+	 * of the image.
+	 */
+	unsigned long start = PFN_ALIGN(_text);
+	unsigned long end = ALIGN((unsigned long)_end, PMD_PAGE_SIZE);
+
+	/*
+	 * This clears _PAGE_GLOBAL from the entire kernel image.
+	 * pti_clone_kernel_text() map put _PAGE_GLOBAL back for
+	 * areas that are mapped to userspace.
+	 */
+	set_memory_nonglobal(start, (end - start) >> PAGE_SHIFT);
 }
 
 /*
@@ -362,6 +524,10 @@ void __init pti_init(void)
 	pr_info("enabled\n");
 
 	pti_clone_user_shared();
+
+	/* Undo all global bits from the init pagetables in head_64.S: */
+	pti_set_kernel_image_nonglobal();
+	/* Replace some of the global bits just for shared entry text: */
 	pti_clone_entry_text();
 	pti_setup_espfix64();
 	pti_setup_vsyscall();

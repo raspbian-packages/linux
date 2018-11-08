@@ -229,11 +229,6 @@ CONFIG_SERIO_LIBPS2=y
 # CONFIG_VIDEO_MXB is not set
 
 ##
-## file: drivers/media/pci/zoran/Kconfig
-##
-# CONFIG_VIDEO_ZORAN is not set
-
-##
 ## file: drivers/media/radio/Kconfig
 ##
 # CONFIG_USB_DSBR is not set
@@ -401,7 +396,6 @@ CONFIG_DISPLAY7SEG=m
 ##
 CONFIG_SCSI_ARCMSR=m
 CONFIG_SCSI_DMX3191D=m
-# CONFIG_SCSI_FUTURE_DOMAIN is not set
 # CONFIG_SCSI_IPS is not set
 CONFIG_SCSI_INITIO=m
 # CONFIG_SCSI_INIA100 is not set
@@ -425,10 +419,9 @@ CONFIG_MEGARAID_MAILBOX=m
 CONFIG_MEGARAID_LEGACY=m
 
 ##
-## file: drivers/staging/ipx/Kconfig
+## file: drivers/staging/media/zoran/Kconfig
 ##
-CONFIG_IPX=m
-# CONFIG_IPX_INTERN is not set
+# CONFIG_VIDEO_ZORAN is not set
 
 ##
 ## file: drivers/tty/Kconfig

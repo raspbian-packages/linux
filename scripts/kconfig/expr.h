@@ -158,8 +158,6 @@ struct symbol {
 /* Set symbol to y if allnoconfig; used for symbols that hide others */
 #define SYMBOL_ALLNOCONFIG_Y 0x200000
 
-#define SYMBOL_NEW        0x400000 /* symbol is new (loaded config did not provide a value) */
-
 #define SYMBOL_MAXLENGTH	256
 #define SYMBOL_HASHSIZE		9973
 
@@ -173,6 +171,9 @@ struct symbol {
  * config BAZ
  *         int "BAZ Value"
  *         range 1..255
+ *
+ * Please, also check zconf.y:print_symbol() when modifying the
+ * list of property types!
  */
 enum prop_type {
 	P_UNKNOWN,
@@ -307,12 +308,12 @@ struct expr *expr_transform(struct expr *e);
 int expr_contains_symbol(struct expr *dep, struct symbol *sym);
 bool expr_depends_symbol(struct expr *dep, struct symbol *sym);
 struct expr *expr_trans_compare(struct expr *e, enum expr_type type, struct symbol *sym);
-struct expr *expr_simplify_unmet_dep(struct expr *e1, struct expr *e2);
 
 void expr_fprint(struct expr *e, FILE *out);
 struct gstr; /* forward */
 void expr_gstr_print(struct expr *e, struct gstr *gs);
-void expr_gstr_print_revdep(struct expr *e, struct gstr *gs);
+void expr_gstr_print_revdep(struct expr *e, struct gstr *gs,
+			    tristate pr_type, const char *title);
 
 static inline int expr_is_yes(struct expr *e)
 {

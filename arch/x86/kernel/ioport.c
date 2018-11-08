@@ -23,7 +23,7 @@
 /*
  * this changes the io permissions bitmap in the current task.
  */
-SYSCALL_DEFINE3(ioperm, unsigned long, from, unsigned long, num, int, turn_on)
+long ksys_ioperm(unsigned long from, unsigned long num, int turn_on)
 {
 	struct thread_struct *t = &current->thread;
 	struct tss_struct *tss;
@@ -95,6 +95,11 @@ SYSCALL_DEFINE3(ioperm, unsigned long, from, unsigned long, num, int, turn_on)
 	put_cpu();
 
 	return 0;
+}
+
+SYSCALL_DEFINE3(ioperm, unsigned long, from, unsigned long, num, int, turn_on)
+{
+	return ksys_ioperm(from, num, turn_on);
 }
 
 /*

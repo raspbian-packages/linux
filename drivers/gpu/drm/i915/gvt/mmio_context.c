@@ -190,7 +190,7 @@ static void load_render_mocs(struct drm_i915_private *dev_priv)
 
 static int
 restore_context_mmio_for_inhibit(struct intel_vgpu *vgpu,
-				 struct drm_i915_gem_request *req)
+				 struct i915_request *req)
 {
 	u32 *cs;
 	int ret;
@@ -236,7 +236,7 @@ restore_context_mmio_for_inhibit(struct intel_vgpu *vgpu,
 
 static int
 restore_render_mocs_control_for_inhibit(struct intel_vgpu *vgpu,
-					struct drm_i915_gem_request *req)
+					struct i915_request *req)
 {
 	unsigned int index;
 	u32 *cs;
@@ -263,7 +263,7 @@ restore_render_mocs_control_for_inhibit(struct intel_vgpu *vgpu,
 
 static int
 restore_render_mocs_l3cc_for_inhibit(struct intel_vgpu *vgpu,
-				     struct drm_i915_gem_request *req)
+				     struct i915_request *req)
 {
 	unsigned int index;
 	u32 *cs;
@@ -294,7 +294,7 @@ restore_render_mocs_l3cc_for_inhibit(struct intel_vgpu *vgpu,
  * render_mocs_l3cc.
  */
 int intel_vgpu_restore_inhibit_context(struct intel_vgpu *vgpu,
-				       struct drm_i915_gem_request *req)
+				       struct i915_request *req)
 {
 	int ret;
 	u32 *cs;
@@ -448,7 +448,7 @@ static void switch_mocs(struct intel_vgpu *pre, struct intel_vgpu *next,
 
 bool is_inhibit_context(struct i915_gem_context *ctx, int ring_id)
 {
-	u32 *reg_state = ctx->engine[ring_id].lrc_reg_state;
+	u32 *reg_state = ctx->__engine[ring_id].lrc_reg_state;
 	u32 inhibit_mask =
 		_MASKED_BIT_ENABLE(CTX_CTRL_ENGINE_CTX_RESTORE_INHIBIT);
 
@@ -581,7 +581,9 @@ void intel_gvt_init_engine_mmio_context(struct intel_gvt *gvt)
 
 	for (mmio = gvt->engine_mmio_list.mmio;
 	     i915_mmio_reg_valid(mmio->reg); mmio++) {
-		if (mmio->in_context)
+		if (mmio->in_context) {
 			gvt->engine_mmio_list.ctx_mmio_count[mmio->ring_id]++;
+			intel_gvt_mmio_set_in_ctx(gvt, mmio->reg.reg);
+		}
 	}
 }

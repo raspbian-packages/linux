@@ -36,7 +36,6 @@
 #include <linux/cpu.h>
 #include <linux/sched/task_stack.h>
 
-#include <asm/hyperv.h>
 #include <asm/mshyperv.h>
 #include <linux/notifier.h>
 #include <linux/ptrace.h>
@@ -1178,6 +1177,9 @@ static ssize_t vmbus_chan_attr_show(struct kobject *kobj,
 
 	if (!attribute->show)
 		return -EIO;
+
+	if (chan->state != CHANNEL_OPENED_STATE)
+		return -EINVAL;
 
 	return attribute->show(chan, buf);
 }

@@ -18,6 +18,7 @@
 #include <linux/quotaops.h>
 #include <linux/types.h>
 #include <linux/writeback.h>
+#include <linux/nospec.h>
 
 static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
 				     qid_t id)
@@ -703,6 +704,7 @@ static int do_quotactl(struct super_block *sb, int type, int cmd, qid_t id,
 
 	if (type >= (XQM_COMMAND(cmd) ? XQM_MAXQUOTAS : MAXQUOTAS))
 		return -EINVAL;
+	type = array_index_nospec(type, MAXQUOTAS);
 	/*
 	 * Quota not supported on this fs? Check this before s_quota_types
 	 * since they needn't be set if quota is not supported at all.
@@ -833,8 +835,8 @@ static struct super_block *quotactl_block(const char __user *special, int cmd)
  * calls. Maybe we need to add the process quotas etc. in the future,
  * but we probably should use rlimits for that.
  */
-SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
-		qid_t, id, void __user *, addr)
+int kernel_quotactl(unsigned int cmd, const char __user *special,
+		    qid_t id, void __user *addr)
 {
 	uint cmds, type;
 	struct super_block *sb = NULL;
@@ -884,4 +886,10 @@ out:
 	if (pathp && !IS_ERR(pathp))
 		path_put(pathp);
 	return ret;
+}
+
+SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
+		qid_t, id, void __user *, addr)
+{
+	return kernel_quotactl(cmd, special, id, addr);
 }

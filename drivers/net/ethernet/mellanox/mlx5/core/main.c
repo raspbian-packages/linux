@@ -58,7 +58,9 @@
 #include "eswitch.h"
 #include "lib/mlx5.h"
 #include "fpga/core.h"
+#include "fpga/ipsec.h"
 #include "accel/ipsec.h"
+#include "accel/tls.h"
 #include "lib/clock.h"
 
 MODULE_AUTHOR("Eli Cohen <eli@mellanox.com>");
@@ -872,8 +874,10 @@ static int mlx5_pci_init(struct mlx5_core_dev *dev, struct mlx5_priv *priv)
 	priv->numa_node = dev_to_node(&dev->pdev->dev);
 
 	priv->dbg_root = debugfs_create_dir(dev_name(&pdev->dev), mlx5_debugfs_root);
-	if (!priv->dbg_root)
+	if (!priv->dbg_root) {
+		dev_err(&pdev->dev, "Cannot create debugfs dir, aborting\n");
 		return -ENOMEM;
+	}
 
 	err = mlx5_pci_enable_device(dev);
 	if (err) {
@@ -922,7 +926,7 @@ static void mlx5_pci_close(struct mlx5_core_dev *dev, struct mlx5_priv *priv)
 	pci_clear_master(dev->pdev);
 	release_bar(dev->pdev);
 	mlx5_pci_disable_device(dev);
-	debugfs_remove(priv->dbg_root);
+	debugfs_remove_recursive(priv->dbg_root);
 }
 
 static int mlx5_init_once(struct mlx5_core_dev *dev, struct mlx5_priv *priv)
@@ -942,9 +946,9 @@ static int mlx5_init_once(struct mlx5_core_dev *dev, struct mlx5_priv *priv)
 		goto out;
 	}
 
-	err = mlx5_init_cq_table(dev);
+	err = mlx5_cq_debugfs_init(dev);
 	if (err) {
-		dev_err(&pdev->dev, "failed to initialize cq table\n");
+		dev_err(&pdev->dev, "failed to initialize cq debugfs\n");
 		goto err_eq_cleanup;
 	}
 
@@ -1002,7 +1006,7 @@ err_tables_cleanup:
 	mlx5_cleanup_mkey_table(dev);
 	mlx5_cleanup_srq_table(dev);
 	mlx5_cleanup_qp_table(dev);
-	mlx5_cleanup_cq_table(dev);
+	mlx5_cq_debugfs_cleanup(dev);
 
 err_eq_cleanup:
 	mlx5_eq_cleanup(dev);
@@ -1023,7 +1027,7 @@ static void mlx5_cleanup_once(struct mlx5_core_dev *dev)
 	mlx5_cleanup_mkey_table(dev);
 	mlx5_cleanup_srq_table(dev);
 	mlx5_cleanup_qp_table(dev);
-	mlx5_cleanup_cq_table(dev);
+	mlx5_cq_debugfs_cleanup(dev);
 	mlx5_eq_cleanup(dev);
 }
 
@@ -1042,6 +1046,10 @@ static int mlx5_load_one(struct mlx5_core_dev *dev, struct mlx5_priv *priv,
 
 	dev_info(&pdev->dev, "firmware version: %d.%d.%d\n", fw_rev_maj(dev),
 		 fw_rev_min(dev), fw_rev_sub(dev));
+
+	/* Only PFs hold the relevant PCIe information for this query */
+	if (mlx5_core_is_pf(dev))
+		pcie_print_link_status(dev->pdev);
 
 	/* on load removing any previous indication of internal error, device is
 	 * up
@@ -1173,6 +1181,24 @@ static int mlx5_load_one(struct mlx5_core_dev *dev, struct mlx5_priv *priv,
 		goto err_affinity_hints;
 	}
 
+	err = mlx5_fpga_device_start(dev);
+	if (err) {
+		dev_err(&pdev->dev, "fpga device start failed %d\n", err);
+		goto err_fpga_start;
+	}
+
+	err = mlx5_accel_ipsec_init(dev);
+	if (err) {
+		dev_err(&pdev->dev, "IPSec device start failed %d\n", err);
+		goto err_ipsec_start;
+	}
+
+	err = mlx5_accel_tls_init(dev);
+	if (err) {
+		dev_err(&pdev->dev, "TLS device start failed %d\n", err);
+		goto err_tls_start;
+	}
+
 	err = mlx5_init_fs(dev);
 	if (err) {
 		dev_err(&pdev->dev, "Failed to init flow steering\n");
@@ -1189,17 +1215,6 @@ static int mlx5_load_one(struct mlx5_core_dev *dev, struct mlx5_priv *priv,
 	if (err) {
 		dev_err(&pdev->dev, "sriov init failed %d\n", err);
 		goto err_sriov;
-	}
-
-	err = mlx5_fpga_device_start(dev);
-	if (err) {
-		dev_err(&pdev->dev, "fpga device start failed %d\n", err);
-		goto err_fpga_start;
-	}
-	err = mlx5_accel_ipsec_init(dev);
-	if (err) {
-		dev_err(&pdev->dev, "IPSec device start failed %d\n", err);
-		goto err_ipsec_start;
 	}
 
 	if (mlx5_device_registered(dev)) {
@@ -1219,17 +1234,21 @@ out:
 	return 0;
 
 err_reg_dev:
-	mlx5_accel_ipsec_cleanup(dev);
-err_ipsec_start:
-	mlx5_fpga_device_stop(dev);
-
-err_fpga_start:
 	mlx5_sriov_detach(dev);
 
 err_sriov:
 	mlx5_cleanup_fs(dev);
 
 err_fs:
+	mlx5_accel_tls_cleanup(dev);
+
+err_tls_start:
+	mlx5_accel_ipsec_cleanup(dev);
+
+err_ipsec_start:
+	mlx5_fpga_device_stop(dev);
+
+err_fpga_start:
 	mlx5_irq_clear_affinity_hints(dev);
 
 err_affinity_hints:
@@ -1249,7 +1268,7 @@ err_cleanup_once:
 		mlx5_cleanup_once(dev);
 
 err_stop_poll:
-	mlx5_stop_health_poll(dev);
+	mlx5_stop_health_poll(dev, boot);
 	if (mlx5_cmd_teardown_hca(dev)) {
 		dev_err(&dev->pdev->dev, "tear_down_hca failed, skip cleanup\n");
 		goto out_err;
@@ -1296,11 +1315,11 @@ static int mlx5_unload_one(struct mlx5_core_dev *dev, struct mlx5_priv *priv,
 	if (mlx5_device_registered(dev))
 		mlx5_detach_device(dev);
 
-	mlx5_accel_ipsec_cleanup(dev);
-	mlx5_fpga_device_stop(dev);
-
 	mlx5_sriov_detach(dev);
 	mlx5_cleanup_fs(dev);
+	mlx5_accel_ipsec_cleanup(dev);
+	mlx5_accel_tls_cleanup(dev);
+	mlx5_fpga_device_stop(dev);
 	mlx5_irq_clear_affinity_hints(dev);
 	free_comp_eqs(dev);
 	mlx5_stop_eqs(dev);
@@ -1308,7 +1327,7 @@ static int mlx5_unload_one(struct mlx5_core_dev *dev, struct mlx5_priv *priv,
 	mlx5_free_irq_vectors(dev);
 	if (cleanup)
 		mlx5_cleanup_once(dev);
-	mlx5_stop_health_poll(dev);
+	mlx5_stop_health_poll(dev, cleanup);
 	err = mlx5_cmd_teardown_hca(dev);
 	if (err) {
 		dev_err(&dev->pdev->dev, "tear_down_hca failed, skip cleanup\n");
@@ -1570,7 +1589,7 @@ static int mlx5_try_fast_unload(struct mlx5_core_dev *dev)
 	 * with the HCA, so the health polll is no longer needed.
 	 */
 	mlx5_drain_health_wq(dev);
-	mlx5_stop_health_poll(dev);
+	mlx5_stop_health_poll(dev, false);
 
 	ret = mlx5_cmd_force_teardown_hca(dev);
 	if (ret) {
@@ -1580,6 +1599,14 @@ static int mlx5_try_fast_unload(struct mlx5_core_dev *dev)
 	}
 
 	mlx5_enter_error_state(dev, true);
+
+	/* Some platforms requiring freeing the IRQ's in the shutdown
+	 * flow. If they aren't freed they can't be allocated after
+	 * kexec. There is no need to cleanup the mlx5_core software
+	 * contexts.
+	 */
+	mlx5_irq_clear_affinity_hints(dev);
+	mlx5_core_eq_free_irqs(dev);
 
 	return 0;
 }
@@ -1657,6 +1684,7 @@ static int __init init(void)
 	get_random_bytes(&sw_owner_id, sizeof(sw_owner_id));
 
 	mlx5_core_verify_params();
+	mlx5_fpga_ipsec_build_fs_cmds();
 	mlx5_register_debugfs();
 
 	err = pci_register_driver(&mlx5_core_driver);

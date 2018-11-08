@@ -144,6 +144,8 @@ static ssize_t qeth_dev_portno_store(struct device *dev,
 		goto out;
 	}
 	card->info.portno = portno;
+	if (card->dev)
+		card->dev->dev_port = portno;
 out:
 	mutex_unlock(&card->conf_mutex);
 	return rc ? rc : count;
@@ -424,6 +426,7 @@ static ssize_t qeth_dev_layer2_store(struct device *dev,
 	if (card->discipline) {
 		card->discipline->remove(card->gdev);
 		qeth_core_free_discipline(card);
+		card->options.layer2 = -1;
 	}
 
 	rc = qeth_core_load_discipline(card, newdis);

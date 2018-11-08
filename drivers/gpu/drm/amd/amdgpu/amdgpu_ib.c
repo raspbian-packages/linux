@@ -127,6 +127,7 @@ int amdgpu_ib_schedule(struct amdgpu_ring *ring, unsigned num_ibs,
 	struct amdgpu_vm *vm;
 	uint64_t fence_ctx;
 	uint32_t status = 0, alloc_size;
+	unsigned fence_flags = 0;
 
 	unsigned i;
 	int r = 0;
@@ -181,15 +182,18 @@ int amdgpu_ib_schedule(struct amdgpu_ring *ring, unsigned num_ibs,
 		}
 	}
 
-	if (ring->funcs->init_cond_exec)
+	if (job && ring->funcs->init_cond_exec)
 		patch_offset = amdgpu_ring_init_cond_exec(ring);
 
-	if (ring->funcs->emit_hdp_flush
 #ifdef CONFIG_X86_64
-	    && !(adev->flags & AMD_IS_APU)
+	if (!(adev->flags & AMD_IS_APU))
 #endif
-	   )
-		amdgpu_ring_emit_hdp_flush(ring);
+	{
+		if (ring->funcs->emit_hdp_flush)
+			amdgpu_ring_emit_hdp_flush(ring);
+		else
+			amdgpu_asic_flush_hdp(adev, ring);
+	}
 
 	skip_preamble = ring->current_ctx == fence_ctx;
 	need_ctx_switch = ring->current_ctx != fence_ctx;
@@ -219,14 +223,21 @@ int amdgpu_ib_schedule(struct amdgpu_ring *ring, unsigned num_ibs,
 	if (ring->funcs->emit_tmz)
 		amdgpu_ring_emit_tmz(ring, false);
 
-	if (ring->funcs->emit_hdp_invalidate
 #ifdef CONFIG_X86_64
-	    && !(adev->flags & AMD_IS_APU)
+	if (!(adev->flags & AMD_IS_APU))
 #endif
-	   )
-		amdgpu_ring_emit_hdp_invalidate(ring);
+		amdgpu_asic_invalidate_hdp(adev, ring);
 
-	r = amdgpu_fence_emit(ring, f);
+	if (ib->flags & AMDGPU_IB_FLAG_TC_WB_NOT_INVALIDATE)
+		fence_flags |= AMDGPU_FENCE_FLAG_TC_WB_ONLY;
+
+	/* wrap the last IB with fence */
+	if (job && job->uf_addr) {
+		amdgpu_ring_emit_fence(ring, job->uf_addr, job->uf_sequence,
+				       fence_flags | AMDGPU_FENCE_FLAG_64BIT);
+	}
+
+	r = amdgpu_fence_emit(ring, f, fence_flags);
 	if (r) {
 		dev_err(adev->dev, "failed to emit fence (%d)\n", r);
 		if (job && job->vmid)
@@ -237,12 +248,6 @@ int amdgpu_ib_schedule(struct amdgpu_ring *ring, unsigned num_ibs,
 
 	if (ring->funcs->insert_end)
 		ring->funcs->insert_end(ring);
-
-	/* wrap the last IB with fence */
-	if (job && job->uf_addr) {
-		amdgpu_ring_emit_fence(ring, job->uf_addr, job->uf_sequence,
-				       AMDGPU_FENCE_FLAG_64BIT);
-	}
 
 	if (patch_offset != ~0 && ring->funcs->patch_cond_exec)
 		amdgpu_ring_patch_cond_exec(ring, patch_offset);
@@ -278,11 +283,6 @@ int amdgpu_ib_pool_init(struct amdgpu_device *adev)
 		return r;
 	}
 
-	r = amdgpu_sa_bo_manager_start(adev, &adev->ring_tmp_bo);
-	if (r) {
-		return r;
-	}
-
 	adev->ib_pool_ready = true;
 	if (amdgpu_debugfs_sa_init(adev)) {
 		dev_err(adev->dev, "failed to register debugfs file for SA\n");
@@ -301,7 +301,6 @@ int amdgpu_ib_pool_init(struct amdgpu_device *adev)
 void amdgpu_ib_pool_fini(struct amdgpu_device *adev)
 {
 	if (adev->ib_pool_ready) {
-		amdgpu_sa_bo_manager_suspend(adev, &adev->ring_tmp_bo);
 		amdgpu_sa_bo_manager_fini(adev, &adev->ring_tmp_bo);
 		adev->ib_pool_ready = false;
 	}

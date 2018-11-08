@@ -12,7 +12,7 @@
  *	under the terms of the GNU General Public License as published by the Free
  *	Software Foundation, version 2.
  *
- * see Documentation/dvb/README.dvb-usb for more information
+ * see Documentation/media/dvb-drivers/dvb-usb.rst for more information
  */
 #include "gp8psk.h"
 #include "gp8psk-fe.h"
@@ -143,7 +143,7 @@ static int gp8psk_load_bcm4500fw(struct dvb_usb_device *d)
 		goto out_rel_fw;
 
 	ptr = fw->data;
-	buf = kmalloc(64, GFP_KERNEL | GFP_DMA);
+	buf = kmalloc(64, GFP_KERNEL);
 	if (!buf) {
 		ret = -ENOMEM;
 		goto out_rel_fw;

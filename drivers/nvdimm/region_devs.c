@@ -182,6 +182,14 @@ struct nd_region *to_nd_region(struct device *dev)
 }
 EXPORT_SYMBOL_GPL(to_nd_region);
 
+struct device *nd_region_dev(struct nd_region *nd_region)
+{
+	if (!nd_region)
+		return NULL;
+	return &nd_region->dev;
+}
+EXPORT_SYMBOL_GPL(nd_region_dev);
+
 struct nd_blk_region *to_nd_blk_region(struct device *dev)
 {
 	struct nd_region *nd_region = to_nd_region(dev);
@@ -378,6 +386,30 @@ resource_size_t nd_region_available_dpa(struct nd_region *nd_region)
 			available += nd_blk_available_dpa(nd_region);
 	}
 
+	return available;
+}
+
+resource_size_t nd_region_allocatable_dpa(struct nd_region *nd_region)
+{
+	resource_size_t available = 0;
+	int i;
+
+	if (is_memory(&nd_region->dev))
+		available = PHYS_ADDR_MAX;
+
+	WARN_ON(!is_nvdimm_bus_locked(&nd_region->dev));
+	for (i = 0; i < nd_region->ndr_mappings; i++) {
+		struct nd_mapping *nd_mapping = &nd_region->mapping[i];
+
+		if (is_memory(&nd_region->dev))
+			available = min(available,
+					nd_pmem_max_contiguous_dpa(nd_region,
+								   nd_mapping));
+		else if (is_nd_blk(&nd_region->dev))
+			available += nd_blk_available_dpa(nd_region);
+	}
+	if (is_memory(&nd_region->dev))
+		return available * nd_region->ndr_mappings;
 	return available;
 }
 
@@ -1014,6 +1046,7 @@ static struct nd_region *nd_region_create(struct nvdimm_bus *nvdimm_bus,
 	dev->parent = &nvdimm_bus->dev;
 	dev->type = dev_type;
 	dev->groups = ndr_desc->attr_groups;
+	dev->of_node = ndr_desc->of_node;
 	nd_region->ndr_size = resource_size(ndr_desc->res);
 	nd_region->ndr_start = ndr_desc->res->start;
 	nd_device_register(dev);
@@ -1123,7 +1156,8 @@ EXPORT_SYMBOL_GPL(nvdimm_has_flush);
 
 int nvdimm_has_cache(struct nd_region *nd_region)
 {
-	return is_nd_pmem(&nd_region->dev);
+	return is_nd_pmem(&nd_region->dev) &&
+		!test_bit(ND_REGION_PERSIST_CACHE, &nd_region->flags);
 }
 EXPORT_SYMBOL_GPL(nvdimm_has_cache);
 

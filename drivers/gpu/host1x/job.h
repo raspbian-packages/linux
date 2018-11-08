@@ -20,16 +20,17 @@
 #define __HOST1X_JOB_H
 
 struct host1x_job_gather {
-	u32 words;
+	unsigned int words;
 	dma_addr_t base;
 	struct host1x_bo *bo;
-	u32 offset;
+	unsigned int offset;
 	bool handled;
 };
 
 struct host1x_job_unpin_data {
 	struct host1x_bo *bo;
 	struct sg_table *sgt;
+	size_t size;
 };
 
 /*

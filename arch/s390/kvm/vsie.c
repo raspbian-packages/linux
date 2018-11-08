@@ -173,7 +173,8 @@ static int shadow_crycb(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 		return set_validity_icpt(scb_s, 0x0039U);
 
 	/* copy only the wrapping keys */
-	if (read_guest_real(vcpu, crycb_addr + 72, &vsie_page->crycb, 56))
+	if (read_guest_real(vcpu, crycb_addr + 72,
+			    vsie_page->crycb.dea_wrapping_key_mask, 56))
 		return set_validity_icpt(scb_s, 0x0035U);
 
 	scb_s->ecb3 |= ecb3_flags;
@@ -557,7 +558,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 	if (test_kvm_cpu_feat(vcpu->kvm, KVM_S390_VM_CPU_FEAT_64BSCAO))
 		gpa |= (u64) READ_ONCE(scb_o->scaoh) << 32;
 	if (gpa) {
-		if (!(gpa & ~0x1fffUL))
+		if (gpa < 2 * PAGE_SIZE)
 			rc = set_validity_icpt(scb_s, 0x0038U);
 		else if ((gpa & ~0x1fffUL) == kvm_s390_get_prefix(vcpu))
 			rc = set_validity_icpt(scb_s, 0x0011U);
@@ -578,7 +579,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 
 	gpa = READ_ONCE(scb_o->itdba) & ~0xffUL;
 	if (gpa && (scb_s->ecb & ECB_TE)) {
-		if (!(gpa & ~0x1fffUL)) {
+		if (gpa < 2 * PAGE_SIZE) {
 			rc = set_validity_icpt(scb_s, 0x0080U);
 			goto unpin;
 		}
@@ -594,7 +595,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 
 	gpa = READ_ONCE(scb_o->gvrd) & ~0x1ffUL;
 	if (gpa && (scb_s->eca & ECA_VX) && !(scb_s->ecd & ECD_HOSTREGMGMT)) {
-		if (!(gpa & ~0x1fffUL)) {
+		if (gpa < 2 * PAGE_SIZE) {
 			rc = set_validity_icpt(scb_s, 0x1310U);
 			goto unpin;
 		}
@@ -613,7 +614,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 
 	gpa = READ_ONCE(scb_o->riccbd) & ~0x3fUL;
 	if (gpa && (scb_s->ecb3 & ECB3_RI)) {
-		if (!(gpa & ~0x1fffUL)) {
+		if (gpa < 2 * PAGE_SIZE) {
 			rc = set_validity_icpt(scb_s, 0x0043U);
 			goto unpin;
 		}
@@ -632,7 +633,7 @@ static int pin_blocks(struct kvm_vcpu *vcpu, struct vsie_page *vsie_page)
 
 		gpa = READ_ONCE(scb_o->sdnxo) & ~0xfUL;
 		sdnxc = READ_ONCE(scb_o->sdnxo) & 0xfUL;
-		if (!gpa || !(gpa & ~0x1fffUL)) {
+		if (!gpa || gpa < 2 * PAGE_SIZE) {
 			rc = set_validity_icpt(scb_s, 0x10b0U);
 			goto unpin;
 		}

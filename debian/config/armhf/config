@@ -146,11 +146,12 @@ CONFIG_OMAP_RESET_CLOCKS=y
 # CONFIG_OMAP_MPU_TIMER is not set
 CONFIG_OMAP_32K_TIMER=y
 # CONFIG_OMAP3_L2_AUX_SECURE_SAVE_RESTORE is not set
-CONFIG_OMAP_DM_TIMER=y
 CONFIG_OMAP_SERIAL_WAKE=y
-## choice: OMAP PM layer selection
-CONFIG_OMAP_PM_NOOP=y
-## end choice
+
+##
+## file: drivers/android/Kconfig
+##
+CONFIG_ANDROID=y
 
 ##
 ## file: drivers/ata/Kconfig
@@ -237,7 +238,6 @@ CONFIG_ARM_TEGRA_DEVFREQ=m
 CONFIG_DMADEVICES=y
 CONFIG_AMBA_PL08X=y
 CONFIG_DMA_BCM2835=y
-CONFIG_DMA_OMAP=y
 CONFIG_DMA_SUN6I=m
 CONFIG_IMX_DMA=y
 CONFIG_IMX_SDMA=y
@@ -245,8 +245,13 @@ CONFIG_MV_XOR=y
 CONFIG_MXS_DMA=y
 CONFIG_PL330_DMA=y
 CONFIG_TEGRA20_APB_DMA=y
+
+##
+## file: drivers/dma/ti/Kconfig
+##
 CONFIG_TI_CPPI41=m
 CONFIG_TI_EDMA=y
+CONFIG_DMA_OMAP=y
 
 ##
 ## file: drivers/extcon/Kconfig
@@ -308,6 +313,7 @@ CONFIG_DRM_I2C_NXP_TDA998X=m
 ## file: drivers/gpu/drm/imx/Kconfig
 ##
 CONFIG_DRM_IMX=m
+CONFIG_DRM_IMX_PARALLEL_DISPLAY=m
 CONFIG_DRM_IMX_LDB=m
 CONFIG_DRM_IMX_HDMI=m
 
@@ -602,8 +608,8 @@ CONFIG_TEGRA124_EMC=y
 ##
 ## file: drivers/mfd/Kconfig
 ##
-CONFIG_MFD_AC100=y
 CONFIG_MFD_AS3722=y
+CONFIG_MFD_AC100=y
 CONFIG_MFD_AXP20X_I2C=y
 CONFIG_MFD_CROS_EC=m
 CONFIG_MFD_CROS_EC_SPI=m
@@ -616,8 +622,8 @@ CONFIG_MFD_RK808=y
 CONFIG_MFD_SEC_CORE=y
 CONFIG_MFD_STMPE=y
 CONFIG_MFD_TI_AM335X_TSCADC=m
-CONFIG_MFD_TPS65217=m
 CONFIG_MFD_PALMAS=y
+CONFIG_MFD_TPS65217=m
 CONFIG_TWL4030_CORE=y
 CONFIG_TWL6040_CORE=y
 
@@ -661,21 +667,21 @@ CONFIG_MMC_BCM2835=m
 CONFIG_MTD=y
 
 ##
-## file: drivers/mtd/nand/Kconfig
+## file: drivers/mtd/nand/onenand/Kconfig
+##
+CONFIG_MTD_ONENAND=y
+CONFIG_MTD_ONENAND_OMAP2=m
+
+##
+## file: drivers/mtd/nand/raw/Kconfig
 ##
 CONFIG_MTD_NAND=y
 CONFIG_MTD_NAND_OMAP2=m
-CONFIG_MTD_NAND_PXA3xx=m
+CONFIG_MTD_NAND_MARVELL=m
 CONFIG_MTD_NAND_GPMI_NAND=m
 CONFIG_MTD_NAND_ORION=m
 CONFIG_MTD_NAND_MXC=m
 CONFIG_MTD_NAND_SUNXI=m
-
-##
-## file: drivers/mtd/onenand/Kconfig
-##
-CONFIG_MTD_ONENAND=y
-CONFIG_MTD_ONENAND_OMAP2=m
 
 ##
 ## file: drivers/net/can/Kconfig
@@ -877,17 +883,17 @@ CONFIG_NVMEM_SUNXI_SID=m
 CONFIG_MESON_MX_EFUSE=m
 
 ##
-## file: drivers/pci/dwc/Kconfig
-##
-CONFIG_PCI_DRA7XX_HOST=y
-CONFIG_PCI_IMX6=y
-
-##
-## file: drivers/pci/host/Kconfig
+## file: drivers/pci/controller/Kconfig
 ##
 CONFIG_PCI_MVEBU=y
 CONFIG_PCI_TEGRA=y
 CONFIG_PCI_HOST_GENERIC=y
+
+##
+## file: drivers/pci/controller/dwc/Kconfig
+##
+CONFIG_PCI_DRA7XX_HOST=y
+CONFIG_PCI_IMX6=y
 
 ##
 ## file: drivers/phy/allwinner/Kconfig
@@ -1088,7 +1094,6 @@ CONFIG_SPI_SUN4I=m
 CONFIG_SPI_SUN6I=m
 CONFIG_SPI_TEGRA114=m
 CONFIG_SPI_TEGRA20_SFLASH=m
-CONFIG_SPI_SPIDEV=y
 
 ##
 ## file: drivers/thermal/Kconfig
@@ -1333,6 +1338,7 @@ CONFIG_SND_BCM2835_SOC_I2S=m
 ##
 ## file: sound/soc/davinci/Kconfig
 ##
+CONFIG_SND_EDMA_SOC=m
 CONFIG_SND_DAVINCI_SOC_MCASP=m
 
 ##

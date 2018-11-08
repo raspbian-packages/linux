@@ -74,7 +74,7 @@ static enum drm_lspcon_mode lspcon_wait_mode(struct intel_lspcon *lspcon,
 	DRM_DEBUG_KMS("Waiting for LSPCON mode %s to settle\n",
 		      lspcon_mode_name(mode));
 
-	wait_for((current_mode = lspcon_get_current_mode(lspcon)) == mode, 100);
+	wait_for((current_mode = lspcon_get_current_mode(lspcon)) == mode, 400);
 	if (current_mode != mode)
 		DRM_ERROR("LSPCON mode hasn't settled\n");
 
@@ -167,11 +167,10 @@ static void lspcon_resume_in_pcon_wa(struct intel_lspcon *lspcon)
 {
 	struct intel_dp *intel_dp = lspcon_to_intel_dp(lspcon);
 	struct intel_digital_port *dig_port = dp_to_dig_port(intel_dp);
-	struct drm_i915_private *dev_priv = to_i915(dig_port->base.base.dev);
 	unsigned long start = jiffies;
 
 	while (1) {
-		if (intel_digital_port_connected(dev_priv, dig_port)) {
+		if (intel_digital_port_connected(&dig_port->base)) {
 			DRM_DEBUG_KMS("LSPCON recovering in PCON mode after %u ms\n",
 				      jiffies_to_msecs(jiffies - start));
 			return;

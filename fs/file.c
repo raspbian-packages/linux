@@ -409,6 +409,7 @@ struct files_struct *get_files_struct(struct task_struct *task)
 
 	return files;
 }
+EXPORT_SYMBOL_GPL(get_files_struct);
 
 void put_files_struct(struct files_struct *files)
 {
@@ -421,6 +422,7 @@ void put_files_struct(struct files_struct *files)
 		kmem_cache_free(files_cachep, files);
 	}
 }
+EXPORT_SYMBOL_GPL(put_files_struct);
 
 void reset_files_struct(struct files_struct *files)
 {
@@ -533,6 +535,7 @@ out:
 	spin_unlock(&files->file_lock);
 	return error;
 }
+EXPORT_SYMBOL_GPL(__alloc_fd);
 
 static int alloc_fd(unsigned start, unsigned flags)
 {
@@ -606,6 +609,7 @@ void __fd_install(struct files_struct *files, unsigned int fd,
 	rcu_assign_pointer(fdt->fd[fd], file);
 	rcu_read_unlock_sched();
 }
+EXPORT_SYMBOL_GPL(__fd_install);
 
 void fd_install(unsigned int fd, struct file *file)
 {
@@ -638,6 +642,7 @@ out_unlock:
 	spin_unlock(&files->file_lock);
 	return -EBADF;
 }
+EXPORT_SYMBOL(__close_fd); /* for ksys_close() */
 
 void do_close_on_exec(struct files_struct *files)
 {
@@ -870,7 +875,7 @@ out_unlock:
 	return err;
 }
 
-SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
+static int ksys_dup3(unsigned int oldfd, unsigned int newfd, int flags)
 {
 	int err = -EBADF;
 	struct file *file;
@@ -904,6 +909,11 @@ out_unlock:
 	return err;
 }
 
+SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
+{
+	return ksys_dup3(oldfd, newfd, flags);
+}
+
 SYSCALL_DEFINE2(dup2, unsigned int, oldfd, unsigned int, newfd)
 {
 	if (unlikely(newfd == oldfd)) { /* corner case */
@@ -916,10 +926,10 @@ SYSCALL_DEFINE2(dup2, unsigned int, oldfd, unsigned int, newfd)
 		rcu_read_unlock();
 		return retval;
 	}
-	return sys_dup3(oldfd, newfd, 0);
+	return ksys_dup3(oldfd, newfd, 0);
 }
 
-SYSCALL_DEFINE1(dup, unsigned int, fildes)
+int ksys_dup(unsigned int fildes)
 {
 	int ret = -EBADF;
 	struct file *file = fget_raw(fildes);
@@ -932,6 +942,11 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
 			fput(file);
 	}
 	return ret;
+}
+
+SYSCALL_DEFINE1(dup, unsigned int, fildes)
+{
+	return ksys_dup(fildes);
 }
 
 int f_dupfd(unsigned int from, struct file *file, unsigned flags)

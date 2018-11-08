@@ -221,8 +221,18 @@ static const u64 shadow_acc_track_saved_bits_mask = PT64_EPT_READABLE_MASK |
 						    PT64_EPT_EXECUTABLE_MASK;
 static const u64 shadow_acc_track_saved_bits_shift = PT64_SECOND_AVAIL_BITS_SHIFT;
 
+/*
+ * This mask must be set on all non-zero Non-Present or Reserved SPTEs in order
+ * to guard against L1TF attacks.
+ */
+static u64 __read_mostly shadow_nonpresent_or_rsvd_mask;
+
+/*
+ * The number of high-order 1 bits to use in the mask above.
+ */
+static const u64 shadow_nonpresent_or_rsvd_mask_len = 5;
+
 static void mmu_spte_set(u64 *sptep, u64 spte);
-static void mmu_free_roots(struct kvm_vcpu *vcpu);
 
 void kvm_mmu_set_mmio_spte_mask(u64 mmio_mask, u64 mmio_value)
 {
@@ -309,9 +319,13 @@ static void mark_mmio_spte(struct kvm_vcpu *vcpu, u64 *sptep, u64 gfn,
 {
 	unsigned int gen = kvm_current_mmio_generation(vcpu);
 	u64 mask = generation_mmio_spte_mask(gen);
+	u64 gpa = gfn << PAGE_SHIFT;
 
 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
-	mask |= shadow_mmio_value | access | gfn << PAGE_SHIFT;
+	mask |= shadow_mmio_value | access;
+	mask |= gpa | shadow_nonpresent_or_rsvd_mask;
+	mask |= (gpa & shadow_nonpresent_or_rsvd_mask)
+		<< shadow_nonpresent_or_rsvd_mask_len;
 
 	trace_mark_mmio_spte(sptep, gfn, access, gen);
 	mmu_spte_set(sptep, mask);
@@ -324,8 +338,14 @@ static bool is_mmio_spte(u64 spte)
 
 static gfn_t get_mmio_spte_gfn(u64 spte)
 {
-	u64 mask = generation_mmio_spte_mask(MMIO_GEN_MASK) | shadow_mmio_mask;
-	return (spte & ~mask) >> PAGE_SHIFT;
+	u64 mask = generation_mmio_spte_mask(MMIO_GEN_MASK) | shadow_mmio_mask |
+		   shadow_nonpresent_or_rsvd_mask;
+	u64 gpa = spte & ~mask;
+
+	gpa |= (spte >> shadow_nonpresent_or_rsvd_mask_len)
+	       & shadow_nonpresent_or_rsvd_mask;
+
+	return gpa >> PAGE_SHIFT;
 }
 
 static unsigned get_mmio_spte_access(u64 spte)
@@ -382,7 +402,7 @@ void kvm_mmu_set_mask_ptes(u64 user_mask, u64 accessed_mask,
 }
 EXPORT_SYMBOL_GPL(kvm_mmu_set_mask_ptes);
 
-static void kvm_mmu_clear_all_pte_masks(void)
+static void kvm_mmu_reset_all_pte_masks(void)
 {
 	shadow_user_mask = 0;
 	shadow_accessed_mask = 0;
@@ -392,6 +412,18 @@ static void kvm_mmu_clear_all_pte_masks(void)
 	shadow_mmio_mask = 0;
 	shadow_present_mask = 0;
 	shadow_acc_track_mask = 0;
+
+	/*
+	 * If the CPU has 46 or less physical address bits, then set an
+	 * appropriate mask to guard against L1TF attacks. Otherwise, it is
+	 * assumed that the CPU is not vulnerable to L1TF.
+	 */
+	if (boot_cpu_data.x86_phys_bits <
+	    52 - shadow_nonpresent_or_rsvd_mask_len)
+		shadow_nonpresent_or_rsvd_mask =
+			rsvd_bits(boot_cpu_data.x86_phys_bits -
+				  shadow_nonpresent_or_rsvd_mask_len,
+				  boot_cpu_data.x86_phys_bits - 1);
 }
 
 static int is_cpuid_PSE36(void)
@@ -891,7 +923,7 @@ static int mmu_topup_memory_cache_page(struct kvm_mmu_memory_cache *cache,
 	if (cache->nobjs >= min)
 		return 0;
 	while (cache->nobjs < ARRAY_SIZE(cache->objects)) {
-		page = (void *)__get_free_page(GFP_KERNEL);
+		page = (void *)__get_free_page(GFP_KERNEL_ACCOUNT);
 		if (!page)
 			return -ENOMEM;
 		cache->objects[cache->nobjs++] = page;
@@ -3007,6 +3039,7 @@ static void kvm_send_hwpoison_signal(unsigned long address, struct task_struct *
 {
 	siginfo_t info;
 
+	clear_siginfo(&info);
 	info.si_signo	= SIGBUS;
 	info.si_errno	= 0;
 	info.si_code	= BUS_MCEERR_AR;
@@ -3342,51 +3375,48 @@ out_unlock:
 	return RET_PF_RETRY;
 }
 
+static void mmu_free_root_page(struct kvm *kvm, hpa_t *root_hpa,
+			       struct list_head *invalid_list)
+{
+	struct kvm_mmu_page *sp;
 
-static void mmu_free_roots(struct kvm_vcpu *vcpu)
+	if (!VALID_PAGE(*root_hpa))
+		return;
+
+	sp = page_header(*root_hpa & PT64_BASE_ADDR_MASK);
+	--sp->root_count;
+	if (!sp->root_count && sp->role.invalid)
+		kvm_mmu_prepare_zap_page(kvm, sp, invalid_list);
+
+	*root_hpa = INVALID_PAGE;
+}
+
+void kvm_mmu_free_roots(struct kvm_vcpu *vcpu)
 {
 	int i;
-	struct kvm_mmu_page *sp;
 	LIST_HEAD(invalid_list);
+	struct kvm_mmu *mmu = &vcpu->arch.mmu;
 
-	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
+	if (!VALID_PAGE(mmu->root_hpa))
 		return;
-
-	if (vcpu->arch.mmu.shadow_root_level >= PT64_ROOT_4LEVEL &&
-	    (vcpu->arch.mmu.root_level >= PT64_ROOT_4LEVEL ||
-	     vcpu->arch.mmu.direct_map)) {
-		hpa_t root = vcpu->arch.mmu.root_hpa;
-
-		spin_lock(&vcpu->kvm->mmu_lock);
-		sp = page_header(root);
-		--sp->root_count;
-		if (!sp->root_count && sp->role.invalid) {
-			kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
-			kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
-		}
-		spin_unlock(&vcpu->kvm->mmu_lock);
-		vcpu->arch.mmu.root_hpa = INVALID_PAGE;
-		return;
-	}
 
 	spin_lock(&vcpu->kvm->mmu_lock);
-	for (i = 0; i < 4; ++i) {
-		hpa_t root = vcpu->arch.mmu.pae_root[i];
 
-		if (root) {
-			root &= PT64_BASE_ADDR_MASK;
-			sp = page_header(root);
-			--sp->root_count;
-			if (!sp->root_count && sp->role.invalid)
-				kvm_mmu_prepare_zap_page(vcpu->kvm, sp,
-							 &invalid_list);
-		}
-		vcpu->arch.mmu.pae_root[i] = INVALID_PAGE;
+	if (mmu->shadow_root_level >= PT64_ROOT_4LEVEL &&
+	    (mmu->root_level >= PT64_ROOT_4LEVEL || mmu->direct_map)) {
+		mmu_free_root_page(vcpu->kvm, &mmu->root_hpa, &invalid_list);
+	} else {
+		for (i = 0; i < 4; ++i)
+			if (mmu->pae_root[i] != 0)
+				mmu_free_root_page(vcpu->kvm, &mmu->pae_root[i],
+						   &invalid_list);
+		mmu->root_hpa = INVALID_PAGE;
 	}
+
 	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
 	spin_unlock(&vcpu->kvm->mmu_lock);
-	vcpu->arch.mmu.root_hpa = INVALID_PAGE;
 }
+EXPORT_SYMBOL_GPL(kvm_mmu_free_roots);
 
 static int mmu_check_root(struct kvm_vcpu *vcpu, gfn_t root_gfn)
 {
@@ -3719,7 +3749,6 @@ static int handle_mmio_page_fault(struct kvm_vcpu *vcpu, u64 addr, bool direct)
 	 */
 	return RET_PF_RETRY;
 }
-EXPORT_SYMBOL_GPL(handle_mmio_page_fault);
 
 static bool page_fault_handle_page_track(struct kvm_vcpu *vcpu,
 					 u32 error_code, gfn_t gfn)
@@ -3811,6 +3840,14 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, bool prefault, gfn_t gfn,
 	struct kvm_memory_slot *slot;
 	bool async;
 
+	/*
+	 * Don't expose private memslots to L2.
+	 */
+	if (is_guest_mode(vcpu) && !kvm_is_visible_gfn(vcpu->kvm, gfn)) {
+		*pfn = KVM_PFN_NOSLOT;
+		return false;
+	}
+
 	slot = kvm_vcpu_gfn_to_memslot(vcpu, gfn);
 	async = false;
 	*pfn = __gfn_to_pfn_memslot(slot, gfn, false, &async, write, writable);
@@ -3836,6 +3873,7 @@ int kvm_handle_page_fault(struct kvm_vcpu *vcpu, u64 error_code,
 {
 	int r = 1;
 
+	vcpu->arch.l1tf_flush_l1d = true;
 	switch (vcpu->arch.apf.host_apf_reason) {
 	default:
 		trace_kvm_page_fault(fault_address, error_code);
@@ -3950,7 +3988,7 @@ static void nonpaging_init_context(struct kvm_vcpu *vcpu,
 
 void kvm_mmu_new_cr3(struct kvm_vcpu *vcpu)
 {
-	mmu_free_roots(vcpu);
+	kvm_mmu_free_roots(vcpu);
 }
 
 static unsigned long get_cr3(struct kvm_vcpu *vcpu)
@@ -4472,6 +4510,7 @@ static void init_kvm_tdp_mmu(struct kvm_vcpu *vcpu)
 	struct kvm_mmu *context = &vcpu->arch.mmu;
 
 	context->base_role.word = 0;
+	context->base_role.guest_mode = is_guest_mode(vcpu);
 	context->base_role.smm = is_smm(vcpu);
 	context->base_role.ad_disabled = (shadow_accessed_mask == 0);
 	context->page_fault = tdp_page_fault;
@@ -4538,6 +4577,7 @@ void kvm_init_shadow_mmu(struct kvm_vcpu *vcpu)
 		= smep && !is_write_protection(vcpu);
 	context->base_role.smap_andnot_wp
 		= smap && !is_write_protection(vcpu);
+	context->base_role.guest_mode = is_guest_mode(vcpu);
 	context->base_role.smm = is_smm(vcpu);
 	reset_shadow_zero_bits_mask(vcpu, context);
 }
@@ -4563,7 +4603,7 @@ void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly,
 	context->root_hpa = INVALID_PAGE;
 	context->direct_map = false;
 	context->base_role.ad_disabled = !accessed_dirty;
-
+	context->base_role.guest_mode = 1;
 	update_permission_bitmask(vcpu, context, true);
 	update_pkru_bitmask(vcpu, context, true);
 	update_last_nonleaf_level(vcpu, context);
@@ -4663,7 +4703,7 @@ EXPORT_SYMBOL_GPL(kvm_mmu_load);
 
 void kvm_mmu_unload(struct kvm_vcpu *vcpu)
 {
-	mmu_free_roots(vcpu);
+	kvm_mmu_free_roots(vcpu);
 	WARN_ON(VALID_PAGE(vcpu->arch.mmu.root_hpa));
 }
 EXPORT_SYMBOL_GPL(kvm_mmu_unload);
@@ -4824,6 +4864,7 @@ static void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
 	mask.smep_andnot_wp = 1;
 	mask.smap_andnot_wp = 1;
 	mask.smm = 1;
+	mask.guest_mode = 1;
 	mask.ad_disabled = 1;
 
 	/*
@@ -4919,7 +4960,7 @@ static int make_mmu_pages_available(struct kvm_vcpu *vcpu)
 int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u64 error_code,
 		       void *insn, int insn_len)
 {
-	int r, emulation_type = EMULTYPE_RETRY;
+	int r, emulation_type = 0;
 	enum emulation_result er;
 	bool direct = vcpu->arch.mmu.direct_map;
 
@@ -4932,10 +4973,8 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u64 error_code,
 	r = RET_PF_INVALID;
 	if (unlikely(error_code & PFERR_RSVD_MASK)) {
 		r = handle_mmio_page_fault(vcpu, cr2, direct);
-		if (r == RET_PF_EMULATE) {
-			emulation_type = 0;
+		if (r == RET_PF_EMULATE)
 			goto emulate;
-		}
 	}
 
 	if (r == RET_PF_INVALID) {
@@ -4962,8 +5001,19 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u64 error_code,
 		return 1;
 	}
 
-	if (mmio_info_in_cache(vcpu, cr2, direct))
-		emulation_type = 0;
+	/*
+	 * vcpu->arch.mmu.page_fault returned RET_PF_EMULATE, but we can still
+	 * optimistically try to just unprotect the page and let the processor
+	 * re-execute the instruction that caused the page fault.  Do not allow
+	 * retrying MMIO emulation, as it's not only pointless but could also
+	 * cause us to enter an infinite loop because the processor will keep
+	 * faulting on the non-existent MMIO address.  Retrying an instruction
+	 * from a nested guest is also pointless and dangerous as we are only
+	 * explicitly shadowing L1's page tables, i.e. unprotecting something
+	 * for L1 isn't going to magically fix whatever issue cause L2 to fail.
+	 */
+	if (!mmio_info_in_cache(vcpu, cr2, direct) && !is_guest_mode(vcpu))
+		emulation_type = EMULTYPE_ALLOW_RETRY;
 emulate:
 	/*
 	 * On AMD platforms, under certain conditions insn_len may be zero on #NPF.
@@ -5492,7 +5542,7 @@ int kvm_mmu_module_init(void)
 {
 	int ret = -ENOMEM;
 
-	kvm_mmu_clear_all_pte_masks();
+	kvm_mmu_reset_all_pte_masks();
 
 	pte_list_desc_cache = kmem_cache_create("pte_list_desc",
 					    sizeof(struct pte_list_desc),

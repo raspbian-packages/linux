@@ -3121,7 +3121,7 @@ il3945_store_debug_level(struct device *d, struct device_attribute *attr,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(debug_level, S_IWUSR | S_IRUGO, il3945_show_debug_level,
+static DEVICE_ATTR(debug_level, 0644, il3945_show_debug_level,
 		   il3945_store_debug_level);
 
 #endif /* CONFIG_IWLEGACY_DEBUG */
@@ -3138,7 +3138,7 @@ il3945_show_temperature(struct device *d, struct device_attribute *attr,
 	return sprintf(buf, "%d\n", il3945_hw_get_temperature(il));
 }
 
-static DEVICE_ATTR(temperature, S_IRUGO, il3945_show_temperature, NULL);
+static DEVICE_ATTR(temperature, 0444, il3945_show_temperature, NULL);
 
 static ssize_t
 il3945_show_tx_power(struct device *d, struct device_attribute *attr, char *buf)
@@ -3164,8 +3164,7 @@ il3945_store_tx_power(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(tx_power, S_IWUSR | S_IRUGO, il3945_show_tx_power,
-		   il3945_store_tx_power);
+static DEVICE_ATTR(tx_power, 0644, il3945_show_tx_power, il3945_store_tx_power);
 
 static ssize_t
 il3945_show_flags(struct device *d, struct device_attribute *attr, char *buf)
@@ -3198,8 +3197,7 @@ il3945_store_flags(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(flags, S_IWUSR | S_IRUGO, il3945_show_flags,
-		   il3945_store_flags);
+static DEVICE_ATTR(flags, 0644, il3945_show_flags, il3945_store_flags);
 
 static ssize_t
 il3945_show_filter_flags(struct device *d, struct device_attribute *attr,
@@ -3234,7 +3232,7 @@ il3945_store_filter_flags(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(filter_flags, S_IWUSR | S_IRUGO, il3945_show_filter_flags,
+static DEVICE_ATTR(filter_flags, 0644, il3945_show_filter_flags,
 		   il3945_store_filter_flags);
 
 static ssize_t
@@ -3305,7 +3303,7 @@ il3945_store_measurement(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(measurement, S_IRUSR | S_IWUSR, il3945_show_measurement,
+static DEVICE_ATTR(measurement, 0600, il3945_show_measurement,
 		   il3945_store_measurement);
 
 static ssize_t
@@ -3329,7 +3327,7 @@ il3945_show_retry_rate(struct device *d, struct device_attribute *attr,
 	return sprintf(buf, "%d", il->retry_rate);
 }
 
-static DEVICE_ATTR(retry_rate, S_IWUSR | S_IRUSR, il3945_show_retry_rate,
+static DEVICE_ATTR(retry_rate, 0600, il3945_show_retry_rate,
 		   il3945_store_retry_rate);
 
 static ssize_t
@@ -3339,7 +3337,7 @@ il3945_show_channels(struct device *d, struct device_attribute *attr, char *buf)
 	return 0;
 }
 
-static DEVICE_ATTR(channels, S_IRUSR, il3945_show_channels, NULL);
+static DEVICE_ATTR(channels, 0400, il3945_show_channels, NULL);
 
 static ssize_t
 il3945_show_antenna(struct device *d, struct device_attribute *attr, char *buf)
@@ -3376,8 +3374,7 @@ il3945_store_antenna(struct device *d, struct device_attribute *attr,
 	return count;
 }
 
-static DEVICE_ATTR(antenna, S_IWUSR | S_IRUGO, il3945_show_antenna,
-		   il3945_store_antenna);
+static DEVICE_ATTR(antenna, 0644, il3945_show_antenna, il3945_store_antenna);
 
 static ssize_t
 il3945_show_status(struct device *d, struct device_attribute *attr, char *buf)
@@ -3388,7 +3385,7 @@ il3945_show_status(struct device *d, struct device_attribute *attr, char *buf)
 	return sprintf(buf, "0x%08x\n", (int)il->status);
 }
 
-static DEVICE_ATTR(status, S_IRUGO, il3945_show_status, NULL);
+static DEVICE_ATTR(status, 0444, il3945_show_status, NULL);
 
 static ssize_t
 il3945_dump_error_log(struct device *d, struct device_attribute *attr,
@@ -3403,7 +3400,7 @@ il3945_dump_error_log(struct device *d, struct device_attribute *attr,
 	return strnlen(buf, count);
 }
 
-static DEVICE_ATTR(dump_errors, S_IWUSR, NULL, il3945_dump_error_log);
+static DEVICE_ATTR(dump_errors, 0200, NULL, il3945_dump_error_log);
 
 /*****************************************************************************
  *
@@ -3942,18 +3939,18 @@ il3945_exit(void)
 
 MODULE_FIRMWARE(IL3945_MODULE_FIRMWARE(IL3945_UCODE_API_MAX));
 
-module_param_named(antenna, il3945_mod_params.antenna, int, S_IRUGO);
+module_param_named(antenna, il3945_mod_params.antenna, int, 0444);
 MODULE_PARM_DESC(antenna, "select antenna (1=Main, 2=Aux, default 0 [both])");
-module_param_named(swcrypto, il3945_mod_params.sw_crypto, int, S_IRUGO);
+module_param_named(swcrypto, il3945_mod_params.sw_crypto, int, 0444);
 MODULE_PARM_DESC(swcrypto, "using software crypto (default 1 [software])");
 module_param_named(disable_hw_scan, il3945_mod_params.disable_hw_scan, int,
-		   S_IRUGO);
+		   0444);
 MODULE_PARM_DESC(disable_hw_scan, "disable hardware scanning (default 1)");
 #ifdef CONFIG_IWLEGACY_DEBUG
-module_param_named(debug, il_debug_level, uint, S_IRUGO | S_IWUSR);
+module_param_named(debug, il_debug_level, uint, 0644);
 MODULE_PARM_DESC(debug, "debug output mask");
 #endif
-module_param_named(fw_restart, il3945_mod_params.restart_fw, int, S_IRUGO);
+module_param_named(fw_restart, il3945_mod_params.restart_fw, int, 0444);
 MODULE_PARM_DESC(fw_restart, "restart firmware in case of error");
 
 module_exit(il3945_exit);

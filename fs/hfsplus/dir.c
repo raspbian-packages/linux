@@ -78,13 +78,13 @@ again:
 				cpu_to_be32(HFSP_HARDLINK_TYPE) &&
 				entry.file.user_info.fdCreator ==
 				cpu_to_be32(HFSP_HFSPLUS_CREATOR) &&
+				HFSPLUS_SB(sb)->hidden_dir &&
 				(entry.file.create_date ==
 					HFSPLUS_I(HFSPLUS_SB(sb)->hidden_dir)->
 						create_date ||
 				entry.file.create_date ==
 					HFSPLUS_I(d_inode(sb->s_root))->
-						create_date) &&
-				HFSPLUS_SB(sb)->hidden_dir) {
+						create_date)) {
 			struct qstr str;
 			char name[32];
 
@@ -122,8 +122,7 @@ again:
 	if (S_ISREG(inode->i_mode))
 		HFSPLUS_I(inode)->linkid = linkid;
 out:
-	d_add(dentry, inode);
-	return NULL;
+	return d_splice_alias(inode, dentry);
 fail:
 	hfs_find_exit(&fd);
 	return ERR_PTR(err);

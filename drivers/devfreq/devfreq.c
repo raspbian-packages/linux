@@ -625,17 +625,19 @@ struct devfreq *devfreq_add_device(struct device *dev,
 	err = device_register(&devfreq->dev);
 	if (err) {
 		mutex_unlock(&devfreq->lock);
-		goto err_dev;
+		put_device(&devfreq->dev);
+		goto err_out;
 	}
 
-	devfreq->trans_table =	devm_kzalloc(&devfreq->dev,
-						sizeof(unsigned int) *
-						devfreq->profile->max_state *
+	devfreq->trans_table =
+		devm_kzalloc(&devfreq->dev,
+			     array3_size(sizeof(unsigned int),
+					 devfreq->profile->max_state,
+					 devfreq->profile->max_state),
+			     GFP_KERNEL);
+	devfreq->time_in_state = devm_kcalloc(&devfreq->dev,
 						devfreq->profile->max_state,
-						GFP_KERNEL);
-	devfreq->time_in_state = devm_kzalloc(&devfreq->dev,
-						sizeof(unsigned long) *
-						devfreq->profile->max_state,
+						sizeof(unsigned long),
 						GFP_KERNEL);
 	devfreq->last_stat_updated = jiffies;
 
@@ -671,6 +673,7 @@ err_init:
 	mutex_unlock(&devfreq_list_lock);
 
 	device_unregister(&devfreq->dev);
+	devfreq = NULL;
 err_dev:
 	if (devfreq)
 		kfree(devfreq);

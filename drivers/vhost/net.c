@@ -32,6 +32,7 @@
 #include <linux/skbuff.h>
 
 #include <net/sock.h>
+#include <net/xdp.h>
 
 #include "vhost.h"
 
@@ -43,6 +44,12 @@ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
 /* Max number of bytes transferred before requeueing the job.
  * Using this limit prevents one virtqueue from starving others. */
 #define VHOST_NET_WEIGHT 0x80000
+
+/* Max number of packets transferred before requeueing the job.
+ * Using this limit prevents one virtqueue from starving others with small
+ * pkts.
+ */
+#define VHOST_NET_PKT_WEIGHT 256
 
 /* MAX number of TX used buffers for outstanding zerocopy */
 #define VHOST_MAX_PEND 128
@@ -179,10 +186,10 @@ static void vhost_net_buf_unproduce(struct vhost_net_virtqueue *nvq)
 
 static int vhost_net_buf_peek_len(void *ptr)
 {
-	if (tun_is_xdp_buff(ptr)) {
-		struct xdp_buff *xdp = tun_ptr_to_xdp(ptr);
+	if (tun_is_xdp_frame(ptr)) {
+		struct xdp_frame *xdpf = tun_ptr_to_xdp(ptr);
 
-		return xdp->data_end - xdp->data;
+		return xdpf->len;
 	}
 
 	return __skb_array_len_with_tag(ptr);
@@ -267,8 +274,10 @@ static int vhost_net_set_ubuf_info(struct vhost_net *n)
 		zcopy = vhost_net_zcopy_mask & (0x1 << i);
 		if (!zcopy)
 			continue;
-		n->vqs[i].ubuf_info = kmalloc(sizeof(*n->vqs[i].ubuf_info) *
-					      UIO_MAXIOV, GFP_KERNEL);
+		n->vqs[i].ubuf_info =
+			kmalloc_array(UIO_MAXIOV,
+				      sizeof(*n->vqs[i].ubuf_info),
+				      GFP_KERNEL);
 		if  (!n->vqs[i].ubuf_info)
 			goto err;
 	}
@@ -475,6 +484,7 @@ static void handle_tx(struct vhost_net *net)
 	struct socket *sock;
 	struct vhost_net_ubuf_ref *uninitialized_var(ubufs);
 	bool zcopy, zcopy_used;
+	int sent_pkts = 0;
 
 	mutex_lock(&vq->mutex);
 	sock = vq->private_data;
@@ -582,7 +592,8 @@ static void handle_tx(struct vhost_net *net)
 		else
 			vhost_zerocopy_signal_used(net, vq);
 		vhost_net_tx_packet(net);
-		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+		if (unlikely(total_len >= VHOST_NET_WEIGHT) ||
+		    unlikely(++sent_pkts >= VHOST_NET_PKT_WEIGHT)) {
 			vhost_poll_queue(&vq->poll);
 			break;
 		}
@@ -778,6 +789,7 @@ static void handle_rx(struct vhost_net *net)
 	struct socket *sock;
 	struct iov_iter fixup;
 	__virtio16 num_buffers;
+	int recv_pkts = 0;
 
 	mutex_lock_nested(&vq->mutex, 0);
 	sock = vq->private_data;
@@ -878,7 +890,8 @@ static void handle_rx(struct vhost_net *net)
 		if (unlikely(vq_log))
 			vhost_log_write(vq, vq_log, log, vhost_len);
 		total_len += vhost_len;
-		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
+		if (unlikely(total_len >= VHOST_NET_WEIGHT) ||
+		    unlikely(++recv_pkts >= VHOST_NET_PKT_WEIGHT)) {
 			vhost_poll_queue(&vq->poll);
 			goto out;
 		}
@@ -932,7 +945,7 @@ static int vhost_net_open(struct inode *inode, struct file *f)
 	n = kvmalloc(sizeof *n, GFP_KERNEL | __GFP_RETRY_MAYFAIL);
 	if (!n)
 		return -ENOMEM;
-	vqs = kmalloc(VHOST_NET_VQ_MAX * sizeof(*vqs), GFP_KERNEL);
+	vqs = kmalloc_array(VHOST_NET_VQ_MAX, sizeof(*vqs), GFP_KERNEL);
 	if (!vqs) {
 		kvfree(n);
 		return -ENOMEM;
@@ -1051,7 +1064,7 @@ static struct socket *get_raw_socket(int fd)
 		struct sockaddr_ll sa;
 		char  buf[MAX_ADDR_LEN];
 	} uaddr;
-	int uaddr_len = sizeof uaddr, r;
+	int r;
 	struct socket *sock = sockfd_lookup(fd, &r);
 
 	if (!sock)
@@ -1063,9 +1076,8 @@ static struct socket *get_raw_socket(int fd)
 		goto err;
 	}
 
-	r = sock->ops->getname(sock, (struct sockaddr *)&uaddr.sa,
-			       &uaddr_len, 0);
-	if (r)
+	r = sock->ops->getname(sock, (struct sockaddr *)&uaddr.sa, 0);
+	if (r < 0)
 		goto err;
 
 	if (uaddr.sa.sll_family != AF_PACKET) {
@@ -1214,7 +1226,8 @@ err_used:
 	if (ubufs)
 		vhost_net_ubuf_put_wait_and_free(ubufs);
 err_ubufs:
-	sockfd_put(sock);
+	if (sock)
+		sockfd_put(sock);
 err_vq:
 	mutex_unlock(&vq->mutex);
 err:

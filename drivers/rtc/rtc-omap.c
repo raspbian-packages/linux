@@ -273,9 +273,6 @@ static int omap_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 /* this hardware doesn't support "don't care" alarm fields */
 static int tm2bcd(struct rtc_time *tm)
 {
-	if (rtc_valid_tm(tm) != 0)
-		return -EINVAL;
-
 	tm->tm_sec = bin2bcd(tm->tm_sec);
 	tm->tm_min = bin2bcd(tm->tm_min);
 	tm->tm_hour = bin2bcd(tm->tm_hour);
@@ -850,7 +847,6 @@ static int omap_rtc_probe(struct platform_device *pdev)
 
 	rtc->rtc->ops = &omap_rtc_ops;
 	omap_rtc_nvmem_config.priv = rtc;
-	rtc->rtc->nvmem_config = &omap_rtc_nvmem_config;
 
 	/* handle periodic and alarm irqs */
 	ret = devm_request_irq(&pdev->dev, rtc->irq_timer, rtc_irq, 0,
@@ -865,13 +861,6 @@ static int omap_rtc_probe(struct platform_device *pdev)
 			goto err;
 	}
 
-	if (rtc->is_pmic_controller) {
-		if (!pm_power_off) {
-			omap_rtc_power_off_rtc = rtc;
-			pm_power_off = omap_rtc_power_off;
-		}
-	}
-
 	/* Support ext_wakeup pinconf */
 	rtc_pinctrl_desc.name = dev_name(&pdev->dev);
 
@@ -884,10 +873,21 @@ static int omap_rtc_probe(struct platform_device *pdev)
 
 	ret = rtc_register_device(rtc->rtc);
 	if (ret)
-		goto err;
+		goto err_deregister_pinctrl;
+
+	rtc_nvmem_register(rtc->rtc, &omap_rtc_nvmem_config);
+
+	if (rtc->is_pmic_controller) {
+		if (!pm_power_off) {
+			omap_rtc_power_off_rtc = rtc;
+			pm_power_off = omap_rtc_power_off;
+		}
+	}
 
 	return 0;
 
+err_deregister_pinctrl:
+	pinctrl_unregister(rtc->pctldev);
 err:
 	clk_disable_unprepare(rtc->clk);
 	device_init_wakeup(&pdev->dev, false);

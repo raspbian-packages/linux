@@ -35,7 +35,7 @@ binutils               2.20             ld -v
 flex                   2.5.35           flex --version
 bison                  2.0              bison --version
 util-linux             2.10o            fdformat --version
-module-init-tools      0.9.10           depmod -V
+kmod                   13               depmod -V
 e2fsprogs              1.41.4           e2fsck -V
 jfsutils               1.1.3            fsck.jfs -V
 reiserfsprogs          3.6.3            reiserfsck -V
@@ -78,7 +78,7 @@ Binutils
 --------
 
 The build system has, as of 4.13, switched to using thin archives (`ar T`)
-rather than incremental linking (`ld -r`) for built-in.o intermediate steps.
+rather than incremental linking (`ld -r`) for built-in.a intermediate steps.
 This requires binutils 2.20 or newer.
 
 Flex
@@ -155,12 +155,6 @@ produces better output than ksymoops).  If for some reason your kernel
 is not build with ``CONFIG_KALLSYMS`` and you have no way to rebuild and
 reproduce the Oops with that option, then you can still decode that Oops
 with ksymoops.
-
-Module-Init-Tools
------------------
-
-A new module loader is now in the kernel that requires ``module-init-tools``
-to use.  It is backward compatible with the 2.4.x series kernels.
 
 Mkinitrd
 --------
@@ -371,15 +365,16 @@ Util-linux
 
 - <https://www.kernel.org/pub/linux/utils/util-linux/>
 
+Kmod
+----
+
+- <https://www.kernel.org/pub/linux/utils/kernel/kmod/>
+- <https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git>
+
 Ksymoops
 --------
 
 - <https://www.kernel.org/pub/linux/utils/kernel/ksymoops/v2.4/>
-
-Module-Init-Tools
------------------
-
-- <https://www.kernel.org/pub/linux/utils/kernel/module-init-tools/>
 
 Mkinitrd
 --------
@@ -430,7 +425,7 @@ udev
 FUSE
 ----
 
-- <http://sourceforge.net/projects/fuse>
+- <https://github.com/libfuse/libfuse/releases>
 
 mcelog
 ------

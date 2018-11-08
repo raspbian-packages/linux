@@ -787,12 +787,15 @@ static void usb3_irq_epc_int_1_speed(struct renesas_usb3 *usb3)
 	switch (speed) {
 	case USB_STA_SPEED_SS:
 		usb3->gadget.speed = USB_SPEED_SUPER;
+		usb3->gadget.ep0->maxpacket = USB3_EP0_SS_MAX_PACKET_SIZE;
 		break;
 	case USB_STA_SPEED_HS:
 		usb3->gadget.speed = USB_SPEED_HIGH;
+		usb3->gadget.ep0->maxpacket = USB3_EP0_HSFS_MAX_PACKET_SIZE;
 		break;
 	case USB_STA_SPEED_FS:
 		usb3->gadget.speed = USB_SPEED_FULL;
+		usb3->gadget.ep0->maxpacket = USB3_EP0_HSFS_MAX_PACKET_SIZE;
 		break;
 	default:
 		usb3->gadget.speed = USB_SPEED_UNKNOWN;
@@ -2391,22 +2394,10 @@ static const struct file_operations renesas_usb3_b_device_fops = {
 static void renesas_usb3_debugfs_init(struct renesas_usb3 *usb3,
 				      struct device *dev)
 {
-	struct dentry *root, *file;
+	usb3->dentry = debugfs_create_dir(dev_name(dev), NULL);
 
-	root = debugfs_create_dir(dev_name(dev), NULL);
-	if (IS_ERR_OR_NULL(root)) {
-		dev_info(dev, "%s: Can't create the root\n", __func__);
-		return;
-	}
-
-	file = debugfs_create_file("b_device", 0644, root, usb3,
-				   &renesas_usb3_b_device_fops);
-	if (!file) {
-		dev_info(dev, "%s: Can't create debugfs mode\n", __func__);
-		debugfs_remove_recursive(root);
-	} else {
-		usb3->dentry = root;
-	}
+	debugfs_create_file("b_device", 0644, usb3->dentry, usb3,
+			    &renesas_usb3_b_device_fops);
 }
 
 /*------- platform_driver ------------------------------------------------*/
@@ -2439,7 +2430,8 @@ static int renesas_usb3_init_ep(struct renesas_usb3 *usb3, struct device *dev,
 	if (usb3->num_usb3_eps > USB3_MAX_NUM_PIPES)
 		usb3->num_usb3_eps = USB3_MAX_NUM_PIPES;
 
-	usb3->usb3_ep = devm_kzalloc(dev, sizeof(*usb3_ep) * usb3->num_usb3_eps,
+	usb3->usb3_ep = devm_kcalloc(dev,
+				     usb3->num_usb3_eps, sizeof(*usb3_ep),
 				     GFP_KERNEL);
 	if (!usb3->usb3_ep)
 		return -ENOMEM;
@@ -2462,7 +2454,7 @@ static int renesas_usb3_init_ep(struct renesas_usb3 *usb3, struct device *dev,
 			/* for control pipe */
 			usb3->gadget.ep0 = &usb3_ep->ep;
 			usb_ep_set_maxpacket_limit(&usb3_ep->ep,
-						USB3_EP0_HSFS_MAX_PACKET_SIZE);
+						USB3_EP0_SS_MAX_PACKET_SIZE);
 			usb3_ep->ep.caps.type_control = true;
 			usb3_ep->ep.caps.dir_in = true;
 			usb3_ep->ep.caps.dir_out = true;

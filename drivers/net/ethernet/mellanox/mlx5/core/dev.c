@@ -132,11 +132,11 @@ void mlx5_add_device(struct mlx5_interface *intf, struct mlx5_priv *priv)
 	delayed_event_start(priv);
 
 	dev_ctx->context = intf->add(dev);
-	set_bit(MLX5_INTERFACE_ADDED, &dev_ctx->state);
-	if (intf->attach)
-		set_bit(MLX5_INTERFACE_ATTACHED, &dev_ctx->state);
-
 	if (dev_ctx->context) {
+		set_bit(MLX5_INTERFACE_ADDED, &dev_ctx->state);
+		if (intf->attach)
+			set_bit(MLX5_INTERFACE_ATTACHED, &dev_ctx->state);
+
 		spin_lock_irq(&priv->ctx_lock);
 		list_add_tail(&dev_ctx->list, &priv->ctx_list);
 
@@ -211,12 +211,17 @@ static void mlx5_attach_interface(struct mlx5_interface *intf, struct mlx5_priv 
 	if (intf->attach) {
 		if (test_bit(MLX5_INTERFACE_ATTACHED, &dev_ctx->state))
 			goto out;
-		intf->attach(dev, dev_ctx->context);
+		if (intf->attach(dev, dev_ctx->context))
+			goto out;
+
 		set_bit(MLX5_INTERFACE_ATTACHED, &dev_ctx->state);
 	} else {
 		if (test_bit(MLX5_INTERFACE_ADDED, &dev_ctx->state))
 			goto out;
 		dev_ctx->context = intf->add(dev);
+		if (!dev_ctx->context)
+			goto out;
+
 		set_bit(MLX5_INTERFACE_ADDED, &dev_ctx->state);
 	}
 
@@ -336,6 +341,14 @@ void mlx5_unregister_interface(struct mlx5_interface *intf)
 	mutex_unlock(&mlx5_intf_mutex);
 }
 EXPORT_SYMBOL(mlx5_unregister_interface);
+
+void mlx5_reload_interface(struct mlx5_core_dev *mdev, int protocol)
+{
+	mutex_lock(&mlx5_intf_mutex);
+	mlx5_remove_dev_by_protocol(mdev, protocol);
+	mlx5_add_dev_by_protocol(mdev, protocol);
+	mutex_unlock(&mlx5_intf_mutex);
+}
 
 void *mlx5_get_protocol_dev(struct mlx5_core_dev *mdev, int protocol)
 {
