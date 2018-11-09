@@ -3552,6 +3552,11 @@ static void wait_cmds_complete_timeout_v2_hw(struct hisi_hba *hisi_hba,
 	dev_dbg(dev, "wait commands complete %dms\n", time);
 }
 
+struct device_attribute *host_attrs_v2_hw[] = {
+	&dev_attr_phy_event_threshold,
+	NULL
+};
+
 static struct scsi_host_template sht_v2_hw = {
 	.name			= DRV_NAME,
 	.module			= THIS_MODULE,
@@ -3571,7 +3576,7 @@ static struct scsi_host_template sht_v2_hw = {
 	.slave_alloc		= sas_slave_alloc,
 	.target_destroy		= sas_target_destroy,
 	.ioctl			= sas_ioctl,
-	.shost_attrs		= host_attrs,
+	.shost_attrs		= host_attrs_v2_hw,
 };
 
 static const struct hisi_sas_hw hisi_sas_v2_hw = {
