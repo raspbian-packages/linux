@@ -56,6 +56,11 @@ module_param_named(xino_auto, ovl_xino_auto_def, bool, 0644);
 MODULE_PARM_DESC(ovl_xino_auto_def,
 		 "Auto enable xino feature");
 
+static bool ovl_permit_mounts_in_userns;
+module_param_named_unsafe(permit_mounts_in_userns, ovl_permit_mounts_in_userns,
+			  bool, 0444);
+MODULE_PARM_DESC(permit_mounts_in_userns, "Permit mounts in user namespaces");
+
 static void ovl_entry_stack_free(struct ovl_entry *oe)
 {
 	unsigned int i;
@@ -1714,6 +1719,11 @@ static int __init ovl_init(void)
 					     ovl_inode_init_once);
 	if (ovl_inode_cachep == NULL)
 		return -ENOMEM;
+
+	if (unlikely(ovl_permit_mounts_in_userns)) {
+		pr_warn("overlayfs: Allowing overlay mounts in user namespaces bears security risks\n");
+		ovl_fs_type.fs_flags |= FS_USERNS_MOUNT;
+	}
 
 	err = register_filesystem(&ovl_fs_type);
 	if (err)
