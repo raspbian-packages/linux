@@ -1,10 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 # Most of this file is copied from tools/lib/traceevent/Makefile
 
-BPF_VERSION = 0
-BPF_PATCHLEVEL = 0
-BPF_EXTRAVERSION = 1
-
 MAKEFLAGS += --no-print-directory
 
 ifeq ($(srctree),)
@@ -94,16 +90,12 @@ export prefix libdir src obj
 libdir_SQ = $(subst ','\'',$(libdir))
 libdir_relative_SQ = $(subst ','\'',$(libdir_relative))
 
-LIB_FILE = libbpf.a libbpf.so
+LIBBPF_VERSION=$(shell make --no-print-directory -sC ../../.. kernelversion)
 
-VERSION		= $(BPF_VERSION)
-PATCHLEVEL	= $(BPF_PATCHLEVEL)
-EXTRAVERSION	= $(BPF_EXTRAVERSION)
+LIB_FILE = libbpf.a libbpf.so.$(LIBBPF_VERSION)
 
 OBJ		= $@
 N		=
-
-LIBBPF_VERSION = $(BPF_VERSION).$(BPF_PATCHLEVEL).$(BPF_EXTRAVERSION)
 
 # Set compile option CFLAGS
 ifdef EXTRA_CFLAGS
@@ -169,8 +161,8 @@ $(BPF_IN): force elfdep bpfdep
 	echo "Warning: Kernel ABI header at 'tools/include/uapi/linux/if_link.h' differs from latest version at 'include/uapi/linux/if_link.h'" >&2 )) || true
 	$(Q)$(MAKE) $(build)=libbpf
 
-$(OUTPUT)libbpf.so: $(BPF_IN)
-	$(QUIET_LINK)$(CC) --shared $^ -o $@
+$(OUTPUT)libbpf.so.$(LIBBPF_VERSION): $(BPF_IN)
+	$(QUIET_LINK)$(CC) --shared $^ -Wl,-soname,$(@F) -o $@
 
 $(OUTPUT)libbpf.a: $(BPF_IN)
 	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
@@ -185,6 +177,7 @@ endef
 install_lib: all_cmd
 	$(call QUIET_INSTALL, $(LIB_FILE)) \
 		$(call do_install,$(LIB_FILE),$(libdir_SQ))
+	$(Q)ln -sf libbpf.so.$(LIBBPF_VERSION) $(DESTDIR_SQ)$(libdir_SQ)/libbpf.so
 
 install_headers:
 	$(call QUIET_INSTALL, headers) \
