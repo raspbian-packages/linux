@@ -170,7 +170,7 @@ $(BPF_IN): force elfdep bpfdep
 	$(Q)$(MAKE) $(build)=libbpf
 
 $(OUTPUT)libbpf.so.$(LIBBPF_VERSION): $(BPF_IN)
-	$(QUIET_LINK)$(CC) --shared $^ -Wl,-soname,$(@F) -o $@
+	$(QUIET_LINK)$(CC) --shared $^ -lelf -Wl,-soname,$(@F) -o $@
 
 $(OUTPUT)libbpf.a: $(BPF_IN)
 	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
