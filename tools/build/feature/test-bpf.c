@@ -34,5 +34,11 @@ int main(void)
 	attr.kern_version = 0;
 	attr.prog_flags = 0;
 
+	/*
+	 * bwh: Don't use the bpf() syscall as we might be building on a
+	 * much older kernel.  Do "use" the attr structure here to avoid
+	 * a "set but not used" warning.
+	 */
+	(void)&attr;
 	return 0;
 }
