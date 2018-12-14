@@ -153,6 +153,7 @@ struct ena_napi {
 	struct napi_struct napi ____cacheline_aligned;
 	struct ena_ring *tx_ring;
 	struct ena_ring *rx_ring;
+	atomic_t unmask_interrupt;
 	u32 qid;
 };
 
