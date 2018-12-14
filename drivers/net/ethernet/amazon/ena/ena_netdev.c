@@ -1264,7 +1264,8 @@ static int ena_io_poll(struct napi_struct *napi, int budget)
 		/* Update numa and unmask the interrupt only when schedule
 		 * from the interrupt context (vs from sk_busy_loop)
 		 */
-		if (napi_complete_done(napi, rx_work_done)) {
+		napi_complete_done(napi, rx_work_done);
+		if (atomic_cmpxchg(&ena_napi->unmask_interrupt, 1, 0)) {
 			/* Tx and Rx share the same interrupt vector */
 			if (ena_com_get_adaptive_moderation_enabled(rx_ring->ena_dev))
 				ena_adjust_intr_moderation(rx_ring, tx_ring);
@@ -1311,6 +1312,8 @@ static irqreturn_t ena_intr_msix_io(int irq, void *data)
 	ena_napi->tx_ring->first_interrupt = true;
 	ena_napi->rx_ring->first_interrupt = true;
 
+	smp_mb__before_atomic();
+	atomic_set(&ena_napi->unmask_interrupt, 1);
 	napi_schedule_irqoff(&ena_napi->napi);
 
 	return IRQ_HANDLED;
