@@ -60,3 +60,12 @@ config LOCK_DOWN_IN_EFI_SECURE_BOOT
 
 	  Enabling this option results in kernel lockdown being
 	  triggered in confidentiality mode if EFI Secure Boot is set.
+
+config ALLOW_LOCKDOWN_LIFT_BY_SYSRQ
+	bool "Allow the kernel lockdown to be lifted by SysRq"
+	depends on SECURITY_LOCKDOWN_LSM
+	depends on MAGIC_SYSRQ
+	depends on X86
+	help
+	  Allow the lockdown on a kernel to be lifted, by pressing a SysRq key
+	  combination on a wired keyboard.
