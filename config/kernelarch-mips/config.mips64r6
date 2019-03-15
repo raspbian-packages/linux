@@ -1,0 +1,15 @@
+##
+## file: arch/Kconfig
+##
+# CONFIG_JUMP_LABEL is not set
+
+##
+## file: arch/mips/Kconfig
+##
+## choice: CPU type
+CONFIG_CPU_MIPS64_R6=y
+## end choice
+## choice: Kernel code model
+CONFIG_64BIT=y
+## end choice
+
