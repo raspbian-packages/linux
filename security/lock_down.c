@@ -28,7 +28,7 @@ static void __init lock_kernel_down(const char *where)
 {
 	if (!kernel_locked_down) {
 		kernel_locked_down = true;
-		pr_notice("Kernel is locked down from %s; see man kernel_lockdown.7\n",
+		pr_notice("Kernel is locked down from %s; see https://wiki.debian.org/SecureBoot\n",
 			  where);
 	}
 }
@@ -60,7 +60,7 @@ void __init init_lockdown(void)
 bool __kernel_is_locked_down(const char *what, bool first)
 {
 	if (what && first && kernel_locked_down)
-		pr_notice("Lockdown: %s is restricted; see man kernel_lockdown.7\n",
+		pr_notice("Lockdown: %s is restricted; see https://wiki.debian.org/SecureBoot\n",
 			  what);
 	return kernel_locked_down;
 }
