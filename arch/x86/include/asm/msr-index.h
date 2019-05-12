@@ -1,7 +1,9 @@
 #ifndef _ASM_X86_MSR_INDEX_H
 #define _ASM_X86_MSR_INDEX_H
 
+#ifdef __KERNEL__
 #include <linux/bits.h>
+#endif
 
 /*
  * CPU model specific register (MSR) numbers.
