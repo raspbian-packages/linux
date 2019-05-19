@@ -52,8 +52,8 @@ DESTDIR ?=
 # and _should_ modify the PACKAGE_BUGREPORT definition
 
 VERSION=			$(shell ./utils/version-gen.sh)
-LIB_MAJ=			0.0.1
-LIB_MIN=			0
+LIB_MAJ=			2.0.1
+LIB_MIN=			2
 
 PACKAGE =			cpupower
 PACKAGE_BUGREPORT =		linux-pm@vger.kernel.org
