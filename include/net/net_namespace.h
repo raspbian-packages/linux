@@ -163,6 +163,7 @@ struct net {
 	atomic_t		fnhe_genid;
 #if !defined(__GENKSYMS__) && !defined(MODULE)
 	int			ipv4_sysctl_tcp_min_snd_mss;
+	siphash_key_t		ipv4_ip_id_key;
 #endif
 } __randomize_layout;
 
