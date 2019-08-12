@@ -41,6 +41,8 @@ static int default_open_file(struct inode *inode, struct file *filp)
 		return -EPERM;
 
 	real_fops = dentry->d_fsdata;
+	if (!real_fops->open)
+		return 0;
 	return real_fops->open(inode, filp);
 }
 
