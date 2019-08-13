@@ -22,11 +22,11 @@ static u32 __ipv6_select_ident(struct net *net,
 	u32 hash, id;
 
 	/* Note the following code is not safe, but this is okay. */
-	if (unlikely(siphash_key_is_zero(&net->ipv4.ip_id_key)))
-		get_random_bytes(&net->ipv4.ip_id_key,
-				 sizeof(net->ipv4.ip_id_key));
+	if (unlikely(siphash_key_is_zero(&net->ipv4_ip_id_key)))
+		get_random_bytes(&net->ipv4_ip_id_key,
+				 sizeof(net->ipv4_ip_id_key));
 
-	hash = siphash(&combined, sizeof(combined), &net->ipv4.ip_id_key);
+	hash = siphash(&combined, sizeof(combined), &net->ipv4_ip_id_key);
 
 	/* Treat id of 0 as unset and if we get 0 back from ip_idents_reserve,
 	 * set the hight order instead thus minimizing possible future
@@ -39,6 +39,8 @@ static u32 __ipv6_select_ident(struct net *net,
 	return id;
 }
 
+#undef ipv6_proxy_select_ident
+
 /* This function exists only for tap drivers that must support broken
  * clients requesting UFO without specifying an IPv6 fragment ID.
  *
@@ -47,7 +49,7 @@ static u32 __ipv6_select_ident(struct net *net,
  *
  * The network header must be set before calling this.
  */
-void ipv6_proxy_select_ident(struct net *net, struct sk_buff *skb)
+void ipv6_proxy_select_ident_net(struct net *net, struct sk_buff *skb)
 {
 	struct in6_addr buf[2];
 	struct in6_addr *addrs;
@@ -62,6 +64,12 @@ void ipv6_proxy_select_ident(struct net *net, struct sk_buff *skb)
 
 	id = __ipv6_select_ident(net, &addrs[1], &addrs[0]);
 	skb_shinfo(skb)->ip6_frag_id = htonl(id);
+}
+EXPORT_SYMBOL_GPL(ipv6_proxy_select_ident_net);
+
+void ipv6_proxy_select_ident(struct sk_buff *skb)
+{
+	ipv6_proxy_select_ident_net(&init_net, skb);
 }
 EXPORT_SYMBOL_GPL(ipv6_proxy_select_ident);
 

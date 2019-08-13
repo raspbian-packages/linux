@@ -690,6 +690,7 @@ static inline int ipv6_addr_diff(const struct in6_addr *a1, const struct in6_add
 
 void ipv6_select_ident(struct net *net, struct frag_hdr *fhdr,
 		       struct rt6_info *rt);
+#define ipv6_proxy_select_ident ipv6_proxy_select_ident_net
 void ipv6_proxy_select_ident(struct net *net, struct sk_buff *skb);
 
 int ip6_dst_hoplimit(struct dst_entry *dst);

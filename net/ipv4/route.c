@@ -484,21 +484,29 @@ u32 ip_idents_reserve(u32 hash, int segs)
 }
 EXPORT_SYMBOL(ip_idents_reserve);
 
-void __ip_select_ident(struct net *net, struct iphdr *iph, int segs)
+#undef __ip_select_ident
+
+void __ip_select_ident_net(struct net *net, struct iphdr *iph, int segs)
 {
 	u32 hash, id;
 
 	/* Note the following code is not safe, but this is okay. */
-	if (unlikely(siphash_key_is_zero(&net->ipv4.ip_id_key)))
-		get_random_bytes(&net->ipv4.ip_id_key,
-				 sizeof(net->ipv4.ip_id_key));
+	if (unlikely(siphash_key_is_zero(&net->ipv4_ip_id_key)))
+		get_random_bytes(&net->ipv4_ip_id_key,
+				 sizeof(net->ipv4_ip_id_key));
 
 	hash = siphash_3u32((__force u32)iph->daddr,
 			    (__force u32)iph->saddr,
 			    iph->protocol,
-			    &net->ipv4.ip_id_key);
+			    &net->ipv4_ip_id_key);
 	id = ip_idents_reserve(hash, segs);
 	iph->id = htons(id);
+}
+EXPORT_SYMBOL(__ip_select_ident_net);
+
+void __ip_select_ident(struct iphdr *iph, int segs)
+{
+	return __ip_select_ident_net(&init_net, iph, segs);
 }
 EXPORT_SYMBOL(__ip_select_ident);
 

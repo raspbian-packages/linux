@@ -133,6 +133,9 @@ struct net {
 #endif
 	struct sock		*diag_nlsk;
 	atomic_t		fnhe_genid;
+#if !defined(__GENKSYMS__) && !defined(MODULE)
+	siphash_key_t		ipv4_ip_id_key;
+#endif
 };
 
 #include <linux/seq_file_net.h>
