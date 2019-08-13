@@ -99,6 +99,6 @@ struct netns_ipv4 {
 #endif
 #endif
 	atomic_t	rt_genid;
-	siphash_key_t	ip_id_key;
+	/* siphash_key_t ip_id_key; - bwh: moved to end of struct net */
 };
 #endif
