@@ -166,8 +166,8 @@ struct op_devlist_reply_extra {
 	usbip_net_pack_uint32_t(pack, &(reply)->ndev);\
 } while (0)
 
-void usbip_net_pack_uint32_t(int pack, uint32_t *num);
-void usbip_net_pack_uint16_t(int pack, uint16_t *num);
+void usbip_net_pack_uint32_t(int pack, void *num);
+void usbip_net_pack_uint16_t(int pack, void *num);
 void usbip_net_pack_usb_device(int pack, struct usbip_usb_device *udev);
 void usbip_net_pack_usb_interface(int pack, struct usbip_usb_interface *uinf);
 
