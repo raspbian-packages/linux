@@ -2142,6 +2142,8 @@
 			bypassed by not enabling DMAR with this option. In
 			this case, gfx device will use physical address for
 			DMA.
+		intgpu_off [Default Off]
+			Bypass the DMAR unit for an integrated GPU only.
 		strict [Default Off]
 			Deprecated, equivalent to iommu.strict=1.
 		sp_off [Default Off]
