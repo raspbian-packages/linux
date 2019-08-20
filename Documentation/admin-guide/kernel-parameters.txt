@@ -1814,6 +1814,8 @@
 			bypassed by not enabling DMAR with this option. In
 			this case, gfx device will use physical address for
 			DMA.
+		intgpu_off [Default Off]
+			Bypass the DMAR unit for an integrated GPU only.
 		forcedac [x86_64]
 			With this option iommu will not optimize to look
 			for io virtual address below 32-bit forcing dual
