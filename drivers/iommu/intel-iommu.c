@@ -54,6 +54,9 @@
 #define CONTEXT_SIZE		VTD_PAGE_SIZE
 
 #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+#define IS_INTGPU_DEVICE(pdev) (IS_GFX_DEVICE(pdev) &&		\
+				(pdev)->vendor == 0x8086 &&	\
+				pci_is_root_bus((pdev)->bus))
 #define IS_USB_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
 #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
 #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
@@ -381,6 +384,7 @@ int intel_iommu_enabled = 0;
 EXPORT_SYMBOL_GPL(intel_iommu_enabled);
 
 static int dmar_map_gfx = 1;
+static int dmar_map_intgpu = 1;
 static int dmar_forcedac;
 static int intel_iommu_strict;
 static int intel_iommu_superpage = 1;
@@ -389,6 +393,7 @@ static int intel_no_bounce;
 
 #define IDENTMAP_GFX		2
 #define IDENTMAP_AZALIA		4
+#define IDENTMAP_INTGPU		8
 
 int intel_iommu_gfx_mapped;
 EXPORT_SYMBOL_GPL(intel_iommu_gfx_mapped);
@@ -467,6 +472,9 @@ static int __init intel_iommu_setup(char *str)
 		} else if (!strncmp(str, "igfx_off", 8)) {
 			dmar_map_gfx = 0;
 			pr_info("Disable GFX device mapping\n");
+		} else if (!strncmp(str, "intgpu_off", 8)) {
+			dmar_map_intgpu = 0;
+			pr_info("Disable integrated GPU device mapping\n");
 		} else if (!strncmp(str, "forcedac", 8)) {
 			pr_info("Forcing DAC for PCI devices\n");
 			dmar_forcedac = 1;
@@ -3049,6 +3057,9 @@ static int device_def_domain_type(struct device *dev)
 		if ((iommu_identity_mapping & IDENTMAP_GFX) && IS_GFX_DEVICE(pdev))
 			return IOMMU_DOMAIN_IDENTITY;
 
+		if ((iommu_identity_mapping & IDENTMAP_INTGPU) && IS_INTGPU_DEVICE(pdev))
+			return IOMMU_DOMAIN_IDENTITY;
+
 		/*
 		 * We want to start off with all devices in the 1:1 domain, and
 		 * take them out later if we find they can't access all of memory.
@@ -3425,6 +3436,9 @@ static int __init init_dmars(void)
 
 	if (!dmar_map_gfx)
 		iommu_identity_mapping |= IDENTMAP_GFX;
+
+	if (!dmar_map_intgpu)
+		iommu_identity_mapping |= IDENTMAP_INTGPU;
 
 	check_tylersburg_isoch();
 
