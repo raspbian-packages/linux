@@ -52,6 +52,9 @@
 #define CONTEXT_SIZE		VTD_PAGE_SIZE
 
 #define IS_GFX_DEVICE(pdev) ((pdev->class >> 16) == PCI_BASE_CLASS_DISPLAY)
+#define IS_INTGPU_DEVICE(pdev) (IS_GFX_DEVICE(pdev) &&		\
+				(pdev)->vendor == 0x8086 &&	\
+				pci_is_root_bus((pdev)->bus))
 #define IS_USB_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_SERIAL_USB)
 #define IS_ISA_DEVICE(pdev) ((pdev->class >> 8) == PCI_CLASS_BRIDGE_ISA)
 #define IS_AZALIA(pdev) ((pdev)->vendor == 0x8086 && (pdev)->device == 0x3a3e)
@@ -353,6 +356,7 @@ int intel_iommu_enabled = 0;
 EXPORT_SYMBOL_GPL(intel_iommu_enabled);
 
 static int dmar_map_gfx = 1;
+static int dmar_map_intgpu = 1;
 static int dmar_forcedac;
 static int intel_iommu_strict;
 static int intel_iommu_superpage = 1;
@@ -362,6 +366,7 @@ static int iommu_identity_mapping;
 #define IDENTMAP_ALL		1
 #define IDENTMAP_GFX		2
 #define IDENTMAP_AZALIA		4
+#define IDENTMAP_INTGPU		8
 
 #define sm_supported(iommu)	(intel_iommu_sm && ecap_smts((iommu)->ecap))
 #define pasid_supported(iommu)	(sm_supported(iommu) &&			\
@@ -440,6 +445,9 @@ static int __init intel_iommu_setup(char *str)
 		} else if (!strncmp(str, "igfx_off", 8)) {
 			dmar_map_gfx = 0;
 			pr_info("Disable GFX device mapping\n");
+		} else if (!strncmp(str, "intgpu_off", 8)) {
+			dmar_map_intgpu = 0;
+			pr_info("Disable integrated GPU device mapping\n");
 		} else if (!strncmp(str, "forcedac", 8)) {
 			pr_info("Forcing DAC for PCI devices\n");
 			dmar_forcedac = 1;
@@ -2951,6 +2959,9 @@ static int iommu_should_identity_map(struct device *dev, int startup)
 		if ((iommu_identity_mapping & IDENTMAP_GFX) && IS_GFX_DEVICE(pdev))
 			return 1;
 
+		if ((iommu_identity_mapping & IDENTMAP_INTGPU) && IS_INTGPU_DEVICE(pdev))
+			return 1;
+
 		if (!(iommu_identity_mapping & IDENTMAP_ALL))
 			return 0;
 
@@ -3415,6 +3426,9 @@ static int __init init_dmars(void)
 
 	if (!dmar_map_gfx)
 		iommu_identity_mapping |= IDENTMAP_GFX;
+
+	if (!dmar_map_intgpu)
+		iommu_identity_mapping |= IDENTMAP_INTGPU;
 
 	check_tylersburg_isoch();
 
