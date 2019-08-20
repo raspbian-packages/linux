@@ -1165,14 +1165,14 @@ static long sock_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 			err = open_related_ns(&net->ns, get_net_ns);
 			break;
-		case SIOCGSTAMP_OLD:
-		case SIOCGSTAMPNS_OLD:
+		case SIOCGSTAMP:
+		case SIOCGSTAMPNS:
 			if (!sock->ops->gettstamp) {
 				err = -ENOIOCTLCMD;
 				break;
 			}
 			err = sock->ops->gettstamp(sock, argp,
-						   cmd == SIOCGSTAMP_OLD,
+						   cmd == SIOCGSTAMP,
 						   !IS_ENABLED(CONFIG_64BIT));
 			break;
 		case SIOCGSTAMP_NEW:
@@ -3461,11 +3461,11 @@ static int compat_sock_ioctl_trans(struct file *file, struct socket *sock,
 	case SIOCADDRT:
 	case SIOCDELRT:
 		return routing_ioctl(net, sock, cmd, argp);
-	case SIOCGSTAMP_OLD:
-	case SIOCGSTAMPNS_OLD:
+	case SIOCGSTAMP:
+	case SIOCGSTAMPNS:
 		if (!sock->ops->gettstamp)
 			return -ENOIOCTLCMD;
-		return sock->ops->gettstamp(sock, argp, cmd == SIOCGSTAMP_OLD,
+		return sock->ops->gettstamp(sock, argp, cmd == SIOCGSTAMP,
 					    !COMPAT_USE_64BIT_TIME);
 
 	case SIOCBONDSLAVEINFOQUERY:
