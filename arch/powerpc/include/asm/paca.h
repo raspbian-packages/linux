@@ -173,7 +173,7 @@ struct paca_struct {
 	u8 pmcregs_in_use;		/* pseries puts this in lppaca */
 #endif
 	u64 sprg_vdso;			/* Saved user-visible sprg */
-#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+#if 1 /* ifdef CONFIG_PPC_TRANSACTIONAL_MEM */
 	u64 tm_scratch;                 /* TM scratch area for reclaim */
 #endif
 
