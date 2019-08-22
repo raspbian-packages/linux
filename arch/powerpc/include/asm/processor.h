@@ -293,7 +293,7 @@ struct thread_struct {
 					   call or trap return */
 	int		used_spe;	/* set if process has used spe */
 #endif /* CONFIG_SPE */
-#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+#if 1 /* ifdef CONFIG_PPC_TRANSACTIONAL_MEM */
 	u8	load_tm;
 	u64		tm_tfhar;	/* Transaction fail handler addr */
 	u64		tm_texasr;	/* Transaction exception & summary */
