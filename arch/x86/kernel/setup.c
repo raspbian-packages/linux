@@ -1031,6 +1031,8 @@ void __init setup_arch(char **cmdline_p)
 	if (efi_enabled(EFI_BOOT))
 		efi_init();
 
+	efi_set_secure_boot(boot_params.secure_boot);
+
 	reserve_ibft_region();
 	dmi_setup();
 
@@ -1191,8 +1193,6 @@ void __init setup_arch(char **cmdline_p)
 #endif
 	/* Allocate bigger log buffer */
 	setup_log_buf(1);
-
-	efi_set_secure_boot(boot_params.secure_boot);
 
 	reserve_initrd();
 
