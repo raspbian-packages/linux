@@ -30,16 +30,15 @@ struct task_struct {
 	struct held_lock held_locks[MAX_LOCK_DEPTH];
 	gfp_t lockdep_reclaim_gfp;
 	int pid;
+	int state;
 	char comm[17];
-	long state;
 };
+
+#define TASK_RUNNING 0
 
 extern struct task_struct *__curr(void);
 
 #define current (__curr())
-
-/* lockdep checks task_struct::state == TASK_RUNNING */
-#define TASK_RUNNING 0
 
 static inline int debug_locks_off(void)
 {

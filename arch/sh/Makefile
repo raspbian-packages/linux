@@ -121,11 +121,11 @@ endif
 ifdef CONFIG_CPU_LITTLE_ENDIAN
 ld_bfd			:= elf32-$(UTS_MACHINE)-linux
 LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64 --oformat $(ld_bfd)
-LDFLAGS			+= -EL
+KBUILD_LDFLAGS		+= -EL
 else
 ld_bfd			:= elf32-$(UTS_MACHINE)big-linux
 LDFLAGS_vmlinux		+= --defsym jiffies=jiffies_64+4 --oformat $(ld_bfd)
-LDFLAGS			+= -EB
+KBUILD_LDFLAGS		+= -EB
 endif
 
 export ld_bfd BITS
@@ -190,8 +190,8 @@ cpuincdir-y			+= cpu-common	# Must be last
 drivers-y			+= arch/sh/drivers/
 drivers-$(CONFIG_OPROFILE)	+= arch/sh/oprofile/
 
-cflags-y	+= $(foreach d, $(cpuincdir-y), -Iarch/sh/include/$(d)) \
-		   $(foreach d, $(machdir-y), -Iarch/sh/include/$(d))
+cflags-y	+= $(foreach d, $(cpuincdir-y), -I $(srctree)/arch/sh/include/$(d)) \
+		   $(foreach d, $(machdir-y), -I $(srctree)/arch/sh/include/$(d))
 
 KBUILD_CFLAGS		+= -pipe $(cflags-y)
 KBUILD_CPPFLAGS		+= $(cflags-y)
@@ -226,6 +226,9 @@ archprepare:
 archclean:
 	$(Q)$(MAKE) $(clean)=$(boot)
 	$(Q)$(MAKE) $(clean)=arch/sh/kernel/vsyscall
+
+archheaders:
+	$(Q)$(MAKE) $(build)=arch/sh/kernel/syscalls all
 
 define archhelp
 	@echo '  zImage 	           - Compressed kernel image'

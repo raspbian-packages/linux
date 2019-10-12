@@ -1,11 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Asus Wireless Radio Control Driver
  *
  * Copyright (C) 2015-2016 Endless Mobile, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  */
 
 #include <linux/kernel.h>
@@ -170,6 +167,7 @@ static int asus_wireless_add(struct acpi_device *adev)
 	data->led.brightness_get = led_state_get;
 	data->led.flags = LED_CORE_SUSPENDRESUME;
 	data->led.max_brightness = 1;
+	data->led.default_trigger = "rfkill-none";
 	err = devm_led_classdev_register(&adev->dev, &data->led);
 	if (err)
 		destroy_workqueue(data->wq);

@@ -1,9 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  *  TDA9950 Consumer Electronics Control driver
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  *
  * The NXP TDA9950 implements the HDMI Consumer Electronics Control
  * interface.  The host interface is similar to a mailbox: the data
@@ -76,8 +73,11 @@ struct tda9950_priv {
 static int tda9950_write_range(struct i2c_client *client, u8 addr, u8 *p, int cnt)
 {
 	struct i2c_msg msg;
-	u8 buf[cnt + 1];
+	u8 buf[CEC_MAX_MSG_SIZE + 3];
 	int ret;
+
+	if (WARN_ON(cnt > sizeof(buf) - 1))
+		return -EINVAL;
 
 	buf[0] = addr;
 	memcpy(buf + 1, p, cnt);

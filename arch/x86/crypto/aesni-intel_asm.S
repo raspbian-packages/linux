@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /*
  * Implement AES algorithm in Intel AES-NI instructions.
  *
@@ -22,11 +23,6 @@
  *
  * Ported x86_64 version to x86:
  *    Author: Mathias Krause <minipli@googlemail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
  */
 
 #include <linux/linkage.h>
@@ -258,7 +254,7 @@ ALL_F:      .octa 0xffffffffffffffffffffffffffffffff
 .macro GCM_INIT Iv SUBKEY AAD AADLEN
 	mov \AADLEN, %r11
 	mov %r11, AadLen(%arg2) # ctx_data.aad_length = aad_length
-	xor %r11, %r11
+	xor %r11d, %r11d
 	mov %r11, InLen(%arg2) # ctx_data.in_length = 0
 	mov %r11, PBlockLen(%arg2) # ctx_data.partial_block_length = 0
 	mov %r11, PBlockEncKey(%arg2) # ctx_data.partial_block_enc_key = 0
@@ -286,7 +282,7 @@ ALL_F:      .octa 0xffffffffffffffffffffffffffffffff
 	movdqu HashKey(%arg2), %xmm13
 	add %arg5, InLen(%arg2)
 
-	xor %r11, %r11 # initialise the data pointer offset as zero
+	xor %r11d, %r11d # initialise the data pointer offset as zero
 	PARTIAL_BLOCK %arg3 %arg4 %arg5 %r11 %xmm8 \operation
 
 	sub %r11, %arg5		# sub partial block data used
@@ -702,7 +698,7 @@ _no_extra_mask_1_\@:
 
 	# GHASH computation for the last <16 Byte block
 	GHASH_MUL \AAD_HASH, %xmm13, %xmm0, %xmm10, %xmm11, %xmm5, %xmm6
-	xor	%rax,%rax
+	xor	%eax, %eax
 
 	mov	%rax, PBlockLen(%arg2)
 	jmp	_dec_done_\@
@@ -737,7 +733,7 @@ _no_extra_mask_2_\@:
 
 	# GHASH computation for the last <16 Byte block
 	GHASH_MUL \AAD_HASH, %xmm13, %xmm0, %xmm10, %xmm11, %xmm5, %xmm6
-	xor	%rax,%rax
+	xor	%eax, %eax
 
 	mov	%rax, PBlockLen(%arg2)
 	jmp	_encode_done_\@

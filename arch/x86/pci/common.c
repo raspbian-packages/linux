@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  *	Low-Level PCI Support for PC
  *
@@ -22,7 +23,6 @@
 unsigned int pci_probe = PCI_PROBE_CONF1 | PCI_PROBE_CONF2 | PCI_PROBE_MMCONF |
 	(IS_ENABLED(CONFIG_X86_64) || IS_ENABLED(CONFIG_X86_PAE) ? 0 : PCI_PROBE_BIOS);
 
-unsigned int pci_early_dump_regs;
 static int pci_bf_sort;
 int pci_routeirq;
 int noioapicquirk;
@@ -599,9 +599,6 @@ char *__init pcibios_setup(char *str)
 		pci_probe |= PCI_BIG_ROOT_WINDOW;
 		return NULL;
 #endif
-	} else if (!strcmp(str, "earlydump")) {
-		pci_early_dump_regs = 1;
-		return NULL;
 	} else if (!strcmp(str, "routeirq")) {
 		pci_routeirq = 1;
 		return NULL;

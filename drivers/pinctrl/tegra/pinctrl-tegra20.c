@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Pinctrl data for the NVIDIA Tegra20 pinmux
  *
@@ -8,15 +9,6 @@
  * Derived from code:
  * Copyright (C) 2010 Google, Inc.
  * Copyright (C) 2010 NVIDIA Corporation
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
- * version 2, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
  */
 
 #include <linux/clk-provider.h>
@@ -2221,6 +2213,7 @@ static const struct tegra_pingroup tegra20_groups[] = {
 
 static const struct tegra_pinctrl_soc_data tegra20_pinctrl = {
 	.ngpios = NUM_GPIOS,
+	.gpio_compatible = "nvidia,tegra20-gpio",
 	.pins = tegra20_pins,
 	.npins = ARRAY_SIZE(tegra20_pins),
 	.functions = tegra20_functions,
@@ -2276,4 +2269,9 @@ static struct platform_driver tegra20_pinctrl_driver = {
 	},
 	.probe = tegra20_pinctrl_probe,
 };
-builtin_platform_driver(tegra20_pinctrl_driver);
+
+static int __init tegra20_pinctrl_init(void)
+{
+	return platform_driver_register(&tegra20_pinctrl_driver);
+}
+arch_initcall(tegra20_pinctrl_init);

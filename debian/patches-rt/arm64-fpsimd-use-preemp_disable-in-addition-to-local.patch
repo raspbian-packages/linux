@@ -2,7 +2,7 @@ From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Wed, 25 Jul 2018 14:02:38 +0200
 Subject: [PATCH] arm64: fpsimd: use preemp_disable in addition to
  local_bh_disable()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/4.18/older/patches-4.18.16-rt9.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.2/older/patches-5.2.14-rt7.tar.xz
 
 In v4.16-RT I noticed a number of warnings from task_fpsimd_load(). The
 code disables BH and expects that it is not preemptible. On -RT the
@@ -19,7 +19,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
 --- a/arch/arm64/kernel/fpsimd.c
 +++ b/arch/arm64/kernel/fpsimd.c
-@@ -159,6 +159,16 @@ static void sve_free(struct task_struct
+@@ -162,6 +162,16 @@ static void sve_free(struct task_struct
  	__sve_free(task);
  }
  
@@ -33,10 +33,10 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 +	return sve_state;
 +}
 +
- static void change_cpacr(u64 val, u64 mask)
- {
- 	u64 cpacr = read_sysreg(CPACR_EL1);
-@@ -566,6 +576,7 @@ int sve_set_vector_length(struct task_st
+ /*
+  * TIF_SVE controls whether a task can use SVE without trapping while
+  * in userspace, and also the way a task's FPSIMD/SVE state is stored
+@@ -557,6 +567,7 @@ int sve_set_vector_length(struct task_st
  	 * non-SVE thread.
  	 */
  	if (task == current) {
@@ -44,7 +44,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  		local_bh_disable();
  
  		fpsimd_save();
-@@ -576,8 +587,10 @@ int sve_set_vector_length(struct task_st
+@@ -566,8 +577,10 @@ int sve_set_vector_length(struct task_st
  	if (test_and_clear_tsk_thread_flag(task, TIF_SVE))
  		sve_to_fpsimd(task);
  
@@ -56,7 +56,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  
  	/*
  	 * Force reallocation of task SVE state to the correct size
-@@ -832,6 +845,7 @@ asmlinkage void do_sve_acc(unsigned int
+@@ -880,6 +893,7 @@ asmlinkage void do_sve_acc(unsigned int
  
  	sve_alloc(current);
  
@@ -64,7 +64,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  	local_bh_disable();
  
  	fpsimd_save();
-@@ -845,6 +859,7 @@ asmlinkage void do_sve_acc(unsigned int
+@@ -892,6 +906,7 @@ asmlinkage void do_sve_acc(unsigned int
  		WARN_ON(1); /* SVE access shouldn't have trapped */
  
  	local_bh_enable();
@@ -72,7 +72,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  }
  
  /*
-@@ -911,10 +926,12 @@ void fpsimd_thread_switch(struct task_st
+@@ -954,10 +969,12 @@ void fpsimd_thread_switch(struct task_st
  void fpsimd_flush_thread(void)
  {
  	int vl, supported_vl;
@@ -84,8 +84,8 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 +	preempt_disable();
  	local_bh_disable();
  
- 	memset(&current->thread.uw.fpsimd_state, 0,
-@@ -923,7 +940,7 @@ void fpsimd_flush_thread(void)
+ 	fpsimd_flush_task_state(current);
+@@ -966,7 +983,7 @@ void fpsimd_flush_thread(void)
  
  	if (system_supports_sve()) {
  		clear_thread_flag(TIF_SVE);
@@ -94,8 +94,8 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  
  		/*
  		 * Reset the task vector length as required.
-@@ -959,6 +976,8 @@ void fpsimd_flush_thread(void)
- 	set_thread_flag(TIF_FOREIGN_FPSTATE);
+@@ -1000,6 +1017,8 @@ void fpsimd_flush_thread(void)
+ 	}
  
  	local_bh_enable();
 +	preempt_enable();
@@ -103,7 +103,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  }
  
  /*
-@@ -970,9 +989,11 @@ void fpsimd_preserve_current_state(void)
+@@ -1011,9 +1030,11 @@ void fpsimd_preserve_current_state(void)
  	if (!system_supports_fpsimd())
  		return;
  
@@ -115,7 +115,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  }
  
  /*
-@@ -1030,6 +1051,7 @@ void fpsimd_restore_current_state(void)
+@@ -1076,6 +1097,7 @@ void fpsimd_restore_current_state(void)
  	if (!system_supports_fpsimd())
  		return;
  
@@ -123,7 +123,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  	local_bh_disable();
  
  	if (test_and_clear_thread_flag(TIF_FOREIGN_FPSTATE)) {
-@@ -1038,6 +1060,7 @@ void fpsimd_restore_current_state(void)
+@@ -1084,6 +1106,7 @@ void fpsimd_restore_current_state(void)
  	}
  
  	local_bh_enable();
@@ -131,7 +131,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  }
  
  /*
-@@ -1050,6 +1073,7 @@ void fpsimd_update_current_state(struct
+@@ -1096,6 +1119,7 @@ void fpsimd_update_current_state(struct
  	if (!system_supports_fpsimd())
  		return;
  
@@ -139,7 +139,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  	local_bh_disable();
  
  	current->thread.uw.fpsimd_state = *state;
-@@ -1062,6 +1086,7 @@ void fpsimd_update_current_state(struct
+@@ -1108,6 +1132,7 @@ void fpsimd_update_current_state(struct
  	clear_thread_flag(TIF_FOREIGN_FPSTATE);
  
  	local_bh_enable();
@@ -147,7 +147,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  }
  
  /*
-@@ -1107,6 +1132,7 @@ void kernel_neon_begin(void)
+@@ -1170,6 +1195,7 @@ void kernel_neon_begin(void)
  
  	BUG_ON(!may_use_simd());
  
@@ -155,7 +155,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  	local_bh_disable();
  
  	__this_cpu_write(kernel_neon_busy, true);
-@@ -1120,6 +1146,7 @@ void kernel_neon_begin(void)
+@@ -1183,6 +1209,7 @@ void kernel_neon_begin(void)
  	preempt_disable();
  
  	local_bh_enable();

@@ -15,6 +15,7 @@
 *.bin
 *.bz2
 *.c.[012]*.*
+*.dt.yaml
 *.dtb
 *.dtb.S
 *.dwo
@@ -57,6 +58,7 @@ modules.builtin
 /vmlinuz
 /System.map
 /Module.markers
+/modules.builtin.modinfo
 
 #
 # RPM spec file (make rpm-pkg)
@@ -76,10 +78,10 @@ modules.builtin
 #
 # Generated include files
 #
-include/config
-include/generated
-include/ksym
-arch/*/include/generated
+/include/config/
+/include/generated/
+/include/ksym/
+/arch/*/include/generated/
 
 # stgit generated dirs
 patches-*
@@ -115,7 +117,12 @@ signing_key.x509
 x509.genkey
 
 # Kconfig presets
-all.config
+/all.config
+/alldef.config
+/allmod.config
+/allno.config
+/allrandom.config
+/allyes.config
 
 # Kdevelop4
 *.kdev4

@@ -40,10 +40,14 @@ static void construct(struct dc_context *ctx, struct dc_plane_state *plane_state
 	plane_state->ctx = ctx;
 
 	plane_state->gamma_correction = dc_create_gamma();
-	plane_state->gamma_correction->is_identity = true;
+	if (plane_state->gamma_correction != NULL)
+		plane_state->gamma_correction->is_identity = true;
 
 	plane_state->in_transfer_func = dc_create_transfer_func();
-	plane_state->in_transfer_func->type = TF_TYPE_BYPASS;
+	if (plane_state->in_transfer_func != NULL) {
+		plane_state->in_transfer_func->type = TF_TYPE_BYPASS;
+		plane_state->in_transfer_func->ctx = ctx;
+	}
 }
 
 static void destruct(struct dc_plane_state *plane_state)
@@ -84,6 +88,17 @@ struct dc_plane_state *dc_create_plane_state(struct dc *dc)
 	return plane_state;
 }
 
+/**
+ *****************************************************************************
+ *  Function: dc_plane_get_status
+ *
+ *  @brief
+ *     Looks up the pipe context of plane_state and updates the pending status
+ *     of the pipe context. Then returns plane_state->status
+ *
+ *  @param [in] plane_state: pointer to the plane_state to get the status of
+ *****************************************************************************
+ */
 const struct dc_plane_status *dc_plane_get_status(
 		const struct dc_plane_state *plane_state)
 {
@@ -103,6 +118,19 @@ const struct dc_plane_status *dc_plane_get_status(
 
 	if (core_dc->current_state == NULL)
 		return NULL;
+
+	/* Find the current plane state and set its pending bit to false */
+	for (i = 0; i < core_dc->res_pool->pipe_count; i++) {
+		struct pipe_ctx *pipe_ctx =
+				&core_dc->current_state->res_ctx.pipe_ctx[i];
+
+		if (pipe_ctx->plane_state != plane_state)
+			continue;
+
+		pipe_ctx->plane_state->status.is_flip_pending = false;
+
+		break;
+	}
 
 	for (i = 0; i < core_dc->res_pool->pipe_count; i++) {
 		struct pipe_ctx *pipe_ctx =
@@ -181,7 +209,7 @@ void dc_transfer_func_release(struct dc_transfer_func *tf)
 	kref_put(&tf->refcount, dc_transfer_func_free);
 }
 
-struct dc_transfer_func *dc_create_transfer_func()
+struct dc_transfer_func *dc_create_transfer_func(void)
 {
 	struct dc_transfer_func *tf = kvzalloc(sizeof(*tf), GFP_KERNEL);
 

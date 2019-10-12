@@ -1,19 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright (C) 2011 matt mooney <mfm@muteddisk.com>
  *               2005-2007 Takahiro Hirofuchi
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include <sys/socket.h>
@@ -62,28 +50,30 @@ void usbip_setup_port_number(char *arg)
 	info("using port %d (\"%s\")", usbip_port, usbip_port_string);
 }
 
-void usbip_net_pack_uint32_t(int pack, uint32_t *num)
+void usbip_net_pack_uint32_t(int pack, void *num)
 {
 	uint32_t i;
 
+	memcpy(&i, num, sizeof(i));
 	if (pack)
-		i = htonl(*num);
+		i = htonl(i);
 	else
-		i = ntohl(*num);
+		i = ntohl(i);
 
-	*num = i;
+	memcpy(num, &i, sizeof(i));
 }
 
-void usbip_net_pack_uint16_t(int pack, uint16_t *num)
+void usbip_net_pack_uint16_t(int pack, void *num)
 {
 	uint16_t i;
 
+	memcpy(&i, num, sizeof(i));
 	if (pack)
-		i = htons(*num);
+		i = htons(i);
 	else
-		i = ntohs(*num);
+		i = ntohs(i);
 
-	*num = i;
+	memcpy(num, &i, sizeof(i));
 }
 
 void usbip_net_pack_usb_device(int pack, struct usbip_usb_device *udev)

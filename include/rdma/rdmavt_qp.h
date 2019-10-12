@@ -2,7 +2,7 @@
 #define DEF_RDMAVT_INCQP_H
 
 /*
- * Copyright(c) 2016, 2017 Intel Corporation.
+ * Copyright(c) 2016 - 2018 Intel Corporation.
  *
  * This file is provided under a dual BSD/GPLv2 license.  When using or
  * redistributing this file, you may do so under either license.
@@ -83,7 +83,6 @@
  * RVT_S_WAIT_DMA - waiting for send DMA queue to drain before generating
  *                  next send completion entry not via send DMA
  * RVT_S_WAIT_PIO - waiting for a send buffer to be available
- * RVT_S_WAIT_PIO_DRAIN - waiting for a qp to drain pio packets
  * RVT_S_WAIT_TX - waiting for a struct verbs_txreq to be available
  * RVT_S_WAIT_DMA_DESC - waiting for DMA descriptors to be available
  * RVT_S_WAIT_KMEM - waiting for kernel memory to be available
@@ -91,6 +90,7 @@
  * RVT_S_WAIT_ACK - waiting for an ACK packet before sending more requests
  * RVT_S_SEND_ONE - send one packet, request ACK, then wait for ACK
  * RVT_S_ECN - a BECN was queued to the send engine
+ * RVT_S_MAX_BIT_MASK - The max bit that can be used by rdmavt
  */
 #define RVT_S_SIGNAL_REQ_WR	0x0001
 #define RVT_S_BUSY		0x0002
@@ -103,23 +103,26 @@
 #define RVT_S_WAIT_SSN_CREDIT	0x0100
 #define RVT_S_WAIT_DMA		0x0200
 #define RVT_S_WAIT_PIO		0x0400
-#define RVT_S_WAIT_PIO_DRAIN    0x0800
-#define RVT_S_WAIT_TX		0x1000
-#define RVT_S_WAIT_DMA_DESC	0x2000
-#define RVT_S_WAIT_KMEM		0x4000
-#define RVT_S_WAIT_PSN		0x8000
-#define RVT_S_WAIT_ACK		0x10000
-#define RVT_S_SEND_ONE		0x20000
-#define RVT_S_UNLIMITED_CREDIT	0x40000
-#define RVT_S_AHG_VALID		0x80000
-#define RVT_S_AHG_CLEAR		0x100000
-#define RVT_S_ECN		0x200000
+#define RVT_S_WAIT_TX		0x0800
+#define RVT_S_WAIT_DMA_DESC	0x1000
+#define RVT_S_WAIT_KMEM		0x2000
+#define RVT_S_WAIT_PSN		0x4000
+#define RVT_S_WAIT_ACK		0x8000
+#define RVT_S_SEND_ONE		0x10000
+#define RVT_S_UNLIMITED_CREDIT	0x20000
+#define RVT_S_ECN		0x40000
+#define RVT_S_MAX_BIT_MASK	0x800000
+
+/*
+ * Drivers should use s_flags starting with bit 31 down to the bit next to
+ * RVT_S_MAX_BIT_MASK
+ */
 
 /*
  * Wait flags that would prevent any packet type from being sent.
  */
 #define RVT_S_ANY_WAIT_IO \
-	(RVT_S_WAIT_PIO | RVT_S_WAIT_PIO_DRAIN | RVT_S_WAIT_TX | \
+	(RVT_S_WAIT_PIO | RVT_S_WAIT_TX | \
 	 RVT_S_WAIT_DMA_DESC | RVT_S_WAIT_KMEM)
 
 /*
@@ -170,6 +173,7 @@ struct rvt_swqe {
 	u32 lpsn;               /* last packet sequence number */
 	u32 ssn;                /* send sequence number */
 	u32 length;             /* total length of data in sg_list */
+	void *priv;             /* driver dependent field */
 	struct rvt_sge sg_list[0];
 };
 
@@ -207,20 +211,6 @@ struct rvt_rq {
 };
 
 /*
- * This structure is used by rvt_mmap() to validate an offset
- * when an mmap() request is made.  The vm_area_struct then uses
- * this as its vm_private_data.
- */
-struct rvt_mmap_info {
-	struct list_head pending_mmaps;
-	struct ib_ucontext *context;
-	void *obj;
-	__u64 offset;
-	struct kref ref;
-	unsigned size;
-};
-
-/*
  * This structure holds the information that the send tasklet needs
  * to send a RDMA read response or atomic operation.
  */
@@ -231,6 +221,7 @@ struct rvt_ack_entry {
 	u32 lpsn;
 	u8 opcode;
 	u8 sent;
+	void *priv;
 };
 
 #define	RC_QP_SCALING_INTERVAL	5
@@ -240,6 +231,7 @@ struct rvt_ack_entry {
 #define RVT_OPERATION_ATOMIC_SGE  0x00000004
 #define RVT_OPERATION_LOCAL       0x00000008
 #define RVT_OPERATION_USE_RESERVE 0x00000010
+#define RVT_OPERATION_IGN_RNR_CNT 0x00000020
 
 #define RVT_OPERATION_MAX (IB_WR_RESERVED10 + 1)
 
@@ -369,6 +361,7 @@ struct rvt_qp {
 	u8 s_rnr_retry;         /* requester RNR retry counter */
 	u8 s_num_rd_atomic;     /* number of RDMA read/atomic pending */
 	u8 s_tail_ack_queue;    /* index into s_ack_queue[] */
+	u8 s_acked_ack_queue;   /* index into s_ack_queue[] */
 
 	struct rvt_sge_state s_ack_rdma_sge;
 	struct timer_list s_timer;
@@ -390,6 +383,16 @@ struct rvt_srq {
 	/* send signal when number of RWQEs < limit */
 	u32 limit;
 };
+
+static inline struct rvt_srq *ibsrq_to_rvtsrq(struct ib_srq *ibsrq)
+{
+	return container_of(ibsrq, struct rvt_srq, ibsrq);
+}
+
+static inline struct rvt_qp *ibqp_to_rvtqp(struct ib_qp *ibqp)
+{
+	return container_of(ibqp, struct rvt_qp, ibqp);
+}
 
 #define RVT_QPN_MAX                 BIT(24)
 #define RVT_QPNMAP_ENTRIES          (RVT_QPN_MAX / PAGE_SIZE / BITS_PER_BYTE)
@@ -537,7 +540,7 @@ static inline void rvt_qp_wqe_reserve(
 /**
  * rvt_qp_wqe_unreserve - clean reserved operation
  * @qp - the rvt qp
- * @wqe - the send wqe
+ * @flags - send wqe flags
  *
  * This decrements the reserve use count.
  *
@@ -549,11 +552,9 @@ static inline void rvt_qp_wqe_reserve(
  * the compiler does not juggle the order of the s_last
  * ring index and the decrementing of s_reserved_used.
  */
-static inline void rvt_qp_wqe_unreserve(
-	struct rvt_qp *qp,
-	struct rvt_swqe *wqe)
+static inline void rvt_qp_wqe_unreserve(struct rvt_qp *qp, int flags)
 {
-	if (unlikely(wqe->wr.send_flags & RVT_SEND_RESERVE_USED)) {
+	if (unlikely(flags & RVT_SEND_RESERVE_USED)) {
 		atomic_dec(&qp->s_reserved_used);
 		/* insure no compiler re-order up to s_last change */
 		smp_mb__after_atomic();
@@ -561,42 +562,6 @@ static inline void rvt_qp_wqe_unreserve(
 }
 
 extern const enum ib_wc_opcode ib_rvt_wc_opcode[];
-
-/**
- * rvt_qp_swqe_complete() - insert send completion
- * @qp - the qp
- * @wqe - the send wqe
- * @status - completion status
- *
- * Insert a send completion into the completion
- * queue if the qp indicates it should be done.
- *
- * See IBTA 10.7.3.1 for info on completion
- * control.
- */
-static inline void rvt_qp_swqe_complete(
-	struct rvt_qp *qp,
-	struct rvt_swqe *wqe,
-	enum ib_wc_opcode opcode,
-	enum ib_wc_status status)
-{
-	if (unlikely(wqe->wr.send_flags & RVT_SEND_RESERVE_USED))
-		return;
-	if (!(qp->s_flags & RVT_S_SIGNAL_REQ_WR) ||
-	    (wqe->wr.send_flags & IB_SEND_SIGNALED) ||
-	     status != IB_WC_SUCCESS) {
-		struct ib_wc wc;
-
-		memset(&wc, 0, sizeof(wc));
-		wc.wr_id = wqe->wr.wr_id;
-		wc.status = status;
-		wc.opcode = opcode;
-		wc.qp = &qp->ibqp;
-		wc.byte_len = wqe->length;
-		rvt_cq_enter(ibcq_to_rvtcq(qp->ibqp.send_cq), &wc,
-			     status != IB_WC_SUCCESS);
-	}
-}
 
 /*
  * Compare the lower 24 bits of the msn values.
@@ -623,6 +588,16 @@ __be32 rvt_compute_aeth(struct rvt_qp *qp);
  * The QP s_lock should be held.
  */
 void rvt_get_credit(struct rvt_qp *qp, u32 aeth);
+
+/**
+ * rvt_restart_sge - rewind the sge state for a wqe
+ * @ss: the sge state pointer
+ * @wqe: the wqe to rewind
+ * @len: the data length from the start of the wqe in bytes
+ *
+ * Returns the remaining data length.
+ */
+u32 rvt_restart_sge(struct rvt_sge_state *ss, struct rvt_swqe *wqe, u32 len);
 
 /**
  * @qp - the qp pair
@@ -660,6 +635,143 @@ static inline unsigned long rvt_timeout_to_jiffies(u8 timeout)
 	return usecs_to_jiffies(1U << timeout) * 4096UL / 1000UL;
 }
 
+/**
+ * rvt_lookup_qpn - return the QP with the given QPN
+ * @ibp: the ibport
+ * @qpn: the QP number to look up
+ *
+ * The caller must hold the rcu_read_lock(), and keep the lock until
+ * the returned qp is no longer in use.
+ */
+static inline struct rvt_qp *rvt_lookup_qpn(struct rvt_dev_info *rdi,
+					    struct rvt_ibport *rvp,
+					    u32 qpn) __must_hold(RCU)
+{
+	struct rvt_qp *qp = NULL;
+
+	if (unlikely(qpn <= 1)) {
+		qp = rcu_dereference(rvp->qp[qpn]);
+	} else {
+		u32 n = hash_32(qpn, rdi->qp_dev->qp_table_bits);
+
+		for (qp = rcu_dereference(rdi->qp_dev->qp_table[n]); qp;
+			qp = rcu_dereference(qp->next))
+			if (qp->ibqp.qp_num == qpn)
+				break;
+	}
+	return qp;
+}
+
+/**
+ * rvt_mod_retry_timer - mod a retry timer
+ * @qp - the QP
+ * @shift - timeout shift to wait for multiple packets
+ * Modify a potentially already running retry timer
+ */
+static inline void rvt_mod_retry_timer_ext(struct rvt_qp *qp, u8 shift)
+{
+	struct ib_qp *ibqp = &qp->ibqp;
+	struct rvt_dev_info *rdi = ib_to_rvt(ibqp->device);
+
+	lockdep_assert_held(&qp->s_lock);
+	qp->s_flags |= RVT_S_TIMER;
+	/* 4.096 usec. * (1 << qp->timeout) */
+	mod_timer(&qp->s_timer, jiffies + rdi->busy_jiffies +
+		  (qp->timeout_jiffies << shift));
+}
+
+static inline void rvt_mod_retry_timer(struct rvt_qp *qp)
+{
+	return rvt_mod_retry_timer_ext(qp, 0);
+}
+
+/**
+ * rvt_put_qp_swqe - drop refs held by swqe
+ * @qp: the send qp
+ * @wqe: the send wqe
+ *
+ * This drops any references held by the swqe
+ */
+static inline void rvt_put_qp_swqe(struct rvt_qp *qp, struct rvt_swqe *wqe)
+{
+	rvt_put_swqe(wqe);
+	if (qp->allowed_ops == IB_OPCODE_UD)
+		atomic_dec(&ibah_to_rvtah(wqe->ud_wr.ah)->refcount);
+}
+
+/**
+ * rvt_qp_sqwe_incr - increment ring index
+ * @qp: the qp
+ * @val: the starting value
+ *
+ * Return: the new value wrapping as appropriate
+ */
+static inline u32
+rvt_qp_swqe_incr(struct rvt_qp *qp, u32 val)
+{
+	if (++val >= qp->s_size)
+		val = 0;
+	return val;
+}
+
+/**
+ * rvt_qp_complete_swqe - insert send completion
+ * @qp - the qp
+ * @wqe - the send wqe
+ * @opcode - wc operation (driver dependent)
+ * @status - completion status
+ *
+ * Update the s_last information, and then insert a send
+ * completion into the completion
+ * queue if the qp indicates it should be done.
+ *
+ * See IBTA 10.7.3.1 for info on completion
+ * control.
+ *
+ * Return: new last
+ */
+static inline u32
+rvt_qp_complete_swqe(struct rvt_qp *qp,
+		     struct rvt_swqe *wqe,
+		     enum ib_wc_opcode opcode,
+		     enum ib_wc_status status)
+{
+	bool need_completion;
+	u64 wr_id;
+	u32 byte_len, last;
+	int flags = wqe->wr.send_flags;
+
+	rvt_qp_wqe_unreserve(qp, flags);
+	rvt_put_qp_swqe(qp, wqe);
+
+	need_completion =
+		!(flags & RVT_SEND_RESERVE_USED) &&
+		(!(qp->s_flags & RVT_S_SIGNAL_REQ_WR) ||
+		(flags & IB_SEND_SIGNALED) ||
+		status != IB_WC_SUCCESS);
+	if (need_completion) {
+		wr_id = wqe->wr.wr_id;
+		byte_len = wqe->length;
+		/* above fields required before writing s_last */
+	}
+	last = rvt_qp_swqe_incr(qp, qp->s_last);
+	/* see rvt_qp_is_avail() */
+	smp_store_release(&qp->s_last, last);
+	if (need_completion) {
+		struct ib_wc w = {
+			.wr_id = wr_id,
+			.status = status,
+			.opcode = opcode,
+			.qp = &qp->ibqp,
+			.byte_len = byte_len,
+		};
+
+		rvt_cq_enter(ibcq_to_rvtcq(qp->ibqp.send_cq), &w,
+			     status != IB_WC_SUCCESS);
+	}
+	return last;
+}
+
 extern const int  ib_rvt_state_ops[];
 
 struct rvt_dev_info;
@@ -672,7 +784,18 @@ enum hrtimer_restart rvt_rc_rnr_retry(struct hrtimer *t);
 void rvt_add_rnr_timer(struct rvt_qp *qp, u32 aeth);
 void rvt_del_timers_sync(struct rvt_qp *qp);
 void rvt_stop_rc_timers(struct rvt_qp *qp);
-void rvt_add_retry_timer(struct rvt_qp *qp);
+void rvt_add_retry_timer_ext(struct rvt_qp *qp, u8 shift);
+static inline void rvt_add_retry_timer(struct rvt_qp *qp)
+{
+	rvt_add_retry_timer_ext(qp, 0);
+}
+
+void rvt_copy_sge(struct rvt_qp *qp, struct rvt_sge_state *ss,
+		  void *data, u32 length,
+		  bool release, bool copy_last);
+void rvt_send_complete(struct rvt_qp *qp, struct rvt_swqe *wqe,
+		       enum ib_wc_status status);
+void rvt_ruc_loopback(struct rvt_qp *qp);
 
 /**
  * struct rvt_qp_iter - the iterator for QPs

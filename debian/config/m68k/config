@@ -62,11 +62,6 @@ CONFIG_Q40=y
 # CONFIG_BLK_DEV_INTEGRITY is not set
 
 ##
-## file: block/Kconfig.iosched
-##
-CONFIG_IOSCHED_DEADLINE=m
-
-##
 ## file: block/partitions/Kconfig
 ##
 CONFIG_PARTITION_ADVANCED=y
@@ -311,8 +306,8 @@ CONFIG_ADB=y
 CONFIG_ADB_MACII=y
 #. switched on for the benefit of IIfx, Q900, Q950
 CONFIG_ADB_IOP=y
-CONFIG_ADB_PMU68K=y
 CONFIG_ADB_CUDA=y
+CONFIG_ADB_PMU=y
 CONFIG_INPUT_ADBHID=y
 CONFIG_MAC_EMUMOUSEBTN=m
 
@@ -560,7 +555,8 @@ CONFIG_SERIAL_8250_RUNTIME_UARTS=4
 ##
 ## file: drivers/video/backlight/Kconfig
 ##
-# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
+# CONFIG_LCD_CLASS_DEVICE is not set
+# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
 
 ##
 ## file: drivers/video/fbdev/Kconfig
@@ -633,7 +629,6 @@ CONFIG_ZORRO_NAMES=y
 ## file: fs/Kconfig.binfmt
 ##
 CONFIG_BINFMT_ELF=y
-CONFIG_BINFMT_AOUT=m
 CONFIG_BINFMT_MISC=m
 
 ##
@@ -650,11 +645,6 @@ CONFIG_BINFMT_MISC=m
 ## file: fs/efs/Kconfig
 ##
 # CONFIG_EFS_FS is not set
-
-##
-## file: fs/exofs/Kconfig
-##
-# CONFIG_EXOFS_FS is not set
 
 ##
 ## file: fs/f2fs/Kconfig
@@ -675,11 +665,6 @@ CONFIG_BINFMT_MISC=m
 ## file: fs/jfs/Kconfig
 ##
 # CONFIG_JFS_FS is not set
-
-##
-## file: fs/ntfs/Kconfig
-##
-# CONFIG_NTFS_FS is not set
 
 ##
 ## file: fs/ocfs2/Kconfig

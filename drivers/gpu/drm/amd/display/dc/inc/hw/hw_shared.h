@@ -34,6 +34,7 @@
  * Data types shared between different Virtual HW blocks
  ******************************************************************************/
 
+#define MAX_AUDIOS 7
 #define MAX_PIPES 6
 
 struct gamma_curve {
@@ -51,6 +52,12 @@ struct curve_points {
 	uint32_t custom_float_y;
 	uint32_t custom_float_offset;
 	uint32_t custom_float_slope;
+};
+
+struct curve_points3 {
+	struct curve_points red;
+	struct curve_points green;
+	struct curve_points blue;
 };
 
 struct pwl_result_data {
@@ -71,9 +78,17 @@ struct pwl_result_data {
 	uint32_t delta_blue_reg;
 };
 
+/* arr_curve_points - regamma regions/segments specification
+ * arr_points - beginning and end point specified separately (only one on DCE)
+ * corner_points - beginning and end point for all 3 colors (DCN)
+ * rgb_resulted - final curve
+ */
 struct pwl_params {
 	struct gamma_curve arr_curve_points[34];
-	struct curve_points arr_points[2];
+	union {
+		struct curve_points arr_points[2];
+		struct curve_points3 corner_points[2];
+	};
 	struct pwl_result_data rgb_resulted[256 + 3];
 	uint32_t hw_points_num;
 };
@@ -132,6 +147,12 @@ struct out_csc_color_matrix {
 	uint16_t regval[12];
 };
 
+enum gamut_remap_select {
+	GAMUT_REMAP_BYPASS = 0,
+	GAMUT_REMAP_COEFF,
+	GAMUT_REMAP_COMA_COEFF,
+	GAMUT_REMAP_COMB_COEFF
+};
 
 enum opp_regamma {
 	OPP_REGAMMA_BYPASS = 0,

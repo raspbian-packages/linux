@@ -1,7 +1,7 @@
 Subject: arm: Add support for lazy preemption
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Wed, 31 Oct 2012 12:04:11 +0100
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/4.18/older/patches-4.18.16-rt9.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.2/older/patches-5.2.14-rt7.tar.xz
 
 Implement the arm pieces for lazy preempt.
 
@@ -17,17 +17,17 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
-@@ -89,6 +89,7 @@ config ARM
+@@ -94,6 +94,7 @@ config ARM
  	select HAVE_PERF_EVENTS
  	select HAVE_PERF_REGS
  	select HAVE_PERF_USER_STACK_DUMP
 +	select HAVE_PREEMPT_LAZY
- 	select HAVE_RCU_TABLE_FREE if (SMP && ARM_LPAE)
+ 	select HAVE_RCU_TABLE_FREE if SMP && ARM_LPAE
  	select HAVE_REGS_AND_STACK_ACCESS_API
  	select HAVE_RSEQ
 --- a/arch/arm/include/asm/thread_info.h
 +++ b/arch/arm/include/asm/thread_info.h
-@@ -49,6 +49,7 @@ struct cpu_context_save {
+@@ -46,6 +46,7 @@ struct cpu_context_save {
  struct thread_info {
  	unsigned long		flags;		/* low level flags */
  	int			preempt_count;	/* 0 => preemptable, <0 => bug */
@@ -65,7 +65,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  #endif /* __ASM_ARM_THREAD_INFO_H */
 --- a/arch/arm/kernel/asm-offsets.c
 +++ b/arch/arm/kernel/asm-offsets.c
-@@ -67,6 +67,7 @@ int main(void)
+@@ -53,6 +53,7 @@ int main(void)
    BLANK();
    DEFINE(TI_FLAGS,		offsetof(struct thread_info, flags));
    DEFINE(TI_PREEMPT,		offsetof(struct thread_info, preempt_count));
@@ -75,7 +75,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
    DEFINE(TI_CPU,		offsetof(struct thread_info, cpu));
 --- a/arch/arm/kernel/entry-armv.S
 +++ b/arch/arm/kernel/entry-armv.S
-@@ -216,11 +216,18 @@ ENDPROC(__dabt_svc)
+@@ -213,11 +213,18 @@ ENDPROC(__dabt_svc)
  
  #ifdef CONFIG_PREEMPT
  	ldr	r8, [tsk, #TI_PREEMPT]		@ get preempt count
@@ -96,7 +96,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  #endif
  
  	svc_exit r5, irq = 1			@ return from exception
-@@ -235,8 +242,14 @@ ENDPROC(__irq_svc)
+@@ -232,8 +239,14 @@ ENDPROC(__irq_svc)
  1:	bl	preempt_schedule_irq		@ irq en/disable is done inside
  	ldr	r0, [tsk, #TI_FLAGS]		@ get new tasks TI_FLAGS
  	tst	r0, #_TIF_NEED_RESCHED
@@ -114,7 +114,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  __und_fault:
 --- a/arch/arm/kernel/entry-common.S
 +++ b/arch/arm/kernel/entry-common.S
-@@ -56,7 +56,9 @@ saved_pc	.req	lr
+@@ -53,7 +53,9 @@ saved_pc	.req	lr
  	cmp	r2, #TASK_SIZE
  	blne	addr_limit_check_failed
  	ldr	r1, [tsk, #TI_FLAGS]		@ re-check for syscall tracing
@@ -125,7 +125,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  	bne	fast_work_pending
  
  
-@@ -93,8 +95,11 @@ ENDPROC(ret_fast_syscall)
+@@ -90,8 +92,11 @@ ENDPROC(ret_fast_syscall)
  	cmp	r2, #TASK_SIZE
  	blne	addr_limit_check_failed
  	ldr	r1, [tsk, #TI_FLAGS]		@ re-check for syscall tracing
@@ -140,7 +140,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  
 --- a/arch/arm/kernel/signal.c
 +++ b/arch/arm/kernel/signal.c
-@@ -644,7 +644,8 @@ do_work_pending(struct pt_regs *regs, un
+@@ -648,7 +648,8 @@ do_work_pending(struct pt_regs *regs, un
  	 */
  	trace_hardirqs_off();
  	do {

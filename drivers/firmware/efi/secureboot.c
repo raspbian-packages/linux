@@ -1,3 +1,4 @@
+
 /* Core kernel secure boot support.
  *
  * Copyright (C) 2017 Red Hat, Inc. All Rights Reserved.

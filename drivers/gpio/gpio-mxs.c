@@ -84,7 +84,7 @@ static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
 	port->both_edges &= ~pin_mask;
 	switch (type) {
 	case IRQ_TYPE_EDGE_BOTH:
-		val = port->gc.get(&port->gc, d->hwirq);
+		val = readl(port->base + PINCTRL_DIN(port)) & pin_mask;
 		if (val)
 			edge = GPIO_INT_FALL_EDGE;
 		else
@@ -124,8 +124,7 @@ static int mxs_gpio_set_irq_type(struct irq_data *d, unsigned int type)
 	else
 		writel(pin_mask, pin_addr + MXS_CLR);
 
-	writel(pin_mask,
-	       port->base + PINCTRL_IRQSTAT(port) + MXS_CLR);
+	writel(pin_mask, port->base + PINCTRL_IRQSTAT(port) + MXS_CLR);
 
 	return 0;
 }
