@@ -1,0 +1,185 @@
+debian/gitignore.patch
+
+# Disable features broken by exclusion of upstream files
+debian/dfsg/arch-powerpc-platforms-8xx-ucode-disable.patch
+debian/dfsg/drivers-media-dvb-dvb-usb-af9005-disable.patch
+debian/dfsg/vs6624-disable.patch
+debian/dfsg/drivers-net-appletalk-cops.patch
+debian/dfsg/video-remove-nvidiafb-and-rivafb.patch
+debian/dfsg/documentation-fix-broken-link-to-cipso-draft.patch
+
+# Changes to support package build system
+debian/version.patch
+debian/uname-version-timestamp.patch
+debian/kernelvariables.patch
+debian/ia64-hardcode-arch-script-output.patch
+debian/mips-disable-werror.patch
+debian/mips-boston-disable-its.patch
+debian/arch-sh4-fix-uimage-build.patch
+debian/tools-perf-version.patch
+debian/tools-perf-install.patch
+debian/wireless-add-debian-wireless-regdb-certificates.patch
+debian/export-symbols-needed-by-android-drivers.patch
+debian/android-enable-building-ashmem-and-binder-as-modules.patch
+
+# Fixes/improvements to firmware loading
+features/all/drivers-media-dvb-usb-af9005-request_firmware.patch
+debian/iwlwifi-do-not-request-unreleased-firmware.patch
+bugfix/all/firmware_class-log-every-success-and-failure.patch
+bugfix/all/firmware-remove-redundant-log-messages-from-drivers.patch
+bugfix/all/radeon-amdgpu-firmware-is-required-for-drm-and-kms-on-r600-onward.patch
+debian/firmware_class-refer-to-debian-wiki-firmware-page.patch
+
+# Patches from aufs5 repository, imported with debian/bin/genpatch-aufs.
+# These are only the changes needed to allow aufs to be built out-of-tree.
+features/all/aufs5/aufs5-base.patch
+features/all/aufs5/aufs5-mmap.patch
+features/all/aufs5/aufs5-standalone.patch
+
+# Change some defaults for security reasons
+debian/af_802154-Disable-auto-loading-as-mitigation-against.patch
+debian/rds-Disable-auto-loading-as-mitigation-against-local.patch
+debian/decnet-Disable-auto-loading-as-mitigation-against-lo.patch
+debian/dccp-disable-auto-loading-as-mitigation-against-local-exploits.patch
+debian/hamradio-disable-auto-loading-as-mitigation-against-local-exploits.patch
+debian/fs-enable-link-security-restrictions-by-default.patch
+
+# Set various features runtime-disabled by default
+debian/sched-autogroup-disabled.patch
+debian/yama-disable-by-default.patch
+debian/add-sysctl-to-disallow-unprivileged-CLONE_NEWUSER-by-default.patch
+features/all/security-perf-allow-further-restriction-of-perf_event_open.patch
+features/x86/intel-iommu-add-option-to-exclude-integrated-gpu-only.patch
+features/x86/intel-iommu-add-kconfig-option-to-exclude-igpu-by-default.patch
+
+# Disable autoloading/probing of various drivers by default
+debian/cdc_ncm-cdc_mbim-use-ncm-by-default.patch
+debian/snd-pcsp-disable-autoload.patch
+bugfix/x86/viafb-autoload-on-olpc-xo1.5-only.patch
+debian/fjes-disable-autoload.patch
+
+# Taint if dangerous features are used
+debian/fanotify-taint-on-use-of-fanotify_access_permissions.patch
+debian/btrfs-warn-about-raid5-6-being-experimental-at-mount.patch
+
+# Arch bug fixes
+bugfix/arm/arm-dts-kirkwood-fix-sata-pinmux-ing-for-ts419.patch
+bugfix/arm64/dts-rockchip-correct-voltage-selector-firefly-RK3399.patch
+bugfix/x86/perf-tools-fix-unwind-build-on-i386.patch
+bugfix/sh/sh-boot-do-not-use-hyphen-in-exported-variable-name.patch
+bugfix/arm/arm-mm-export-__sync_icache_dcache-for-xen-privcmd.patch
+bugfix/powerpc/powerpc-boot-fix-missing-crc32poly.h-when-building-with-kernel_xz.patch
+bugfix/arm64/arm64-acpi-Add-fixup-for-HPE-m400-quirks.patch
+bugfix/x86/x86-32-disable-3dnow-in-generic-config.patch
+bugfix/arm64/arm64-kconfig-make-config_compat_vdso-a-proper-kconf.patch
+
+# Arch features
+features/mips/MIPS-Loongson-3-Add-Loongson-LS3A-RS780E-1-way-machi.patch
+features/x86/x86-memtest-WARN-if-bad-RAM-found.patch
+features/x86/x86-make-x32-syscall-support-conditional.patch
+
+# Miscellaneous bug fixes
+bugfix/all/disable-some-marvell-phys.patch
+bugfix/all/fs-add-module_softdep-declarations-for-hard-coded-cr.patch
+bugfix/all/partially-revert-usb-kconfig-using-select-for-usb_co.patch
+debian/revert-objtool-fix-config_stack_validation-y-warning.patch
+bugfix/all/partially-revert-net-socket-implement-64-bit-timestamps.patch
+
+# Miscellaneous features
+features/all/random-try-to-actively-add-entropy-rather-than-passi.patch
+
+# Lockdown (formerly 'securelevel') patchset
+features/all/lockdown/0001-Add-the-ability-to-lock-down-access-to-the-running-k.patch
+features/all/lockdown/0002-Add-a-SysRq-option-to-lift-kernel-lockdown.patch
+features/all/lockdown/0003-ima-require-secure_boot-rules-in-lockdown-mode.patch
+features/all/lockdown/0004-Enforce-module-signatures-if-the-kernel-is-locked-do.patch
+features/all/lockdown/0005-Restrict-dev-mem-kmem-port-when-the-kernel-is-locked.patch
+features/all/lockdown/0006-kexec_load-Disable-at-runtime-if-the-kernel-is-locke.patch
+features/all/lockdown/0007-Copy-secure_boot-flag-in-boot-params-across-kexec-re.patch
+features/all/lockdown/0008-kexec_file-split-KEXEC_VERIFY_SIG-into-KEXEC_SIG-and.patch
+features/all/lockdown/0009-kexec_file-Restrict-at-runtime-if-the-kernel-is-lock.patch
+features/all/lockdown/0010-hibernate-Disable-when-the-kernel-is-locked-down.patch
+features/all/lockdown/0011-uswsusp-Disable-when-the-kernel-is-locked-down.patch
+features/all/lockdown/0012-PCI-Lock-down-BAR-access-when-the-kernel-is-locked-d.patch
+features/all/lockdown/0013-x86-Lock-down-IO-port-access-when-the-kernel-is-lock.patch
+features/all/lockdown/0014-x86-msr-Restrict-MSR-access-when-the-kernel-is-locke.patch
+features/all/lockdown/0015-ACPI-Limit-access-to-custom_method-when-the-kernel-i.patch
+features/all/lockdown/0016-acpi-Ignore-acpi_rsdp-kernel-param-when-the-kernel-h.patch
+features/all/lockdown/0017-acpi-Disable-ACPI-table-override-if-the-kernel-is-lo.patch
+features/all/lockdown/0018-acpi-Disable-APEI-error-injection-if-the-kernel-is-l.patch
+features/all/lockdown/0019-Prohibit-PCMCIA-CIS-storage-when-the-kernel-is-locke.patch
+features/all/lockdown/0020-Lock-down-TIOCSSERIAL.patch
+features/all/lockdown/0021-Lock-down-module-params-that-specify-hardware-parame.patch
+features/all/lockdown/0022-x86-mmiotrace-Lock-down-the-testmmiotrace-module.patch
+features/all/lockdown/0023-Lock-down-proc-kcore.patch
+features/all/lockdown/0024-Lock-down-kprobes.patch
+features/all/lockdown/0025-bpf-Restrict-kernel-image-access-functions-when-the-.patch
+features/all/lockdown/0026-Lock-down-perf.patch
+features/all/lockdown/0027-debugfs-Restrict-debugfs-when-the-kernel-is-locked-d.patch
+features/all/lockdown/0028-efi-Add-an-EFI_SECURE_BOOT-flag-to-indicate-secure-b.patch
+features/all/lockdown/0029-efi-Lock-down-the-kernel-if-booted-in-secure-boot-mo.patch
+features/all/lockdown/0030-lockdown-Print-current-comm-in-restriction-messages.patch
+features/all/lockdown/0031-tracefs-Restrict-tracefs-when-the-kernel-is-locked-d.patch
+features/all/lockdown/tracefs-fix-potential-null-dereference-in-default_fi.patch
+features/all/lockdown/0032-efi-Restrict-efivar_ssdt_load-when-the-kernel-is-loc.patch
+# some missing pieces
+features/all/lockdown/enable-cold-boot-attack-mitigation.patch
+features/all/lockdown/mtd-disable-slram-and-phram-when-locked-down.patch
+features/all/lockdown/arm64-add-kernel-config-option-to-lock-down-when.patch
+# until the "kernel_lockdown.7" manual page exists
+features/all/lockdown/lockdown-refer-to-debian-wiki-until-manual-page-exists.patch
+
+# Improve integrity platform keyring for kernel modules verification
+features/all/db-mok-keyring/0006-Make-get_cert_list-not-complain-about-cert-lists-tha.patch
+features/all/db-mok-keyring/0001-MODSIGN-do-not-load-mok-when-secure-boot-disabled.patch
+features/all/db-mok-keyring/0002-MODSIGN-load-blacklist-from-MOKx.patch
+features/all/db-mok-keyring/0003-MODSIGN-checking-the-blacklisted-hash-before-loading-a-kernel-module.patch
+features/all/db-mok-keyring/0004-MODSIGN-check-the-attributes-of-db-and-mok.patch
+features/all/db-mok-keyring/modsign-make-shash-allocation-failure-fatal.patch
+features/all/db-mok-keyring/KEYS-Make-use-of-platform-keyring-for-module-signature.patch
+
+# Security fixes
+debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
+debian/ntfs-mark-it-as-broken.patch
+
+# Fix exported symbol versions
+bugfix/all/module-disable-matching-missing-version-crc.patch
+
+# Tools bug fixes
+bugfix/all/usbip-document-tcp-wrappers.patch
+bugfix/all/kbuild-fix-recordmcount-dependency.patch
+bugfix/all/tools-perf-man-date.patch
+bugfix/all/tools-perf-remove-shebangs.patch
+bugfix/x86/revert-perf-build-fix-libunwind-feature-detection-on.patch
+bugfix/all/tools-build-remove-bpf-run-time-check-at-build-time.patch
+bugfix/all/cpupower-bump-soname-version.patch
+bugfix/all/libcpupower-hide-private-function.patch
+bugfix/all/cpupower-fix-checks-for-cpu-existence.patch
+bugfix/all/tools-lib-api-fs-fs.c-fix-misuse-of-strncpy.patch
+bugfix/all/usbip-fix-misuse-of-strncpy.patch
+bugfix/all/usbip-network-fix-unaligned-member-access.patch
+bugfix/all/tools-perf-pmu-events-fix-reproducibility.patch
+
+# wireless: Disable regulatory.db direct loading (until we sort out signing)
+debian/wireless-disable-regulatory.db-direct-loading.patch
+
+# overlay: allow mounting in user namespaces
+debian/overlayfs-permit-mounts-in-userns.patch
+
+# ena: Update to 5.4-rc5
+features/all/ena/0001-net-ena-don-t-wake-up-tx-queue-when-down.patch
+features/all/ena/0002-net-ena-add-intr_moder_rx_interval-to-struct-ena_com.patch
+features/all/ena/0003-net-ena-switch-to-dim-algorithm-for-rx-adaptive-inte.patch
+features/all/ena/0004-net-ena-reimplement-set-get_coalesce.patch
+features/all/ena/0005-net-ena-enable-the-interrupt_moderation-in-driver_su.patch
+features/all/ena/0006-net-ena-remove-code-duplication-in-ena_com_update_no.patch
+features/all/ena/0007-net-ena-remove-old-adaptive-interrupt-moderation-cod.patch
+features/all/ena/0008-net-ena-remove-ena_restore_ethtool_params-and-releva.patch
+features/all/ena/0009-net-ena-remove-all-old-adaptive-rx-interrupt-moderat.patch
+features/all/ena/0010-net-ena-fix-update-of-interrupt-moderation-register.patch
+features/all/ena/0011-net-ena-fix-retrieval-of-nonadaptive-interrupt-moder.patch
+features/all/ena/0012-net-ena-fix-incorrect-update-of-intr_delay_resolutio.patch
+features/all/ena/0013-net-ena-Select-DIMLIB-for-ENA_ETHERNET.patch
+features/all/ena/0014-net-ena-clean-up-indentation-issue.patch
+
+# ABI maintenance
