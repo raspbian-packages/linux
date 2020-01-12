@@ -38,7 +38,9 @@
 #include <linux/uio.h>
 #include <linux/uaccess.h>
 #include <linux/module.h>
+#ifndef __GENKSYMS__
 #include <linux/compat.h>
+#endif
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/compress_params.h>
