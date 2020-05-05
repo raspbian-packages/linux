@@ -1013,10 +1013,8 @@ static const __initconst struct x86_cpu_id cpu_vuln_whitelist[] = {
 	{}
 };
 
-#define VULNBL_INTEL_STEPPINGS(model, steppings, issues)		   \
-	X86_MATCH_VENDOR_FAM_MODEL_STEPPINGS_FEATURE(INTEL, 6,		   \
-					    INTEL_FAM6_##model, steppings, \
-					    X86_FEATURE_ANY, issues)
+#define VULNBL_INTEL_STEPPINGS(model, steppings, issues)     \
+	VULNWL_INTEL(model, issues)
 
 #define SRBDS		BIT(0)
 
