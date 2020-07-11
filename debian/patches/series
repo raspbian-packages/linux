@@ -1,20 +1,21 @@
+debian/gitignore.patch
+
 # Disable features broken by exclusion of upstream files
 debian/dfsg/arch-powerpc-platforms-8xx-ucode-disable.patch
 debian/dfsg/drivers-media-dvb-dvb-usb-af9005-disable.patch
 debian/dfsg/vs6624-disable.patch
 debian/dfsg/drivers-net-appletalk-cops.patch
 debian/dfsg/video-remove-nvidiafb-and-rivafb.patch
+debian/dfsg/documentation-fix-broken-link-to-cipso-draft.patch
 
 # Changes to support package build system
 debian/version.patch
 debian/uname-version-timestamp.patch
 debian/kernelvariables.patch
-debian/gitignore.patch
 debian/ia64-hardcode-arch-script-output.patch
 debian/mips-disable-werror.patch
 debian/mips-boston-disable-its.patch
 debian/arch-sh4-fix-uimage-build.patch
-debian/powerpcspe-omit-uimage.patch
 debian/tools-perf-version.patch
 debian/tools-perf-install.patch
 debian/wireless-add-debian-wireless-regdb-certificates.patch
@@ -66,21 +67,14 @@ bugfix/arm/arm-dts-kirkwood-fix-sata-pinmux-ing-for-ts419.patch
 bugfix/arm64/dts-rockchip-correct-voltage-selector-firefly-RK3399.patch
 bugfix/x86/perf-tools-fix-unwind-build-on-i386.patch
 bugfix/sh/sh-boot-do-not-use-hyphen-in-exported-variable-name.patch
-bugfix/sh/sh-check-for-kprobe-trap-number-before-trying-to-handle-a-kprobe-trap.patch
-bugfix/powerpc/powerpc-lib-sstep-fix-building-for-powerpcspe.patch
-bugfix/powerpc/powerpc-lib-makefile-don-t-pull-in-quad.o-for-32-bit.patch
 bugfix/arm/arm-mm-export-__sync_icache_dcache-for-xen-privcmd.patch
 bugfix/powerpc/powerpc-boot-fix-missing-crc32poly.h-when-building-with-kernel_xz.patch
 bugfix/arm64/arm64-acpi-Add-fixup-for-HPE-m400-quirks.patch
 bugfix/x86/x86-32-disable-3dnow-in-generic-config.patch
-bugfix/powerpc/powerpc-fix-mcpu-options-for-spe-only-compiler.patch
 
 # Arch features
-features/mips/MIPS-increase-MAX-PHYSMEM-BITS-on-Loongson-3-only.patch
-features/mips/MIPS-Loongson-3-Add-Loongson-LS3A-RS780E-1-way-machi.patch
 features/x86/x86-memtest-WARN-if-bad-RAM-found.patch
 features/x86/x86-make-x32-syscall-support-conditional.patch
-features/riscv64/RISC-V-Add-Image-header.patch
 
 # Miscellaneous bug fixes
 bugfix/all/disable-some-marvell-phys.patch
@@ -88,57 +82,25 @@ bugfix/all/fs-add-module_softdep-declarations-for-hard-coded-cr.patch
 bugfix/all/partially-revert-usb-kconfig-using-select-for-usb_co.patch
 debian/revert-objtool-fix-config_stack_validation-y-warning.patch
 bugfix/all/partially-revert-net-socket-implement-64-bit-timestamps.patch
+bugfix/all/nfsd-apply-umask-on-fs-without-ACL-support.patch
 
 # Miscellaneous features
 
-# Lockdown (formerly 'securelevel') patchset
-features/all/lockdown/0001-Add-the-ability-to-lock-down-access-to-the-running-k.patch
-features/all/lockdown/0002-Add-a-SysRq-option-to-lift-kernel-lockdown.patch
-features/all/lockdown/0003-ima-require-secure_boot-rules-in-lockdown-mode.patch
-features/all/lockdown/0004-Enforce-module-signatures-if-the-kernel-is-locked-do.patch
-features/all/lockdown/0005-Restrict-dev-mem-kmem-port-when-the-kernel-is-locked.patch
-features/all/lockdown/0006-kexec_load-Disable-at-runtime-if-the-kernel-is-locke.patch
-features/all/lockdown/0007-Copy-secure_boot-flag-in-boot-params-across-kexec-re.patch
-features/all/lockdown/0008-kexec_file-split-KEXEC_VERIFY_SIG-into-KEXEC_SIG-and.patch
-features/all/lockdown/0009-kexec_file-Restrict-at-runtime-if-the-kernel-is-lock.patch
-features/all/lockdown/0010-hibernate-Disable-when-the-kernel-is-locked-down.patch
-features/all/lockdown/0011-uswsusp-Disable-when-the-kernel-is-locked-down.patch
-features/all/lockdown/0012-PCI-Lock-down-BAR-access-when-the-kernel-is-locked-d.patch
-features/all/lockdown/0013-x86-Lock-down-IO-port-access-when-the-kernel-is-lock.patch
-features/all/lockdown/0014-x86-msr-Restrict-MSR-access-when-the-kernel-is-locke.patch
-features/all/lockdown/0015-ACPI-Limit-access-to-custom_method-when-the-kernel-i.patch
-features/all/lockdown/0016-acpi-Ignore-acpi_rsdp-kernel-param-when-the-kernel-h.patch
-features/all/lockdown/0017-acpi-Disable-ACPI-table-override-if-the-kernel-is-lo.patch
-features/all/lockdown/0018-acpi-Disable-APEI-error-injection-if-the-kernel-is-l.patch
-features/all/lockdown/0019-Prohibit-PCMCIA-CIS-storage-when-the-kernel-is-locke.patch
-features/all/lockdown/0020-Lock-down-TIOCSSERIAL.patch
-features/all/lockdown/0021-Lock-down-module-params-that-specify-hardware-parame.patch
-features/all/lockdown/0022-x86-mmiotrace-Lock-down-the-testmmiotrace-module.patch
-features/all/lockdown/0023-Lock-down-proc-kcore.patch
-features/all/lockdown/0024-Lock-down-kprobes.patch
-features/all/lockdown/0025-bpf-Restrict-kernel-image-access-functions-when-the-.patch
-features/all/lockdown/0026-Lock-down-perf.patch
-features/all/lockdown/0027-debugfs-Restrict-debugfs-when-the-kernel-is-locked-d.patch
-features/all/lockdown/0028-efi-Add-an-EFI_SECURE_BOOT-flag-to-indicate-secure-b.patch
-features/all/lockdown/0029-efi-Lock-down-the-kernel-if-booted-in-secure-boot-mo.patch
-features/all/lockdown/0030-lockdown-Print-current-comm-in-restriction-messages.patch
-features/all/lockdown/0031-tracefs-Restrict-tracefs-when-the-kernel-is-locked-d.patch
-features/all/lockdown/tracefs-fix-potential-null-dereference-in-default_fi.patch
-features/all/lockdown/0032-efi-Restrict-efivar_ssdt_load-when-the-kernel-is-loc.patch
-# some missing pieces
-features/all/lockdown/enable-cold-boot-attack-mitigation.patch
+# Lockdown missing pieces
+features/all/lockdown/efi-add-an-efi_secure_boot-flag-to-indicate-secure-b.patch
+features/all/lockdown/efi-lock-down-the-kernel-if-booted-in-secure-boot-mo.patch
 features/all/lockdown/mtd-disable-slram-and-phram-when-locked-down.patch
 features/all/lockdown/arm64-add-kernel-config-option-to-lock-down-when.patch
 # until the "kernel_lockdown.7" manual page exists
 features/all/lockdown/lockdown-refer-to-debian-wiki-until-manual-page-exists.patch
 
 # Improve integrity platform keyring for kernel modules verification
-features/all/db-mok-keyring/0006-Make-get_cert_list-not-complain-about-cert-lists-tha.patch
 features/all/db-mok-keyring/0001-MODSIGN-do-not-load-mok-when-secure-boot-disabled.patch
 features/all/db-mok-keyring/0002-MODSIGN-load-blacklist-from-MOKx.patch
 features/all/db-mok-keyring/0003-MODSIGN-checking-the-blacklisted-hash-before-loading-a-kernel-module.patch
 features/all/db-mok-keyring/0004-MODSIGN-check-the-attributes-of-db-and-mok.patch
 features/all/db-mok-keyring/modsign-make-shash-allocation-failure-fatal.patch
+features/all/db-mok-keyring/KEYS-Make-use-of-platform-keyring-for-module-signature.patch
 
 # Security fixes
 debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
@@ -157,12 +119,8 @@ bugfix/all/tools-build-remove-bpf-run-time-check-at-build-time.patch
 bugfix/all/cpupower-bump-soname-version.patch
 bugfix/all/libcpupower-hide-private-function.patch
 bugfix/all/cpupower-fix-checks-for-cpu-existence.patch
-bugfix/all/tools-lib-api-fs-fs.c-fix-misuse-of-strncpy.patch
-bugfix/all/usbip-fix-misuse-of-strncpy.patch
-bugfix/all/usbip-network-fix-unaligned-member-access.patch
-
-# wireless: Disable regulatory.db direct loading (until we sort out signing)
-debian/wireless-disable-regulatory.db-direct-loading.patch
+bugfix/all/tools-perf-pmu-events-fix-reproducibility.patch
+bugfix/all/0005-libtraceevent-Add-dependency-on-libdl.patch
 
 # overlay: allow mounting in user namespaces
 debian/overlayfs-permit-mounts-in-userns.patch

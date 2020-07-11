@@ -5,9 +5,8 @@
 #ifndef __ASM_IRQFLAGS_H
 #define __ASM_IRQFLAGS_H
 
-#ifdef __KERNEL__
-
 #include <asm/alternative.h>
+#include <asm/barrier.h>
 #include <asm/ptrace.h>
 #include <asm/sysreg.h>
 
@@ -29,19 +28,31 @@
  */
 static inline void arch_local_irq_enable(void)
 {
+	if (system_has_prio_mask_debugging()) {
+		u32 pmr = read_sysreg_s(SYS_ICC_PMR_EL1);
+
+		WARN_ON_ONCE(pmr != GIC_PRIO_IRQON && pmr != GIC_PRIO_IRQOFF);
+	}
+
 	asm volatile(ALTERNATIVE(
-		"msr	daifclr, #2		// arch_local_irq_enable\n"
-		"nop",
-		__msr_s(SYS_ICC_PMR_EL1, "%0")
-		"dsb	sy",
+		"msr	daifclr, #2		// arch_local_irq_enable",
+		__msr_s(SYS_ICC_PMR_EL1, "%0"),
 		ARM64_HAS_IRQ_PRIO_MASKING)
 		:
 		: "r" ((unsigned long) GIC_PRIO_IRQON)
 		: "memory");
+
+	pmr_sync();
 }
 
 static inline void arch_local_irq_disable(void)
 {
+	if (system_has_prio_mask_debugging()) {
+		u32 pmr = read_sysreg_s(SYS_ICC_PMR_EL1);
+
+		WARN_ON_ONCE(pmr != GIC_PRIO_IRQON && pmr != GIC_PRIO_IRQOFF);
+	}
+
 	asm volatile(ALTERNATIVE(
 		"msr	daifset, #2		// arch_local_irq_disable",
 		__msr_s(SYS_ICC_PMR_EL1, "%0"),
@@ -106,15 +117,14 @@ static inline unsigned long arch_local_irq_save(void)
 static inline void arch_local_irq_restore(unsigned long flags)
 {
 	asm volatile(ALTERNATIVE(
-			"msr	daif, %0\n"
-			"nop",
-			__msr_s(SYS_ICC_PMR_EL1, "%0")
-			"dsb	sy",
-			ARM64_HAS_IRQ_PRIO_MASKING)
-		: "+r" (flags)
+		"msr	daif, %0",
+		__msr_s(SYS_ICC_PMR_EL1, "%0"),
+		ARM64_HAS_IRQ_PRIO_MASKING)
 		:
+		: "r" (flags)
 		: "memory");
+
+	pmr_sync();
 }
 
-#endif
-#endif
+#endif /* __ASM_IRQFLAGS_H */

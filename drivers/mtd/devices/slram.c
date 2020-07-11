@@ -43,6 +43,7 @@
 #include <linux/ioctl.h>
 #include <linux/init.h>
 #include <linux/io.h>
+#include <linux/security.h>
 
 #include <linux/mtd/mtd.h>
 
@@ -65,7 +66,7 @@ typedef struct slram_mtd_list {
 #ifdef MODULE
 static char *map[SLRAM_MAX_DEVICES_PARAMS];
 
-module_param_array(map, charp, NULL, 0);
+module_param_hw_array(map, charp, iomem, NULL, 0);
 MODULE_PARM_DESC(map, "List of memory regions to map. \"map=<name>, <start>, <length / end>\"");
 #else
 static char *map;
@@ -227,9 +228,6 @@ static int parse_cmdline(char *devname, char *szstart, char *szlength)
 	unsigned long devstart;
 	unsigned long devlength;
 
-	if (kernel_is_locked_down("Command line-specified device addresses"))
-		return -EPERM;
-
 	if ((!devname) || (!szstart) || (!szlength)) {
 		unregister_devices();
 		return(-EINVAL);
@@ -284,11 +282,17 @@ static int __init init_slram(void)
 #ifndef MODULE
 	char *devstart;
 	char *devlength;
+	int ret;
 
 	if (!map) {
 		E("slram: not enough parameters.\n");
 		return(-EINVAL);
 	}
+
+	ret = security_locked_down(LOCKDOWN_MODULE_PARAMETERS);
+	if (ret)
+		return ret;
+
 	while (map) {
 		devname = devstart = devlength = NULL;
 

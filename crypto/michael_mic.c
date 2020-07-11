@@ -137,10 +137,8 @@ static int michael_setkey(struct crypto_shash *tfm, const u8 *key,
 
 	const __le32 *data = (const __le32 *)key;
 
-	if (keylen != 8) {
-		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+	if (keylen != 8)
 		return -EINVAL;
-	}
 
 	mctx->l = le32_to_cpu(data[0]);
 	mctx->r = le32_to_cpu(data[1]);
@@ -156,6 +154,7 @@ static struct shash_alg alg = {
 	.descsize		=	sizeof(struct michael_mic_desc_ctx),
 	.base			=	{
 		.cra_name		=	"michael_mic",
+		.cra_driver_name	=	"michael_mic-generic",
 		.cra_blocksize		=	8,
 		.cra_alignmask		=	3,
 		.cra_ctxsize		=	sizeof(struct michael_mic_ctx),

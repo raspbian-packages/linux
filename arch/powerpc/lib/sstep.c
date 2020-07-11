@@ -2787,16 +2787,12 @@ void emulate_update_regs(struct pt_regs *regs, struct instruction_op *op)
 		case BARRIER_EIEIO:
 			eieio();
 			break;
-#ifdef __powerpc64__
 		case BARRIER_LWSYNC:
 			asm volatile("lwsync" : : : "memory");
 			break;
 		case BARRIER_PTESYNC:
 			asm volatile("ptesync" : : : "memory");
 			break;
-#endif
-		default:
-			WARN_ON_ONCE(1);
 		}
 		break;
 
@@ -3183,8 +3179,9 @@ int emulate_step(struct pt_regs *regs, unsigned int instr)
 		 * entry code works.  If that is changed, this will
 		 * need to be changed also.
 		 */
-		if (regs->gpr[0] == 0x1ebe &&
-		    cpu_has_feature(CPU_FTR_REAL_LE)) {
+		if (IS_ENABLED(CONFIG_PPC_FAST_ENDIAN_SWITCH) &&
+				cpu_has_feature(CPU_FTR_REAL_LE) &&
+				regs->gpr[0] == 0x1ebe) {
 			regs->msr ^= MSR_LE;
 			goto instr_done;
 		}

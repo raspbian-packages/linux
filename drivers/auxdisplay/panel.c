@@ -55,9 +55,7 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
-#include <misc/charlcd.h>
-
-#define KEYPAD_MINOR		185
+#include "charlcd.h"
 
 #define LCD_MAXBYTES		256	/* max burst write */
 

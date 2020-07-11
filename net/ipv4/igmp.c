@@ -107,8 +107,6 @@
 #ifdef CONFIG_IP_MULTICAST
 /* Parameter names and values are taken from igmp-v2-06 draft */
 
-#define IGMP_V2_UNSOLICITED_REPORT_INTERVAL	(10*HZ)
-#define IGMP_V3_UNSOLICITED_REPORT_INTERVAL	(1*HZ)
 #define IGMP_QUERY_INTERVAL			(125*HZ)
 #define IGMP_QUERY_RESPONSE_INTERVAL		(10*HZ)
 
@@ -332,14 +330,15 @@ static __be32 igmpv3_get_srcaddr(struct net_device *dev,
 				 const struct flowi4 *fl4)
 {
 	struct in_device *in_dev = __in_dev_get_rcu(dev);
+	const struct in_ifaddr *ifa;
 
 	if (!in_dev)
 		return htonl(INADDR_ANY);
 
-	for_ifa(in_dev) {
+	in_dev_for_each_ifa_rcu(ifa, in_dev) {
 		if (fl4->saddr == ifa->ifa_local)
 			return fl4->saddr;
-	} endfor_ifa(in_dev);
+	}
 
 	return htonl(INADDR_ANY);
 }
@@ -1562,7 +1561,7 @@ static int ip_mc_check_igmp_msg(struct sk_buff *skb)
 	}
 }
 
-static inline __sum16 ip_mc_validate_checksum(struct sk_buff *skb)
+static __sum16 ip_mc_validate_checksum(struct sk_buff *skb)
 {
 	return skb_checksum_simple_validate(skb);
 }

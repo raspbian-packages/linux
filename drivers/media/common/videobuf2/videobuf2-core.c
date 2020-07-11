@@ -205,6 +205,7 @@ static int __vb2_buf_mem_alloc(struct vb2_buffer *vb)
 	 * NOTE: mmapped areas should be page aligned
 	 */
 	for (plane = 0; plane < vb->num_planes; ++plane) {
+		/* Memops alloc requires size to be page aligned. */
 		unsigned long size = PAGE_ALIGN(vb->planes[plane].length);
 
 		/* Did it wrap around? */
@@ -392,8 +393,8 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum vb2_memory memory,
 		}
 	}
 
-	dprintk(1, "allocated %d buffers, %d plane(s) each\n",
-			buffer, num_planes);
+	dprintk(3, "allocated %d buffers, %d plane(s) each\n",
+		buffer, num_planes);
 
 	return buffer;
 }

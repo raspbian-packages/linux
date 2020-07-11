@@ -194,6 +194,8 @@ static int mb862xxfb_check_var(struct fb_var_screeninfo *var,
 	return 0;
 }
 
+static struct fb_ops mb862xxfb_ops;
+
 /*
  * set display parameters
  */
@@ -204,7 +206,7 @@ static int mb862xxfb_set_par(struct fb_info *fbi)
 
 	dev_dbg(par->dev, "%s\n", __func__);
 	if (par->type == BT_CORALP)
-		mb862xxfb_init_accel(fbi, fbi->var.xres);
+		mb862xxfb_init_accel(fbi, &mb862xxfb_ops, fbi->var.xres);
 
 	if (par->pre_init)
 		return 0;
@@ -680,10 +682,8 @@ static int of_platform_mb862xx_probe(struct platform_device *ofdev)
 	}
 
 	info = framebuffer_alloc(sizeof(struct mb862xxfb_par), dev);
-	if (info == NULL) {
-		dev_err(dev, "cannot allocate framebuffer\n");
+	if (!info)
 		return -ENOMEM;
-	}
 
 	par = info->par;
 	par->info = info;
@@ -1005,7 +1005,6 @@ static int mb862xx_pci_probe(struct pci_dev *pdev,
 
 	info = framebuffer_alloc(sizeof(struct mb862xxfb_par), dev);
 	if (!info) {
-		dev_err(dev, "framebuffer alloc failed\n");
 		ret = -ENOMEM;
 		goto dis_dev;
 	}

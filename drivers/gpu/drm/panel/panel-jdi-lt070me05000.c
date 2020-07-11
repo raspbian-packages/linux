@@ -10,18 +10,20 @@
  * JDI model LT070ME05000, and its data sheet is at:
  * http://panelone.net/en/7-0-inch/JDI_LT070ME05000_7.0_inch-datasheet
  */
+
 #include <linux/backlight.h>
+#include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 
-#include <drm/drmP.h>
+#include <video/mipi_display.h>
+
 #include <drm/drm_crtc.h>
 #include <drm/drm_mipi_dsi.h>
+#include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
-
-#include <video/mipi_display.h>
 
 static const char * const regulator_names[] = {
 	"vddp",
@@ -298,13 +300,14 @@ static const struct drm_display_mode default_mode = {
 		.flags = 0,
 };
 
-static int jdi_panel_get_modes(struct drm_panel *panel)
+static int jdi_panel_get_modes(struct drm_panel *panel,
+			       struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 	struct jdi_panel *jdi = to_jdi_panel(panel);
 	struct device *dev = &jdi->dsi->dev;
 
-	mode = drm_mode_duplicate(panel->drm, &default_mode);
+	mode = drm_mode_duplicate(connector->dev, &default_mode);
 	if (!mode) {
 		dev_err(dev, "failed to add mode %ux%ux@%u\n",
 			default_mode.hdisplay, default_mode.vdisplay,
@@ -314,10 +317,10 @@ static int jdi_panel_get_modes(struct drm_panel *panel)
 
 	drm_mode_set_name(mode);
 
-	drm_mode_probed_add(panel->connector, mode);
+	drm_mode_probed_add(connector, mode);
 
-	panel->connector->display_info.width_mm = 95;
-	panel->connector->display_info.height_mm = 151;
+	connector->display_info.width_mm = 95;
+	connector->display_info.height_mm = 151;
 
 	return 1;
 }
@@ -435,9 +438,8 @@ static int jdi_panel_add(struct jdi_panel *jdi)
 		return ret;
 	}
 
-	drm_panel_init(&jdi->base);
-	jdi->base.funcs = &jdi_panel_funcs;
-	jdi->base.dev = &jdi->dsi->dev;
+	drm_panel_init(&jdi->base, &jdi->dsi->dev, &jdi_panel_funcs,
+		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_add(&jdi->base);
 

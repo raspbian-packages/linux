@@ -1284,7 +1284,7 @@ myri10ge_vlan_rx(struct net_device *dev, void *addr, struct sk_buff *skb)
 {
 	u8 *va;
 	struct vlan_ethhdr *veh;
-	struct skb_frag_struct *frag;
+	skb_frag_t *frag;
 	__wsum vsum;
 
 	va = addr;
@@ -1304,8 +1304,8 @@ myri10ge_vlan_rx(struct net_device *dev, void *addr, struct sk_buff *skb)
 		skb->len -= VLAN_HLEN;
 		skb->data_len -= VLAN_HLEN;
 		frag = skb_shinfo(skb)->frags;
-		frag->page_offset += VLAN_HLEN;
-		skb_frag_size_set(frag, skb_frag_size(frag) - VLAN_HLEN);
+		skb_frag_off_add(frag, VLAN_HLEN);
+		skb_frag_size_sub(frag, VLAN_HLEN);
 	}
 }
 
@@ -1316,7 +1316,7 @@ myri10ge_rx_done(struct myri10ge_slice_state *ss, int len, __wsum csum)
 {
 	struct myri10ge_priv *mgp = ss->mgp;
 	struct sk_buff *skb;
-	struct skb_frag_struct *rx_frags;
+	skb_frag_t *rx_frags;
 	struct myri10ge_rx_buf *rx;
 	int i, idx, remainder, bytes;
 	struct pci_dev *pdev = mgp->pdev;
@@ -1349,7 +1349,7 @@ myri10ge_rx_done(struct myri10ge_slice_state *ss, int len, __wsum csum)
 		return 0;
 	}
 	rx_frags = skb_shinfo(skb)->frags;
-	/* Fill skb_frag_struct(s) with data from our receive */
+	/* Fill skb_frag_t(s) with data from our receive */
 	for (i = 0, remainder = len; remainder > 0; i++) {
 		myri10ge_unmap_rx_page(pdev, &rx->info[idx], bytes);
 		skb_fill_page_desc(skb, i, rx->info[idx].page,
@@ -1362,8 +1362,8 @@ myri10ge_rx_done(struct myri10ge_slice_state *ss, int len, __wsum csum)
 	}
 
 	/* remove padding */
-	rx_frags[0].page_offset += MXGEFW_PAD;
-	rx_frags[0].size -= MXGEFW_PAD;
+	skb_frag_off_add(&rx_frags[0], MXGEFW_PAD);
+	skb_frag_size_sub(&rx_frags[0], MXGEFW_PAD);
 	len -= MXGEFW_PAD;
 
 	skb->len = len;
@@ -1918,6 +1918,7 @@ myri10ge_phys_id(struct net_device *netdev, enum ethtool_phys_id_state state)
 }
 
 static const struct ethtool_ops myri10ge_ethtool_ops = {
+	.supported_coalesce_params = ETHTOOL_COALESCE_RX_USECS,
 	.get_drvinfo = myri10ge_get_drvinfo,
 	.get_coalesce = myri10ge_get_coalesce,
 	.set_coalesce = myri10ge_set_coalesce,
@@ -2626,7 +2627,7 @@ static netdev_tx_t myri10ge_xmit(struct sk_buff *skb,
 	struct myri10ge_slice_state *ss;
 	struct mcp_kreq_ether_send *req;
 	struct myri10ge_tx_buf *tx;
-	struct skb_frag_struct *frag;
+	skb_frag_t *frag;
 	struct netdev_queue *netdev_queue;
 	dma_addr_t bus;
 	u32 low;
@@ -2890,7 +2891,7 @@ drop:
 static netdev_tx_t myri10ge_sw_tso(struct sk_buff *skb,
 					 struct net_device *dev)
 {
-	struct sk_buff *segs, *curr;
+	struct sk_buff *segs, *curr, *next;
 	struct myri10ge_priv *mgp = netdev_priv(dev);
 	struct myri10ge_slice_state *ss;
 	netdev_tx_t status;
@@ -2899,10 +2900,8 @@ static netdev_tx_t myri10ge_sw_tso(struct sk_buff *skb,
 	if (IS_ERR(segs))
 		goto drop;
 
-	while (segs) {
-		curr = segs;
-		segs = segs->next;
-		curr->next = NULL;
+	skb_list_walk_safe(segs, curr, next) {
+		skb_mark_not_on_list(curr);
 		status = myri10ge_xmit(curr, dev);
 		if (status != 0) {
 			dev_kfree_skb_any(curr);
@@ -3035,7 +3034,6 @@ static int myri10ge_set_mac_address(struct net_device *dev, void *addr)
 static int myri10ge_change_mtu(struct net_device *dev, int new_mtu)
 {
 	struct myri10ge_priv *mgp = netdev_priv(dev);
-	int error = 0;
 
 	netdev_info(dev, "changing mtu from %d to %d\n", dev->mtu, new_mtu);
 	if (mgp->running) {
@@ -3047,7 +3045,7 @@ static int myri10ge_change_mtu(struct net_device *dev, int new_mtu)
 	} else
 		dev->mtu = new_mtu;
 
-	return error;
+	return 0;
 }
 
 /*

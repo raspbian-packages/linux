@@ -11,7 +11,9 @@
 #include <asm/user.h>
 #include <asm/auxvec.h>
 #include <asm/fsgsbase.h>
+#ifndef COMPILE_OFFSETS /* avoid a circular dependency on asm-offsets.h */
 #include <asm/syscall.h>
+#endif
 
 typedef unsigned long elf_greg_t;
 

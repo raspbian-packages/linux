@@ -80,6 +80,7 @@ struct arm_pmu {
 	struct pmu	pmu;
 	cpumask_t	supported_cpus;
 	char		*name;
+	int		pmuver;
 	irqreturn_t	(*handle_irq)(struct arm_pmu *pmu);
 	void		(*enable)(struct perf_event *event);
 	void		(*disable)(struct perf_event *event);
@@ -170,5 +171,7 @@ void armpmu_free_irq(int irq, int cpu);
 #define ARMV8_PMU_PDEV_NAME "armv8-pmu"
 
 #endif /* CONFIG_ARM_PMU */
+
+#define ARMV8_SPE_PDEV_NAME "arm,spe-v1"
 
 #endif /* __ARM_PMU_H__ */

@@ -229,7 +229,7 @@ struct audit_netlink_list {
 	struct sk_buff_head q;
 };
 
-int audit_send_list(void *_dest);
+int audit_send_list_thread(void *_dest);
 
 extern int selinux_audit_rule_update(void);
 
@@ -286,10 +286,17 @@ extern const char *audit_tree_path(struct audit_tree *tree);
 extern void audit_put_tree(struct audit_tree *tree);
 extern void audit_kill_trees(struct audit_context *context);
 
-extern int audit_signal_info(int sig, struct task_struct *t);
+extern int audit_signal_info_syscall(struct task_struct *t);
 extern void audit_filter_inodes(struct task_struct *tsk,
 				struct audit_context *ctx);
 extern struct list_head *audit_killed_trees(void);
+
+static inline void audit_clear_dummy(struct audit_context *ctx)
+{
+	if (ctx)
+		ctx->dummy = 0;
+}
+
 #else /* CONFIG_AUDITSYSCALL */
 #define auditsc_get_stamp(c, t, s) 0
 #define audit_put_watch(w) {}
@@ -317,8 +324,13 @@ extern struct list_head *audit_killed_trees(void);
 #define audit_tree_path(rule) ""	/* never called */
 #define audit_kill_trees(context) BUG()
 
-#define audit_signal_info(s, t) AUDIT_DISABLED
+static inline int audit_signal_info_syscall(struct task_struct *t)
+{
+	return 0;
+}
+
 #define audit_filter_inodes(t, c) AUDIT_DISABLED
+#define audit_clear_dummy(c) {}
 #endif /* CONFIG_AUDITSYSCALL */
 
 extern char *audit_unpack_string(void **bufp, size_t *remain, size_t len);

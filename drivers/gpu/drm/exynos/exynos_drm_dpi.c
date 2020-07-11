@@ -7,13 +7,13 @@
  * Contacts: Andrzej Hajda <a.hajda@samsung.com>
 */
 
-#include <drm/drmP.h>
-#include <drm/drm_atomic_helper.h>
-#include <drm/drm_panel.h>
-#include <drm/drm_probe_helper.h>
-
 #include <linux/of_graph.h>
 #include <linux/regulator/consumer.h>
+
+#include <drm/drm_atomic_helper.h>
+#include <drm/drm_panel.h>
+#include <drm/drm_print.h>
+#include <drm/drm_probe_helper.h>
 
 #include <video/of_videomode.h>
 #include <video/videomode.h>
@@ -43,7 +43,7 @@ exynos_dpi_detect(struct drm_connector *connector, bool force)
 {
 	struct exynos_dpi *ctx = connector_to_dpi(connector);
 
-	if (ctx->panel && !ctx->panel->connector)
+	if (ctx->panel)
 		drm_panel_attach(ctx->panel, &ctx->connector);
 
 	return connector_status_connected;
@@ -85,7 +85,7 @@ static int exynos_dpi_get_modes(struct drm_connector *connector)
 	}
 
 	if (ctx->panel)
-		return ctx->panel->funcs->get_modes(ctx->panel);
+		return drm_panel_get_modes(ctx->panel, connector);
 
 	return 0;
 }

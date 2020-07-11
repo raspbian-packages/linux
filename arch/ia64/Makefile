@@ -20,7 +20,7 @@ CHECKFLAGS	+= -D__ia64=1 -D__ia64__=1 -D_LP64 -D__LP64__
 
 OBJCOPYFLAGS	:= --strip-all
 LDFLAGS_vmlinux	:= -static
-KBUILD_LDFLAGS_MODULE += -T $(srctree)/arch/ia64/module.lds
+KBUILD_LDS_MODULE += $(srctree)/arch/ia64/module.lds
 KBUILD_AFLAGS_KERNEL := -mconstant-gp
 EXTRA		:=
 
@@ -30,29 +30,23 @@ KBUILD_CFLAGS_KERNEL := -mconstant-gp
 
 KBUILD_CPPFLAGS += -DHAVE_WORKING_TEXT_ALIGN -DHAVE_MODEL_SMALL_ATTRIBUTE -DHAVE_SERIALIZE_DIRECTIVE
 
+quiet_cmd_gzip = GZIP    $@
+cmd_gzip = cat $(real-prereqs) | gzip -n -f -9 > $@
+
+quiet_cmd_objcopy = OBJCOPY $@
+cmd_objcopy = $(OBJCOPY) $(OBJCOPYFLAGS) $(OBJCOPYFLAGS_$(@F)) $< $@
+
 KBUILD_CFLAGS += $(cflags-y)
 head-y := arch/ia64/kernel/head.o
 
 libs-y				+= arch/ia64/lib/
 core-y				+= arch/ia64/kernel/ arch/ia64/mm/
-core-$(CONFIG_IA64_DIG) 	+= arch/ia64/dig/
-core-$(CONFIG_IA64_DIG_VTD) 	+= arch/ia64/dig/
-core-$(CONFIG_IA64_GENERIC) 	+= arch/ia64/dig/
-core-$(CONFIG_IA64_HP_ZX1)	+= arch/ia64/dig/
-core-$(CONFIG_IA64_HP_ZX1_SWIOTLB) += arch/ia64/dig/
-core-$(CONFIG_IA64_SGI_SN2)	+= arch/ia64/sn/
 core-$(CONFIG_IA64_SGI_UV)	+= arch/ia64/uv/
 
-drivers-$(CONFIG_PCI)		+= arch/ia64/pci/
-drivers-$(CONFIG_IA64_HP_SIM)	+= arch/ia64/hp/sim/
-drivers-$(CONFIG_IA64_HP_ZX1)	+= arch/ia64/hp/common/ arch/ia64/hp/zx1/
-drivers-$(CONFIG_IA64_HP_ZX1_SWIOTLB) += arch/ia64/hp/common/ arch/ia64/hp/zx1/
-drivers-$(CONFIG_IA64_GENERIC)	+= arch/ia64/hp/common/ arch/ia64/hp/zx1/ arch/ia64/hp/sim/ arch/ia64/sn/ arch/ia64/uv/
+drivers-y			+= arch/ia64/pci/ arch/ia64/hp/common/
 drivers-$(CONFIG_OPROFILE)	+= arch/ia64/oprofile/
 
-boot := arch/ia64/hp/sim/boot
-
-PHONY += boot compressed check
+PHONY += compressed check
 
 all: compressed
 
@@ -60,19 +54,18 @@ compressed: vmlinux.gz
 
 vmlinuz: vmlinux.gz
 
-vmlinux.gz: vmlinux
-	$(Q)$(MAKE) $(build)=$(boot) $@
+vmlinux.gz: vmlinux.bin FORCE
+	$(call if_changed,gzip)
+
+vmlinux.bin: vmlinux FORCE
+	$(call if_changed,objcopy)
 
 archclean:
-	$(Q)$(MAKE) $(clean)=$(boot)
 
 archheaders:
 	$(Q)$(MAKE) $(build)=arch/ia64/kernel/syscalls all
 
-CLEAN_FILES += vmlinux.gz bootloader
-
-boot:	lib/lib.a vmlinux
-	$(Q)$(MAKE) $(build)=$(boot) $@
+CLEAN_FILES += vmlinux.gz
 
 install: vmlinux.gz
 	sh $(srctree)/arch/ia64/install.sh $(KERNELRELEASE) $< System.map "$(INSTALL_PATH)"
@@ -80,7 +73,6 @@ install: vmlinux.gz
 define archhelp
   echo '* compressed	- Build compressed kernel image'
   echo '  install	- Install compressed kernel image'
-  echo '  boot		- Build vmlinux and bootloader for Ski simulator'
 endef
 
 archprepare: make_nr_irqs_h

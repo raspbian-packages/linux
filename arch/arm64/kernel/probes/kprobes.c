@@ -123,8 +123,10 @@ void *alloc_insn_page(void)
 	void *page;
 
 	page = vmalloc_exec(PAGE_SIZE);
-	if (page)
+	if (page) {
 		set_memory_ro((unsigned long)page, 1);
+		set_vm_flush_reset_perms(page);
+	}
 
 	return page;
 }
@@ -451,10 +453,6 @@ int __init arch_populate_kprobe_blacklist(void)
 		return ret;
 	ret = kprobe_add_area_blacklist((unsigned long)__irqentry_text_start,
 					(unsigned long)__irqentry_text_end);
-	if (ret)
-		return ret;
-	ret = kprobe_add_area_blacklist((unsigned long)__exception_text_start,
-					(unsigned long)__exception_text_end);
 	if (ret)
 		return ret;
 	ret = kprobe_add_area_blacklist((unsigned long)__idmap_text_start,

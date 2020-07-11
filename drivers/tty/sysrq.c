@@ -63,6 +63,19 @@ static bool sysrq_on(void)
 	return sysrq_enabled || sysrq_always_enabled;
 }
 
+/**
+ * sysrq_mask - Getter for sysrq_enabled mask.
+ *
+ * Return: 1 if sysrq is always enabled, enabled sysrq_key_op mask otherwise.
+ */
+int sysrq_mask(void)
+{
+	if (sysrq_always_enabled)
+		return 1;
+	return sysrq_enabled;
+}
+EXPORT_SYMBOL_GPL(sysrq_mask);
+
 /*
  * A value of 1 means 'all', other nonzero values are an op mask:
  */
@@ -480,7 +493,6 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
 	/* x: May be registered on mips for TLB dump */
 	/* x: May be registered on ppc/powerpc for xmon */
 	/* x: May be registered on sparc64 for global PMU dump */
-	/* x: May be registered on x86_64 for disabling secure boot */
 	NULL,				/* x */
 	/* y: May be registered on sparc64 for global register dump */
 	NULL,				/* y */
@@ -524,7 +536,7 @@ static void __sysrq_put_key_op(int key, struct sysrq_key_op *op_p)
                 sysrq_key_table[i] = op_p;
 }
 
-void __handle_sysrq(int key, unsigned int from)
+void __handle_sysrq(int key, bool check_mask)
 {
 	struct sysrq_key_op *op_p;
 	int orig_log_level;
@@ -547,15 +559,11 @@ void __handle_sysrq(int key, unsigned int from)
 
         op_p = __sysrq_get_key_op(key);
         if (op_p) {
-		/* Ban synthetic events from some sysrq functionality */
-		if ((from == SYSRQ_FROM_PROC || from == SYSRQ_FROM_SYNTHETIC) &&
-		    op_p->enable_mask & SYSRQ_DISABLE_USERSPACE)
-			printk("This sysrq operation is disabled from userspace.\n");
 		/*
 		 * Should we check for enabled operations (/proc/sysrq-trigger
 		 * should not) and is the invoked operation enabled?
 		 */
-		if (from == SYSRQ_FROM_KERNEL || sysrq_on_mask(op_p->enable_mask)) {
+		if (!check_mask || sysrq_on_mask(op_p->enable_mask)) {
 			pr_info("%s\n", op_p->action_msg);
 			console_loglevel = orig_log_level;
 			op_p->handler(key);
@@ -590,7 +598,7 @@ void __handle_sysrq(int key, unsigned int from)
 void handle_sysrq(int key)
 {
 	if (sysrq_on())
-		__handle_sysrq(key, SYSRQ_FROM_KERNEL);
+		__handle_sysrq(key, true);
 }
 EXPORT_SYMBOL(handle_sysrq);
 
@@ -670,7 +678,7 @@ static void sysrq_do_reset(struct timer_list *t)
 static void sysrq_handle_reset_request(struct sysrq_state *state)
 {
 	if (state->reset_requested)
-		__handle_sysrq(sysrq_xlate[KEY_B], SYSRQ_FROM_KERNEL);
+		__handle_sysrq(sysrq_xlate[KEY_B], false);
 
 	if (sysrq_reset_downtime_ms)
 		mod_timer(&state->keyreset_timer,
@@ -823,10 +831,8 @@ static bool sysrq_handle_keypress(struct sysrq_state *sysrq,
 
 	default:
 		if (sysrq->active && value && value != 2) {
-			int from = sysrq->handle.dev->flags & INPUTDEV_FLAGS_SYNTHETIC ?
-					SYSRQ_FROM_SYNTHETIC : 0;
 			sysrq->need_reinject = false;
-			__handle_sysrq(sysrq_xlate[code], from);
+			__handle_sysrq(sysrq_xlate[code], true);
 		}
 		break;
 	}
@@ -974,8 +980,6 @@ static struct input_handler sysrq_handler = {
 	.id_table	= sysrq_ids,
 };
 
-static bool sysrq_handler_registered;
-
 static inline void sysrq_register_handler(void)
 {
 	int error;
@@ -985,16 +989,11 @@ static inline void sysrq_register_handler(void)
 	error = input_register_handler(&sysrq_handler);
 	if (error)
 		pr_err("Failed to register input handler, error %d", error);
-	else
-		sysrq_handler_registered = true;
 }
 
 static inline void sysrq_unregister_handler(void)
 {
-	if (sysrq_handler_registered) {
-		input_unregister_handler(&sysrq_handler);
-		sysrq_handler_registered = false;
-	}
+	input_unregister_handler(&sysrq_handler);
 }
 
 static int sysrq_reset_seq_param_set(const char *buffer,
@@ -1060,6 +1059,7 @@ int sysrq_toggle_support(int enable_mask)
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(sysrq_toggle_support);
 
 static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
                                 struct sysrq_key_op *remove_op_p)
@@ -1109,21 +1109,21 @@ static ssize_t write_sysrq_trigger(struct file *file, const char __user *buf,
 
 		if (get_user(c, buf))
 			return -EFAULT;
-		__handle_sysrq(c, SYSRQ_FROM_PROC);
+		__handle_sysrq(c, false);
 	}
 
 	return count;
 }
 
-static const struct file_operations proc_sysrq_trigger_operations = {
-	.write		= write_sysrq_trigger,
-	.llseek		= noop_llseek,
+static const struct proc_ops sysrq_trigger_proc_ops = {
+	.proc_write	= write_sysrq_trigger,
+	.proc_lseek	= noop_llseek,
 };
 
 static void sysrq_init_procfs(void)
 {
 	if (!proc_create("sysrq-trigger", S_IWUSR, NULL,
-			 &proc_sysrq_trigger_operations))
+			 &sysrq_trigger_proc_ops))
 		pr_err("Failed to register proc interface\n");
 }
 

@@ -159,6 +159,10 @@ static int do_kexec_load(unsigned long entry, unsigned long nr_segments,
 
 	kimage_terminate(image);
 
+	ret = machine_kexec_post_load(image);
+	if (ret)
+		goto out;
+
 	/* Install the new kernel and uninstall the old */
 	image = xchg(dest_image, image);
 
@@ -209,8 +213,9 @@ static inline int kexec_load_check(unsigned long nr_segments,
 	 * kexec can be used to circumvent module loading restrictions, so
 	 * prevent loading in that case
 	 */
-	if (kernel_is_locked_down("kexec of unsigned images"))
-		return -EPERM;
+	result = security_locked_down(LOCKDOWN_KEXEC);
+	if (result)
+		return result;
 
 	/*
 	 * Verify we have a legal set of flags

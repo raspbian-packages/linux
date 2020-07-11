@@ -12,16 +12,20 @@
  * Andrzej Hajda <a.hajda@samsung.com>
 */
 
-#include <drm/drmP.h>
-#include <drm/drm_mipi_dsi.h>
-#include <drm/drm_panel.h>
-
+#include <linux/delay.h>
 #include <linux/gpio/consumer.h>
+#include <linux/module.h>
+#include <linux/of.h>
 #include <linux/regulator/consumer.h>
 
 #include <video/mipi_display.h>
 #include <video/of_videomode.h>
 #include <video/videomode.h>
+
+#include <drm/drm_mipi_dsi.h>
+#include <drm/drm_modes.h>
+#include <drm/drm_panel.h>
+#include <drm/drm_print.h>
 
 #define LDI_MTP_LENGTH			24
 #define GAMMA_LEVEL_NUM			25
@@ -916,9 +920,9 @@ static int s6e8aa0_enable(struct drm_panel *panel)
 	return 0;
 }
 
-static int s6e8aa0_get_modes(struct drm_panel *panel)
+static int s6e8aa0_get_modes(struct drm_panel *panel,
+			     struct drm_connector *connector)
 {
-	struct drm_connector *connector = panel->connector;
 	struct s6e8aa0 *ctx = panel_to_s6e8aa0(panel);
 	struct drm_display_mode *mode;
 
@@ -1013,9 +1017,8 @@ static int s6e8aa0_probe(struct mipi_dsi_device *dsi)
 
 	ctx->brightness = GAMMA_LEVEL_NUM - 1;
 
-	drm_panel_init(&ctx->panel);
-	ctx->panel.dev = dev;
-	ctx->panel.funcs = &s6e8aa0_drm_funcs;
+	drm_panel_init(&ctx->panel, dev, &s6e8aa0_drm_funcs,
+		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_add(&ctx->panel);
 	if (ret < 0)
