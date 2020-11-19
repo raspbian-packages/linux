@@ -1008,7 +1008,6 @@ static int i3c_master_getmrl_locked(struct i3c_master_controller *master,
 				    struct i3c_device_info *info)
 {
 	struct i3c_ccc_cmd_dest dest;
-	unsigned int expected_len;
 	struct i3c_ccc_mrl *mrl;
 	struct i3c_ccc_cmd cmd;
 	int ret;
@@ -1024,21 +1023,22 @@ static int i3c_master_getmrl_locked(struct i3c_master_controller *master,
 	if (!(info->bcr & I3C_BCR_IBI_PAYLOAD))
 		dest.payload.len -= 1;
 
-	expected_len = dest.payload.len;
 	i3c_ccc_cmd_init(&cmd, true, I3C_CCC_GETMRL, &dest, 1);
 	ret = i3c_master_send_ccc_cmd_locked(master, &cmd);
 	if (ret)
 		goto out;
 
-	if (dest.payload.len != expected_len) {
+	switch (dest.payload.len) {
+	case 3:
+		info->max_ibi_len = mrl->ibi_len;
+		fallthrough;
+	case 2:
+		info->max_read_len = be16_to_cpu(mrl->read_len);
+		break;
+	default:
 		ret = -EIO;
 		goto out;
 	}
-
-	info->max_read_len = be16_to_cpu(mrl->read_len);
-
-	if (info->bcr & I3C_BCR_IBI_PAYLOAD)
-		info->max_ibi_len = mrl->ibi_len;
 
 out:
 	i3c_ccc_cmd_dest_cleanup(&dest);
@@ -1782,6 +1782,21 @@ static void i3c_master_bus_cleanup(struct i3c_master_controller *master)
 	i3c_master_detach_free_devs(master);
 }
 
+static void i3c_master_attach_boardinfo(struct i3c_dev_desc *i3cdev)
+{
+	struct i3c_master_controller *master = i3cdev->common.master;
+	struct i3c_dev_boardinfo *i3cboardinfo;
+
+	list_for_each_entry(i3cboardinfo, &master->boardinfo.i3c, node) {
+		if (i3cdev->info.pid != i3cboardinfo->pid)
+			continue;
+
+		i3cdev->boardinfo = i3cboardinfo;
+		i3cdev->info.static_addr = i3cboardinfo->static_addr;
+		return;
+	}
+}
+
 static struct i3c_dev_desc *
 i3c_master_search_i3c_dev_duplicate(struct i3c_dev_desc *refdev)
 {
@@ -1837,10 +1852,10 @@ int i3c_master_add_i3c_dev_locked(struct i3c_master_controller *master,
 	if (ret)
 		goto err_detach_dev;
 
+	i3c_master_attach_boardinfo(newdev);
+
 	olddev = i3c_master_search_i3c_dev_duplicate(newdev);
 	if (olddev) {
-		newdev->boardinfo = olddev->boardinfo;
-		newdev->info.static_addr = olddev->info.static_addr;
 		newdev->dev = olddev->dev;
 		if (newdev->dev)
 			newdev->dev->desc = newdev;

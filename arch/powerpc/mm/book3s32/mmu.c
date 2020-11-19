@@ -170,6 +170,12 @@ unsigned long __init mmu_mapin_ram(unsigned long base, unsigned long top)
 		pr_debug("RAM mapped without BATs\n");
 		return base;
 	}
+	if (debug_pagealloc_enabled()) {
+		if (base >= border)
+			return base;
+		if (top >= border)
+			top = border;
+	}
 
 	if (!strict_kernel_rwx_enabled() || base >= border || top <= border)
 		return __mmu_mapin_ram(base, top);
@@ -179,6 +185,24 @@ unsigned long __init mmu_mapin_ram(unsigned long base, unsigned long top)
 		return done;
 
 	return __mmu_mapin_ram(border, top);
+}
+
+static bool is_module_segment(unsigned long addr)
+{
+	if (!IS_ENABLED(CONFIG_MODULES))
+		return false;
+#ifdef MODULES_VADDR
+	if (addr < ALIGN_DOWN(MODULES_VADDR, SZ_256M))
+		return false;
+	if (addr > ALIGN(MODULES_END, SZ_256M) - 1)
+		return false;
+#else
+	if (addr < ALIGN_DOWN(VMALLOC_START, SZ_256M))
+		return false;
+	if (addr > ALIGN(VMALLOC_END, SZ_256M) - 1)
+		return false;
+#endif
+	return true;
 }
 
 void mmu_mark_initmem_nx(void)
@@ -217,9 +241,9 @@ void mmu_mark_initmem_nx(void)
 
 	for (i = TASK_SIZE >> 28; i < 16; i++) {
 		/* Do not set NX on VM space for modules */
-		if (IS_ENABLED(CONFIG_MODULES) &&
-		    (VMALLOC_START & 0xf0000000) == i << 28)
-			break;
+		if (is_module_segment(i << 28))
+			continue;
+
 		mtsrin(mfsrin(i << 28) | 0x10000000, i << 28);
 	}
 }
@@ -314,7 +338,7 @@ void hash_preload(struct mm_struct *mm, unsigned long ea)
 
 	if (!Hash)
 		return;
-	pmd = pmd_ptr(mm, ea);
+	pmd = pmd_off(mm, ea);
 	if (!pmd_none(*pmd))
 		add_hash_page(mm->context.id, ea, pmd_val(*pmd));
 }

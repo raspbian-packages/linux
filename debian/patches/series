@@ -21,6 +21,8 @@ debian/tools-perf-install.patch
 debian/wireless-add-debian-wireless-regdb-certificates.patch
 debian/export-symbols-needed-by-android-drivers.patch
 debian/android-enable-building-ashmem-and-binder-as-modules.patch
+debian/documentation-drop-sphinx-version-check.patch
+debian/perf-traceevent-support-asciidoctor-for-documentatio.patch
 
 # Fixes/improvements to firmware loading
 features/all/drivers-media-dvb-usb-af9005-request_firmware.patch
@@ -32,9 +34,9 @@ debian/firmware_class-refer-to-debian-wiki-firmware-page.patch
 
 # Patches from aufs5 repository, imported with debian/bin/genpatch-aufs.
 # These are only the changes needed to allow aufs to be built out-of-tree.
-features/all/aufs5/aufs5-base.patch
-features/all/aufs5/aufs5-mmap.patch
-features/all/aufs5/aufs5-standalone.patch
+#features/all/aufs5/aufs5-base.patch
+#features/all/aufs5/aufs5-mmap.patch
+#features/all/aufs5/aufs5-standalone.patch
 
 # Change some defaults for security reasons
 debian/af_802154-Disable-auto-loading-as-mitigation-against.patch
@@ -67,7 +69,6 @@ bugfix/arm/arm-dts-kirkwood-fix-sata-pinmux-ing-for-ts419.patch
 bugfix/arm64/dts-rockchip-correct-voltage-selector-firefly-RK3399.patch
 bugfix/x86/perf-tools-fix-unwind-build-on-i386.patch
 bugfix/sh/sh-boot-do-not-use-hyphen-in-exported-variable-name.patch
-bugfix/sh/sh-implement-__get_user_u64.patch
 bugfix/arm/arm-mm-export-__sync_icache_dcache-for-xen-privcmd.patch
 bugfix/powerpc/powerpc-boot-fix-missing-crc32poly.h-when-building-with-kernel_xz.patch
 bugfix/arm64/arm64-acpi-Add-fixup-for-HPE-m400-quirks.patch
@@ -81,10 +82,8 @@ features/x86/x86-make-x32-syscall-support-conditional.patch
 bugfix/all/disable-some-marvell-phys.patch
 bugfix/all/fs-add-module_softdep-declarations-for-hard-coded-cr.patch
 bugfix/all/partially-revert-usb-kconfig-using-select-for-usb_co.patch
-debian/revert-objtool-fix-config_stack_validation-y-warning.patch
+debian/makefile-do-not-check-for-libelf-when-building-oot-module.patch
 bugfix/all/partially-revert-net-socket-implement-64-bit-timestamps.patch
-bugfix/all/perf-cs-etm-Move-definition-of-traceid_list-global-v.patch
-bugfix/all/usbip-tools-fix-build-error-for-multiple-definition.patch
 
 # Miscellaneous features
 
@@ -107,6 +106,7 @@ features/all/db-mok-keyring/KEYS-Make-use-of-platform-keyring-for-module-signatu
 # Security fixes
 debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
 debian/ntfs-mark-it-as-broken.patch
+bugfix/all/perf-core-Fix-a-memory-leak-in-perf_event_parse_addr.patch
 
 # Fix exported symbol versions
 bugfix/all/module-disable-matching-missing-version-crc.patch
@@ -122,10 +122,12 @@ bugfix/all/cpupower-bump-soname-version.patch
 bugfix/all/libcpupower-hide-private-function.patch
 bugfix/all/cpupower-fix-checks-for-cpu-existence.patch
 bugfix/all/tools-perf-pmu-events-fix-reproducibility.patch
-bugfix/all/0005-libtraceevent-Add-dependency-on-libdl.patch
-bugfix/all/libtraceevent-fix-build-with-binutils-2.35.patch
+bugfix/all/bpftool-fix-version-string-in-recursive-builds.patch
+bugfix/all/tools-include-uapi-fix-errno.h.patch
 
 # overlay: allow mounting in user namespaces
 debian/overlayfs-permit-mounts-in-userns.patch
+
+debian/doc-disable-extension-incompatible-with-sphinx-3.patch
 
 # ABI maintenance

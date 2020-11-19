@@ -322,7 +322,6 @@ int usnic_ib_query_device(struct ib_device *ibdev,
 	props->max_mcast_grp = 0;
 	props->max_mcast_qp_attach = 0;
 	props->max_total_mcast_qp_attach = 0;
-	props->max_map_per_fmr = 0;
 	/* Owned by Userspace
 	 * max_qp_wr, max_sge, max_sge_rd, max_cqe */
 	mutex_unlock(&us_ibdev->usdev_lock);
@@ -597,9 +596,9 @@ int usnic_ib_create_cq(struct ib_cq *ibcq, const struct ib_cq_init_attr *attr,
 	return 0;
 }
 
-void usnic_ib_destroy_cq(struct ib_cq *cq, struct ib_udata *udata)
+int usnic_ib_destroy_cq(struct ib_cq *cq, struct ib_udata *udata)
 {
-	return;
+	return 0;
 }
 
 struct ib_mr *usnic_ib_reg_mr(struct ib_pd *pd, u64 start, u64 length,

@@ -51,6 +51,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/uaccess.h>
 
+#include <asm/unaligned.h>
+
 #include <scsi/scsi.h>
 #include <scsi/scsi_dbg.h>
 #include <scsi/scsi_device.h>
@@ -344,10 +346,8 @@ static int sr_done(struct scsi_cmnd *SCpnt)
 		case ILLEGAL_REQUEST:
 			if (!(SCpnt->sense_buffer[0] & 0x90))
 				break;
-			error_sector = (SCpnt->sense_buffer[3] << 24) |
-				(SCpnt->sense_buffer[4] << 16) |
-				(SCpnt->sense_buffer[5] << 8) |
-				SCpnt->sense_buffer[6];
+			error_sector =
+				get_unaligned_be32(&SCpnt->sense_buffer[3]);
 			if (SCpnt->request->bio != NULL)
 				block_sectors =
 					bio_sectors(SCpnt->request->bio);
@@ -392,14 +392,10 @@ static blk_status_t sr_init_command(struct scsi_cmnd *SCpnt)
 	struct request *rq = SCpnt->request;
 	blk_status_t ret;
 
-	ret = scsi_init_io(SCpnt);
+	ret = scsi_alloc_sgtables(SCpnt);
 	if (ret != BLK_STS_OK)
-		goto out;
+		return ret;
 	cd = scsi_cd(rq->rq_disk);
-
-	/* from here on until we're complete, any goto out
-	 * is used for a killable error condition */
-	ret = BLK_STS_IOERR;
 
 	SCSI_LOG_HLQUEUE(1, scmd_printk(KERN_INFO, SCpnt,
 		"Doing sr request, block = %d\n", block));
@@ -495,13 +491,9 @@ static blk_status_t sr_init_command(struct scsi_cmnd *SCpnt)
 		SCpnt->sdb.length = this_count * s_size;
 	}
 
-	SCpnt->cmnd[2] = (unsigned char) (block >> 24) & 0xff;
-	SCpnt->cmnd[3] = (unsigned char) (block >> 16) & 0xff;
-	SCpnt->cmnd[4] = (unsigned char) (block >> 8) & 0xff;
-	SCpnt->cmnd[5] = (unsigned char) block & 0xff;
+	put_unaligned_be32(block, &SCpnt->cmnd[2]);
 	SCpnt->cmnd[6] = SCpnt->cmnd[9] = 0;
-	SCpnt->cmnd[7] = (unsigned char) (this_count >> 8) & 0xff;
-	SCpnt->cmnd[8] = (unsigned char) this_count & 0xff;
+	put_unaligned_be16(this_count, &SCpnt->cmnd[7]);
 
 	/*
 	 * We shouldn't disconnect in the middle of a sector, so with a dumb
@@ -513,12 +505,12 @@ static blk_status_t sr_init_command(struct scsi_cmnd *SCpnt)
 	SCpnt->allowed = MAX_RETRIES;
 
 	/*
-	 * This indicates that the command is ready from our end to be
-	 * queued.
+	 * This indicates that the command is ready from our end to be queued.
 	 */
-	ret = BLK_STS_OK;
+	return BLK_STS_OK;
  out:
-	return ret;
+	scsi_free_sgtables(SCpnt);
+	return BLK_STS_IOERR;
 }
 
 static int sr_block_open(struct block_device *bdev, fmode_t mode)
@@ -794,9 +786,8 @@ static int sr_probe(struct device *dev)
 	set_capacity(disk, cd->capacity);
 	disk->private_data = &cd->driver;
 	disk->queue = sdev->request_queue;
-	cd->cdi.disk = disk;
 
-	if (register_cdrom(&cd->cdi))
+	if (register_cdrom(disk, &cd->cdi))
 		goto fail_minor;
 
 	/*
@@ -859,8 +850,7 @@ static void get_sectorsize(struct scsi_cd *cd)
 	} else {
 		long last_written;
 
-		cd->capacity = 1 + ((buffer[0] << 24) | (buffer[1] << 16) |
-				    (buffer[2] << 8) | buffer[3]);
+		cd->capacity = 1 + get_unaligned_be32(&buffer[0]);
 		/*
 		 * READ_CAPACITY doesn't return the correct size on
 		 * certain UDF media.  If last_written is larger, use
@@ -871,8 +861,7 @@ static void get_sectorsize(struct scsi_cd *cd)
 		if (!cdrom_get_last_written(&cd->cdi, &last_written))
 			cd->capacity = max_t(long, cd->capacity, last_written);
 
-		sector_size = (buffer[4] << 24) |
-		    (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
+		sector_size = get_unaligned_be32(&buffer[4]);
 		switch (sector_size) {
 			/*
 			 * HP 4020i CD-Recorder reports 2340 byte sectors
@@ -884,10 +873,10 @@ static void get_sectorsize(struct scsi_cd *cd)
 		case 2340:
 		case 2352:
 			sector_size = 2048;
-			/* fall through */
+			fallthrough;
 		case 2048:
 			cd->capacity *= 4;
-			/* fall through */
+			fallthrough;
 		case 512:
 			break;
 		default:
@@ -960,13 +949,13 @@ static void get_capabilities(struct scsi_cd *cd)
 	}
 
 	n = data.header_length + data.block_descriptor_length;
-	cd->cdi.speed = ((buffer[n + 8] << 8) + buffer[n + 9]) / 176;
+	cd->cdi.speed = get_unaligned_be16(&buffer[n + 8]) / 176;
 	cd->readcd_known = 1;
 	cd->readcd_cdda = buffer[n + 5] & 0x01;
 	/* print some capability bits */
 	sr_printk(KERN_INFO, cd,
 		  "scsi3-mmc drive: %dx/%dx %s%s%s%s%s%s\n",
-		  ((buffer[n + 14] << 8) + buffer[n + 15]) / 176,
+		  get_unaligned_be16(&buffer[n + 14]) / 176,
 		  cd->cdi.speed,
 		  buffer[n + 3] & 0x01 ? "writer " : "", /* CD Writer */
 		  buffer[n + 3] & 0x20 ? "dvd-ram " : "",

@@ -41,51 +41,8 @@
 #include "amdgpu_dm_debugfs.h"
 #endif
 
-
 #if defined(CONFIG_DRM_AMD_DC_DCN)
 #include "dc/dcn20/dcn20_resource.h"
-#endif
-
-/* #define TRACE_DPCD */
-
-#ifdef TRACE_DPCD
-#define SIDE_BAND_MSG(address) (address >= DP_SIDEBAND_MSG_DOWN_REQ_BASE && address < DP_SINK_COUNT_ESI)
-
-static inline char *side_band_msg_type_to_str(uint32_t address)
-{
-	static char str[10] = {0};
-
-	if (address < DP_SIDEBAND_MSG_UP_REP_BASE)
-		strcpy(str, "DOWN_REQ");
-	else if (address < DP_SIDEBAND_MSG_DOWN_REP_BASE)
-		strcpy(str, "UP_REP");
-	else if (address < DP_SIDEBAND_MSG_UP_REQ_BASE)
-		strcpy(str, "DOWN_REP");
-	else
-		strcpy(str, "UP_REQ");
-
-	return str;
-}
-
-static void log_dpcd(uint8_t type,
-		     uint32_t address,
-		     uint8_t *data,
-		     uint32_t size,
-		     bool res)
-{
-	DRM_DEBUG_KMS("Op: %s, addr: %04x, SideBand Msg: %s, Op res: %s\n",
-			(type == DP_AUX_NATIVE_READ) ||
-			(type == DP_AUX_I2C_READ) ?
-					"Read" : "Write",
-			address,
-			SIDE_BAND_MSG(address) ?
-					side_band_msg_type_to_str(address) : "Nop",
-			res ? "OK" : "Fail");
-
-	if (res) {
-		print_hex_dump(KERN_INFO, "Body: ", DUMP_PREFIX_NONE, 16, 1, data, size, false);
-	}
-}
 #endif
 
 static ssize_t dm_dp_aux_transfer(struct drm_dp_aux *aux,
@@ -110,7 +67,7 @@ static ssize_t dm_dp_aux_transfer(struct drm_dp_aux *aux,
 	result = dc_link_aux_transfer_raw(TO_DM_AUX(aux)->ddc_service, &payload,
 				      &operation_result);
 
-	if (payload.write)
+	if (payload.write && result >= 0)
 		result = msg->size;
 
 	if (result < 0)
@@ -136,14 +93,20 @@ static ssize_t dm_dp_aux_transfer(struct drm_dp_aux *aux,
 static void
 dm_dp_mst_connector_destroy(struct drm_connector *connector)
 {
-	struct amdgpu_dm_connector *amdgpu_dm_connector = to_amdgpu_dm_connector(connector);
+	struct amdgpu_dm_connector *aconnector =
+		to_amdgpu_dm_connector(connector);
 
-	kfree(amdgpu_dm_connector->edid);
-	amdgpu_dm_connector->edid = NULL;
+	if (aconnector->dc_sink) {
+		dc_link_remove_remote_sink(aconnector->dc_link,
+					   aconnector->dc_sink);
+		dc_sink_release(aconnector->dc_sink);
+	}
+
+	kfree(aconnector->edid);
 
 	drm_connector_cleanup(connector);
-	drm_dp_mst_put_port_malloc(amdgpu_dm_connector->port);
-	kfree(amdgpu_dm_connector);
+	drm_dp_mst_put_port_malloc(aconnector->port);
+	kfree(aconnector);
 }
 
 static int
@@ -434,40 +397,13 @@ dm_dp_add_mst_connector(struct drm_dp_mst_topology_mgr *mgr,
 	 */
 	amdgpu_dm_connector_funcs_reset(connector);
 
-	DRM_INFO("DM_MST: added connector: %p [id: %d] [master: %p]\n",
-		 aconnector, connector->base.id, aconnector->mst_port);
-
 	drm_dp_mst_get_port_malloc(port);
-
-	DRM_DEBUG_KMS(":%d\n", connector->base.id);
 
 	return connector;
 }
 
-static void dm_dp_destroy_mst_connector(struct drm_dp_mst_topology_mgr *mgr,
-					struct drm_connector *connector)
-{
-	struct amdgpu_dm_connector *aconnector = to_amdgpu_dm_connector(connector);
-
-	DRM_INFO("DM_MST: Disabling connector: %p [id: %d] [master: %p]\n",
-		 aconnector, connector->base.id, aconnector->mst_port);
-
-	if (aconnector->dc_sink) {
-		amdgpu_dm_update_freesync_caps(connector, NULL);
-		dc_link_remove_remote_sink(aconnector->dc_link,
-					   aconnector->dc_sink);
-		dc_sink_release(aconnector->dc_sink);
-		aconnector->dc_sink = NULL;
-		aconnector->dc_link->cur_link_settings.lane_count = 0;
-	}
-
-	drm_connector_unregister(connector);
-	drm_connector_put(connector);
-}
-
 static const struct drm_dp_mst_topology_cbs dm_mst_cbs = {
 	.add_connector = dm_dp_add_mst_connector,
-	.destroy_connector = dm_dp_destroy_mst_connector,
 };
 
 void amdgpu_dm_initialize_dp_connector(struct amdgpu_display_manager *dm,
@@ -585,6 +521,8 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 	int link_timeslots_used;
 	int fair_pbn_alloc;
 
+	pbn_per_timeslot = dm_mst_get_pbn_divider(dc_link);
+
 	for (i = 0; i < count; i++) {
 		if (vars[i].dsc_enabled) {
 			initial_slack[i] = kbps_to_peak_pbn(params[i].bw_range.max_kbps) - vars[i].pbn;
@@ -595,9 +533,6 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 			bpp_increased[i] = true;
 		}
 	}
-
-	pbn_per_timeslot = dc_link_bandwidth_kbps(dc_link,
-			dc_link_get_link_cap(dc_link)) / (8 * 1000 * 54);
 
 	while (remaining_to_increase) {
 		next_index = -1;
@@ -627,7 +562,7 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 							  params[next_index].port->mgr,
 							  params[next_index].port,
 							  vars[next_index].pbn,
-							  dm_mst_get_pbn_divider(dc_link)) < 0)
+							  pbn_per_timeslot) < 0)
 				return;
 			if (!drm_dp_mst_atomic_check(state)) {
 				vars[next_index].bpp_x16 = bpp_x16_from_pbn(params[next_index], vars[next_index].pbn);
@@ -637,7 +572,7 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 								  params[next_index].port->mgr,
 								  params[next_index].port,
 								  vars[next_index].pbn,
-								  dm_mst_get_pbn_divider(dc_link)) < 0)
+								  pbn_per_timeslot) < 0)
 					return;
 			}
 		} else {
@@ -646,7 +581,7 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 							  params[next_index].port->mgr,
 							  params[next_index].port,
 							  vars[next_index].pbn,
-							  dm_mst_get_pbn_divider(dc_link)) < 0)
+							  pbn_per_timeslot) < 0)
 				return;
 			if (!drm_dp_mst_atomic_check(state)) {
 				vars[next_index].bpp_x16 = params[next_index].bw_range.max_target_bpp_x16;
@@ -656,7 +591,7 @@ static void increase_dsc_bpp(struct drm_atomic_state *state,
 								  params[next_index].port->mgr,
 								  params[next_index].port,
 								  vars[next_index].pbn,
-								  dm_mst_get_pbn_divider(dc_link)) < 0)
+								  pbn_per_timeslot) < 0)
 					return;
 			}
 		}
@@ -710,7 +645,7 @@ static void try_disable_dsc(struct drm_atomic_state *state,
 						  params[next_index].port->mgr,
 						  params[next_index].port,
 						  vars[next_index].pbn,
-						  0) < 0)
+						  dm_mst_get_pbn_divider(dc_link)) < 0)
 			return;
 
 		if (!drm_dp_mst_atomic_check(state)) {
@@ -781,7 +716,7 @@ static bool compute_mst_dsc_configs_for_link(struct drm_atomic_state *state,
 						 params[i].port->mgr,
 						 params[i].port,
 						 vars[i].pbn,
-						 0) < 0)
+						 dm_mst_get_pbn_divider(dc_link)) < 0)
 			return false;
 	}
 	if (!drm_dp_mst_atomic_check(state)) {
@@ -809,7 +744,7 @@ static bool compute_mst_dsc_configs_for_link(struct drm_atomic_state *state,
 							  params[i].port->mgr,
 							  params[i].port,
 							  vars[i].pbn,
-							  0) < 0)
+							  dm_mst_get_pbn_divider(dc_link)) < 0)
 				return false;
 		}
 	}
@@ -871,7 +806,7 @@ bool compute_mst_dsc_configs_for_state(struct drm_atomic_state *state,
 		stream = dc_state->streams[i];
 
 		if (stream->timing.flags.DSC == 1)
-			dcn20_add_dsc_to_stream_resource(stream->ctx->dc, dc_state, stream);
+			dc_stream_add_dsc_to_resource(stream->ctx->dc, dc_state, stream);
 	}
 
 	return true;

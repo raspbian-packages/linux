@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2000-2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -84,14 +84,6 @@ kmem_zalloc_large(size_t size, xfs_km_flags_t flags)
 
 #define kmem_zone	kmem_cache
 #define kmem_zone_t	struct kmem_cache
-
-extern void *kmem_zone_alloc(kmem_zone_t *, xfs_km_flags_t);
-
-static inline void *
-kmem_zone_zalloc(kmem_zone_t *zone, xfs_km_flags_t flags)
-{
-	return kmem_zone_alloc(zone, flags | KM_ZERO);
-}
 
 static inline struct page *
 kmem_to_page(void *addr)

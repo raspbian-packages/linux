@@ -30,6 +30,7 @@
 #include "util.h"
 #include "dir.h"
 #include "trace_gfs2.h"
+#include "trans.h"
 
 static void gfs2_log_shutdown(struct gfs2_sbd *sdp);
 
@@ -145,9 +146,6 @@ static void dump_ail_list(struct gfs2_sbd *sdp)
 	struct gfs2_bufdata *bd;
 	struct buffer_head *bh;
 
-	fs_err(sdp, "Error: In gfs2_ail1_flush for ten minutes! t=%d\n",
-	       current->journal_info ? 1 : 0);
-
 	list_for_each_entry_reverse(tr, &sdp->sd_ail1_list, tr_list) {
 		list_for_each_entry_reverse(bd, &tr->tr_ail1_list,
 					    bd_ail_st_list) {
@@ -197,6 +195,8 @@ void gfs2_ail1_flush(struct gfs2_sbd *sdp, struct writeback_control *wbc)
 restart:
 	ret = 0;
 	if (time_after(jiffies, flush_start + (HZ * 600))) {
+		fs_err(sdp, "Error: In %s for ten minutes! t=%d\n",
+		       __func__, current->journal_info ? 1 : 0);
 		dump_ail_list(sdp);
 		goto out;
 	}
@@ -379,7 +379,7 @@ static void ail2_empty(struct gfs2_sbd *sdp, unsigned int new_tail)
 		list_del(&tr->tr_list);
 		gfs2_assert_warn(sdp, list_empty(&tr->tr_ail1_list));
 		gfs2_assert_warn(sdp, list_empty(&tr->tr_ail2_list));
-		kfree(tr);
+		gfs2_trans_free(sdp, tr);
 	}
 
 	spin_unlock(&sdp->sd_ail_lock);
@@ -867,16 +867,68 @@ static void ail_drain(struct gfs2_sbd *sdp)
 		gfs2_ail_empty_tr(sdp, tr, &tr->tr_ail1_list);
 		gfs2_ail_empty_tr(sdp, tr, &tr->tr_ail2_list);
 		list_del(&tr->tr_list);
-		kfree(tr);
+		gfs2_trans_free(sdp, tr);
 	}
 	while (!list_empty(&sdp->sd_ail2_list)) {
 		tr = list_first_entry(&sdp->sd_ail2_list, struct gfs2_trans,
 				      tr_list);
 		gfs2_ail_empty_tr(sdp, tr, &tr->tr_ail2_list);
 		list_del(&tr->tr_list);
-		kfree(tr);
+		gfs2_trans_free(sdp, tr);
 	}
 	spin_unlock(&sdp->sd_ail_lock);
+}
+
+/**
+ * empty_ail1_list - try to start IO and empty the ail1 list
+ * @sdp: Pointer to GFS2 superblock
+ */
+static void empty_ail1_list(struct gfs2_sbd *sdp)
+{
+	unsigned long start = jiffies;
+
+	for (;;) {
+		if (time_after(jiffies, start + (HZ * 600))) {
+			fs_err(sdp, "Error: In %s for 10 minutes! t=%d\n",
+			       __func__, current->journal_info ? 1 : 0);
+			dump_ail_list(sdp);
+			return;
+		}
+		gfs2_ail1_start(sdp);
+		gfs2_ail1_wait(sdp);
+		if (gfs2_ail1_empty(sdp, 0))
+			return;
+	}
+}
+
+/**
+ * drain_bd - drain the buf and databuf queue for a failed transaction
+ * @tr: the transaction to drain
+ *
+ * When this is called, we're taking an error exit for a log write that failed
+ * but since we bypassed the after_commit functions, we need to remove the
+ * items from the buf and databuf queue.
+ */
+static void trans_drain(struct gfs2_trans *tr)
+{
+	struct gfs2_bufdata *bd;
+	struct list_head *head;
+
+	if (!tr)
+		return;
+
+	head = &tr->tr_buf;
+	while (!list_empty(head)) {
+		bd = list_first_entry(head, struct gfs2_bufdata, bd_list);
+		list_del_init(&bd->bd_list);
+		kmem_cache_free(gfs2_bufdata_cachep, bd);
+	}
+	head = &tr->tr_databuf;
+	while (!list_empty(head)) {
+		bd = list_first_entry(head, struct gfs2_bufdata, bd_list);
+		list_del_init(&bd->bd_list);
+		kmem_cache_free(gfs2_bufdata_cachep, bd);
+	}
 }
 
 /**
@@ -902,10 +954,8 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl, u32 flags)
 		goto out;
 
 	/* Log might have been flushed while we waited for the flush lock */
-	if (gl && !test_bit(GLF_LFLUSH, &gl->gl_flags)) {
-		up_write(&sdp->sd_log_flush_lock);
-		return;
-	}
+	if (gl && !test_bit(GLF_LFLUSH, &gl->gl_flags))
+		goto out;
 	trace_gfs2_log_flush(sdp, 1, flags);
 
 	if (flags & GFS2_LOG_HEAD_FLUSH_SHUTDOWN)
@@ -915,31 +965,29 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl, u32 flags)
 	tr = sdp->sd_log_tr;
 	if (tr) {
 		sdp->sd_log_tr = NULL;
-		INIT_LIST_HEAD(&tr->tr_ail1_list);
-		INIT_LIST_HEAD(&tr->tr_ail2_list);
 		tr->tr_first = sdp->sd_log_flush_head;
 		if (unlikely (state == SFS_FROZEN))
 			if (gfs2_assert_withdraw_delayed(sdp,
 			       !tr->tr_num_buf_new && !tr->tr_num_databuf_new))
-				goto out;
+				goto out_withdraw;
 	}
 
 	if (unlikely(state == SFS_FROZEN))
 		if (gfs2_assert_withdraw_delayed(sdp, !sdp->sd_log_num_revoke))
-			goto out;
+			goto out_withdraw;
 	if (gfs2_assert_withdraw_delayed(sdp,
 			sdp->sd_log_num_revoke == sdp->sd_log_committed_revoke))
-		goto out;
+		goto out_withdraw;
 
 	gfs2_ordered_write(sdp);
 	if (gfs2_withdrawn(sdp))
-		goto out;
+		goto out_withdraw;
 	lops_before_commit(sdp, tr);
 	if (gfs2_withdrawn(sdp))
-		goto out;
+		goto out_withdraw;
 	gfs2_log_submit_bio(&sdp->sd_log_bio, REQ_OP_WRITE);
 	if (gfs2_withdrawn(sdp))
-		goto out;
+		goto out_withdraw;
 
 	if (sdp->sd_log_head != sdp->sd_log_flush_head) {
 		log_flush_wait(sdp);
@@ -950,7 +998,7 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl, u32 flags)
 		log_write_header(sdp, flags);
 	}
 	if (gfs2_withdrawn(sdp))
-		goto out;
+		goto out_withdraw;
 	lops_after_commit(sdp, tr);
 
 	gfs2_log_lock(sdp);
@@ -968,14 +1016,9 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl, u32 flags)
 
 	if (!(flags & GFS2_LOG_HEAD_FLUSH_NORMAL)) {
 		if (!sdp->sd_log_idle) {
-			for (;;) {
-				gfs2_ail1_start(sdp);
-				gfs2_ail1_wait(sdp);
-				if (gfs2_ail1_empty(sdp, 0))
-					break;
-			}
+			empty_ail1_list(sdp);
 			if (gfs2_withdrawn(sdp))
-				goto out;
+				goto out_withdraw;
 			atomic_dec(&sdp->sd_log_blks_free); /* Adjust for unreserved buffer */
 			trace_gfs2_log_blocks(sdp, -1);
 			log_write_header(sdp, flags);
@@ -988,26 +1031,30 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl, u32 flags)
 			atomic_set(&sdp->sd_freeze_state, SFS_FROZEN);
 	}
 
-out:
-	if (gfs2_withdrawn(sdp)) {
-		/**
-		 * If the tr_list is empty, we're withdrawing during a log
-		 * flush that targets a transaction, but the transaction was
-		 * never queued onto any of the ail lists. Here we add it to
-		 * ail1 just so that ail_drain() will find and free it.
-		 */
-		spin_lock(&sdp->sd_ail_lock);
-		if (tr && list_empty(&tr->tr_list))
-			list_add(&tr->tr_list, &sdp->sd_ail1_list);
-		spin_unlock(&sdp->sd_ail_lock);
-		ail_drain(sdp); /* frees all transactions */
-		tr = NULL;
-	}
-
+out_end:
 	trace_gfs2_log_flush(sdp, 0, flags);
+out:
 	up_write(&sdp->sd_log_flush_lock);
+	gfs2_trans_free(sdp, tr);
+	if (gfs2_withdrawing(sdp))
+		gfs2_withdraw(sdp);
+	return;
 
-	kfree(tr);
+out_withdraw:
+	trans_drain(tr);
+	/**
+	 * If the tr_list is empty, we're withdrawing during a log
+	 * flush that targets a transaction, but the transaction was
+	 * never queued onto any of the ail lists. Here we add it to
+	 * ail1 just so that ail_drain() will find and free it.
+	 */
+	spin_lock(&sdp->sd_ail_lock);
+	if (tr && list_empty(&tr->tr_list))
+		list_add(&tr->tr_list, &sdp->sd_ail1_list);
+	spin_unlock(&sdp->sd_ail_lock);
+	ail_drain(sdp); /* frees all transactions */
+	tr = NULL;
+	goto out_end;
 }
 
 /**
@@ -1077,7 +1124,7 @@ static void log_refund(struct gfs2_sbd *sdp, struct gfs2_trans *tr)
  * or the total number of used blocks (pinned blocks plus AIL blocks)
  * is greater than thresh2.
  *
- * At mount time thresh1 is 1/3rd of journal size, thresh2 is 2/3rd of
+ * At mount time thresh1 is 2/5ths of journal size, thresh2 is 4/5ths of
  * journal size.
  *
  * Returns: errno

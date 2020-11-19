@@ -32,7 +32,7 @@
 
 #define SETFL_MASK (O_APPEND | O_NONBLOCK | O_NDELAY | O_DIRECT | O_NOATIME)
 
-int setfl(int fd, struct file *filp, unsigned long arg)
+static int setfl(int fd, struct file * filp, unsigned long arg)
 {
 	struct inode * inode = file_inode(filp);
 	int error = 0;
@@ -63,8 +63,6 @@ int setfl(int fd, struct file *filp, unsigned long arg)
 
 	if (filp->f_op->check_flags)
 		error = filp->f_op->check_flags(arg);
-	if (!error && filp->f_op->setfl)
-		error = filp->f_op->setfl(filp, arg);
 	if (error)
 		return error;
 
@@ -85,7 +83,6 @@ int setfl(int fd, struct file *filp, unsigned long arg)
  out:
 	return error;
 }
-EXPORT_SYMBOL_GPL(setfl);
 
 static void f_modown(struct file *filp, struct pid *pid, enum pid_type type,
                      int force)
@@ -365,7 +362,7 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
 	case F_OFD_SETLK:
 	case F_OFD_SETLKW:
 #endif
-		/* Fallthrough */
+		fallthrough;
 	case F_SETLK:
 	case F_SETLKW:
 		if (copy_from_user(&flock, argp, sizeof(flock)))
@@ -774,7 +771,7 @@ static void send_sigio_to_task(struct task_struct *p,
 			if (!do_send_sig_info(signum, &si, p, type))
 				break;
 		}
-		/* fall-through - fall back on the old plain SIGIO signal */
+			fallthrough;	/* fall back on the old plain SIGIO signal */
 		case 0:
 			do_send_sig_info(SIGIO, SEND_SIG_PRIV, p, type);
 	}

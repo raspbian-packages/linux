@@ -10,7 +10,6 @@
 #include <linux/errno.h>
 #include <linux/sched/signal.h>
 #include <linux/mm.h>
-#include <linux/mmu_context.h>
 #include <linux/sched/mm.h>
 #include <linux/percpu.h>
 #include <linux/slab.h>
@@ -61,6 +60,7 @@ struct io_worker {
 	const struct cred *cur_creds;
 	const struct cred *saved_creds;
 	struct files_struct *restore_files;
+	struct nsproxy *restore_nsproxy;
 	struct fs_struct *restore_fs;
 };
 
@@ -88,7 +88,7 @@ enum {
  */
 struct io_wqe {
 	struct {
-		spinlock_t lock;
+		raw_spinlock_t lock;
 		struct io_wq_work_list work_list;
 		unsigned long hash_map;
 		unsigned flags;
@@ -112,6 +112,7 @@ struct io_wq {
 	unsigned long state;
 
 	free_work_fn *free_work;
+	io_wq_work_fn *do_work;
 
 	struct task_struct *manager;
 	struct user_struct *user;
@@ -148,11 +149,12 @@ static bool __io_worker_unuse(struct io_wqe *wqe, struct io_worker *worker)
 
 	if (current->files != worker->restore_files) {
 		__acquire(&wqe->lock);
-		spin_unlock_irq(&wqe->lock);
+		raw_spin_unlock_irq(&wqe->lock);
 		dropped_lock = true;
 
 		task_lock(current);
 		current->files = worker->restore_files;
+		current->nsproxy = worker->restore_nsproxy;
 		task_unlock(current);
 	}
 
@@ -166,12 +168,11 @@ static bool __io_worker_unuse(struct io_wqe *wqe, struct io_worker *worker)
 	if (worker->mm) {
 		if (!dropped_lock) {
 			__acquire(&wqe->lock);
-			spin_unlock_irq(&wqe->lock);
+			raw_spin_unlock_irq(&wqe->lock);
 			dropped_lock = true;
 		}
 		__set_current_state(TASK_RUNNING);
-		set_fs(KERNEL_DS);
-		unuse_mm(worker->mm);
+		kthread_unuse_mm(worker->mm);
 		mmput(worker->mm);
 		worker->mm = NULL;
 	}
@@ -201,7 +202,6 @@ static void io_worker_exit(struct io_worker *worker)
 {
 	struct io_wqe *wqe = worker->wqe;
 	struct io_wqe_acct *acct = io_wqe_get_acct(wqe, worker);
-	unsigned nr_workers;
 
 	/*
 	 * If we're not at zero, someone else is holding a brief reference
@@ -221,23 +221,19 @@ static void io_worker_exit(struct io_worker *worker)
 	worker->flags = 0;
 	preempt_enable();
 
-	spin_lock_irq(&wqe->lock);
+	raw_spin_lock_irq(&wqe->lock);
 	hlist_nulls_del_rcu(&worker->nulls_node);
 	list_del_rcu(&worker->all_list);
 	if (__io_worker_unuse(wqe, worker)) {
 		__release(&wqe->lock);
-		spin_lock_irq(&wqe->lock);
+		raw_spin_lock_irq(&wqe->lock);
 	}
 	acct->nr_workers--;
-	nr_workers = wqe->acct[IO_WQ_ACCT_BOUND].nr_workers +
-			wqe->acct[IO_WQ_ACCT_UNBOUND].nr_workers;
-	spin_unlock_irq(&wqe->lock);
-
-	/* all workers gone, wq exit can proceed */
-	if (!nr_workers && refcount_dec_and_test(&wqe->wq->refs))
-		complete(&wqe->wq->done);
+	raw_spin_unlock_irq(&wqe->lock);
 
 	kfree_rcu(worker, rcu);
+	if (refcount_dec_and_test(&wqe->wq->refs))
+		complete(&wqe->wq->done);
 }
 
 static inline bool io_wqe_run_queue(struct io_wqe *wqe)
@@ -319,6 +315,7 @@ static void io_worker_start(struct io_wqe *wqe, struct io_worker *worker)
 
 	worker->flags |= (IO_WORKER_F_UP | IO_WORKER_F_RUNNING);
 	worker->restore_files = current->files;
+	worker->restore_nsproxy = current->nsproxy;
 	worker->restore_fs = current->fs;
 	io_wqe_inc_running(wqe, worker);
 }
@@ -418,18 +415,15 @@ static struct io_wq_work *io_get_next_work(struct io_wqe *wqe)
 static void io_wq_switch_mm(struct io_worker *worker, struct io_wq_work *work)
 {
 	if (worker->mm) {
-		unuse_mm(worker->mm);
+		kthread_unuse_mm(worker->mm);
 		mmput(worker->mm);
 		worker->mm = NULL;
 	}
-	if (!work->mm) {
-		set_fs(KERNEL_DS);
+	if (!work->mm)
 		return;
-	}
+
 	if (mmget_not_zero(work->mm)) {
-		use_mm(work->mm);
-		if (!worker->mm)
-			set_fs(USER_DS);
+		kthread_use_mm(work->mm);
 		worker->mm = work->mm;
 		/* hang on to this mm */
 		work->mm = NULL;
@@ -458,6 +452,7 @@ static void io_impersonate_work(struct io_worker *worker,
 	if (work->files && current->files != work->files) {
 		task_lock(current);
 		current->files = work->files;
+		current->nsproxy = work->nsproxy;
 		task_unlock(current);
 	}
 	if (work->fs && current->fs != work->fs)
@@ -466,6 +461,7 @@ static void io_impersonate_work(struct io_worker *worker,
 		io_wq_switch_mm(worker, work);
 	if (worker->cur_creds != work->creds)
 		io_wq_switch_creds(worker, work);
+	current->signal->rlim[RLIMIT_FSIZE].rlim_cur = work->fsize;
 }
 
 static void io_assign_current_work(struct io_worker *worker,
@@ -493,7 +489,6 @@ static void io_worker_handle_work(struct io_worker *worker)
 
 	do {
 		struct io_wq_work *work;
-		unsigned int hash;
 get_next:
 		/*
 		 * If we got some work, mark us as busy. If we didn't, but
@@ -508,7 +503,7 @@ get_next:
 		else if (!wq_list_empty(&wqe->work_list))
 			wqe->flags |= IO_WQE_FLAG_STALLED;
 
-		spin_unlock_irq(&wqe->lock);
+		raw_spin_unlock_irq(&wqe->lock);
 		if (!work)
 			break;
 		io_assign_current_work(worker, work);
@@ -516,6 +511,7 @@ get_next:
 		/* handle a whole dependent link */
 		do {
 			struct io_wq_work *old_work, *next_hashed, *linked;
+			unsigned int hash = io_get_work_hash(work);
 
 			next_hashed = wq_next_work(work);
 			io_impersonate_work(worker, work);
@@ -526,10 +522,8 @@ get_next:
 			if (test_bit(IO_WQ_BIT_CANCEL, &wq->state))
 				work->flags |= IO_WQ_WORK_CANCEL;
 
-			hash = io_get_work_hash(work);
-			linked = old_work = work;
-			linked->func(&linked);
-			linked = (old_work == linked) ? NULL : linked;
+			old_work = work;
+			linked = wq->do_work(work);
 
 			work = next_hashed;
 			if (!work && linked && !io_wq_is_hashed(linked)) {
@@ -543,19 +537,17 @@ get_next:
 				io_wqe_enqueue(wqe, linked);
 
 			if (hash != -1U && !next_hashed) {
-				spin_lock_irq(&wqe->lock);
+				raw_spin_lock_irq(&wqe->lock);
 				wqe->hash_map &= ~BIT_ULL(hash);
 				wqe->flags &= ~IO_WQE_FLAG_STALLED;
-				/* dependent work is not hashed */
-				hash = -1U;
 				/* skip unnecessary unlock-lock wqe->lock */
 				if (!work)
 					goto get_next;
-				spin_unlock_irq(&wqe->lock);
+				raw_spin_unlock_irq(&wqe->lock);
 			}
 		} while (work);
 
-		spin_lock_irq(&wqe->lock);
+		raw_spin_lock_irq(&wqe->lock);
 	} while (1);
 }
 
@@ -570,7 +562,7 @@ static int io_wqe_worker(void *data)
 	while (!test_bit(IO_WQ_BIT_EXIT, &wq->state)) {
 		set_current_state(TASK_INTERRUPTIBLE);
 loop:
-		spin_lock_irq(&wqe->lock);
+		raw_spin_lock_irq(&wqe->lock);
 		if (io_wqe_run_queue(wqe)) {
 			__set_current_state(TASK_RUNNING);
 			io_worker_handle_work(worker);
@@ -581,7 +573,7 @@ loop:
 			__release(&wqe->lock);
 			goto loop;
 		}
-		spin_unlock_irq(&wqe->lock);
+		raw_spin_unlock_irq(&wqe->lock);
 		if (signal_pending(current))
 			flush_signals(current);
 		if (schedule_timeout(WORKER_IDLE_TIMEOUT))
@@ -593,11 +585,11 @@ loop:
 	}
 
 	if (test_bit(IO_WQ_BIT_EXIT, &wq->state)) {
-		spin_lock_irq(&wqe->lock);
+		raw_spin_lock_irq(&wqe->lock);
 		if (!wq_list_empty(&wqe->work_list))
 			io_worker_handle_work(worker);
 		else
-			spin_unlock_irq(&wqe->lock);
+			raw_spin_unlock_irq(&wqe->lock);
 	}
 
 	io_worker_exit(worker);
@@ -637,14 +629,14 @@ void io_wq_worker_sleeping(struct task_struct *tsk)
 
 	worker->flags &= ~IO_WORKER_F_RUNNING;
 
-	spin_lock_irq(&wqe->lock);
+	raw_spin_lock_irq(&wqe->lock);
 	io_wqe_dec_running(wqe, worker);
-	spin_unlock_irq(&wqe->lock);
+	raw_spin_unlock_irq(&wqe->lock);
 }
 
 static bool create_io_worker(struct io_wq *wq, struct io_wqe *wqe, int index)
 {
-	struct io_wqe_acct *acct =&wqe->acct[index];
+	struct io_wqe_acct *acct = &wqe->acct[index];
 	struct io_worker *worker;
 
 	worker = kzalloc_node(sizeof(*worker), GFP_KERNEL, wqe->node);
@@ -662,8 +654,9 @@ static bool create_io_worker(struct io_wq *wq, struct io_wqe *wqe, int index)
 		kfree(worker);
 		return false;
 	}
+	kthread_bind_mask(worker->task, cpumask_of_node(wqe->node));
 
-	spin_lock_irq(&wqe->lock);
+	raw_spin_lock_irq(&wqe->lock);
 	hlist_nulls_add_head_rcu(&worker->nulls_node, &wqe->free_list);
 	list_add_tail_rcu(&worker->all_list, &wqe->all_list);
 	worker->flags |= IO_WORKER_F_FREE;
@@ -672,11 +665,12 @@ static bool create_io_worker(struct io_wq *wq, struct io_wqe *wqe, int index)
 	if (!acct->nr_workers && (worker->flags & IO_WORKER_F_BOUND))
 		worker->flags |= IO_WORKER_F_FIXED;
 	acct->nr_workers++;
-	spin_unlock_irq(&wqe->lock);
+	raw_spin_unlock_irq(&wqe->lock);
 
 	if (index == IO_WQ_ACCT_UNBOUND)
 		atomic_inc(&wq->user->processes);
 
+	refcount_inc(&wq->refs);
 	wake_up_process(worker->task);
 	return true;
 }
@@ -692,27 +686,62 @@ static inline bool io_wqe_need_worker(struct io_wqe *wqe, int index)
 	return acct->nr_workers < acct->max_workers;
 }
 
+static bool io_wqe_worker_send_sig(struct io_worker *worker, void *data)
+{
+	send_sig(SIGINT, worker->task, 1);
+	return false;
+}
+
+/*
+ * Iterate the passed in list and call the specific function for each
+ * worker that isn't exiting
+ */
+static bool io_wq_for_each_worker(struct io_wqe *wqe,
+				  bool (*func)(struct io_worker *, void *),
+				  void *data)
+{
+	struct io_worker *worker;
+	bool ret = false;
+
+	list_for_each_entry_rcu(worker, &wqe->all_list, all_list) {
+		if (io_worker_get(worker)) {
+			/* no task if node is/was offline */
+			if (worker->task)
+				ret = func(worker, data);
+			io_worker_release(worker);
+			if (ret)
+				break;
+		}
+	}
+
+	return ret;
+}
+
+static bool io_wq_worker_wake(struct io_worker *worker, void *data)
+{
+	wake_up_process(worker->task);
+	return false;
+}
+
 /*
  * Manager thread. Tasked with creating new workers, if we need them.
  */
 static int io_wq_manager(void *data)
 {
 	struct io_wq *wq = data;
-	int workers_to_create = num_possible_nodes();
 	int node;
 
 	/* create fixed workers */
-	refcount_set(&wq->refs, workers_to_create);
+	refcount_set(&wq->refs, 1);
 	for_each_node(node) {
 		if (!node_online(node))
 			continue;
-		if (!create_io_worker(wq, wq->wqes[node], IO_WQ_ACCT_BOUND))
-			goto err;
-		workers_to_create--;
+		if (create_io_worker(wq, wq->wqes[node], IO_WQ_ACCT_BOUND))
+			continue;
+		set_bit(IO_WQ_BIT_ERROR, &wq->state);
+		set_bit(IO_WQ_BIT_EXIT, &wq->state);
+		goto out;
 	}
-
-	while (workers_to_create--)
-		refcount_dec(&wq->refs);
 
 	complete(&wq->done);
 
@@ -727,12 +756,12 @@ static int io_wq_manager(void *data)
 			if (!node_online(node))
 				continue;
 
-			spin_lock_irq(&wqe->lock);
+			raw_spin_lock_irq(&wqe->lock);
 			if (io_wqe_need_worker(wqe, IO_WQ_ACCT_BOUND))
 				fork_worker[IO_WQ_ACCT_BOUND] = true;
 			if (io_wqe_need_worker(wqe, IO_WQ_ACCT_UNBOUND))
 				fork_worker[IO_WQ_ACCT_UNBOUND] = true;
-			spin_unlock_irq(&wqe->lock);
+			raw_spin_unlock_irq(&wqe->lock);
 			if (fork_worker[IO_WQ_ACCT_BOUND])
 				create_io_worker(wq, wqe, IO_WQ_ACCT_BOUND);
 			if (fork_worker[IO_WQ_ACCT_UNBOUND])
@@ -745,12 +774,18 @@ static int io_wq_manager(void *data)
 	if (current->task_works)
 		task_work_run();
 
-	return 0;
-err:
-	set_bit(IO_WQ_BIT_ERROR, &wq->state);
-	set_bit(IO_WQ_BIT_EXIT, &wq->state);
-	if (refcount_sub_and_test(workers_to_create, &wq->refs))
+out:
+	if (refcount_dec_and_test(&wq->refs)) {
 		complete(&wq->done);
+		return 0;
+	}
+	/* if ERROR is set and we get here, we have workers to wake */
+	if (test_bit(IO_WQ_BIT_ERROR, &wq->state)) {
+		rcu_read_lock();
+		for_each_node(node)
+			io_wq_for_each_worker(wq->wqes[node], io_wq_worker_wake, NULL);
+		rcu_read_unlock();
+	}
 	return 0;
 }
 
@@ -785,8 +820,7 @@ static void io_run_cancel(struct io_wq_work *work, struct io_wqe *wqe)
 		struct io_wq_work *old_work = work;
 
 		work->flags |= IO_WQ_WORK_CANCEL;
-		work->func(&work);
-		work = (work == old_work) ? NULL : work;
+		work = wq->do_work(work);
 		wq->free_work(old_work);
 	} while (work);
 }
@@ -829,10 +863,10 @@ static void io_wqe_enqueue(struct io_wqe *wqe, struct io_wq_work *work)
 	}
 
 	work_flags = work->flags;
-	spin_lock_irqsave(&wqe->lock, flags);
+	raw_spin_lock_irqsave(&wqe->lock, flags);
 	io_wqe_insert_work(wqe, work);
 	wqe->flags &= ~IO_WQE_FLAG_STALLED;
-	spin_unlock_irqrestore(&wqe->lock, flags);
+	raw_spin_unlock_irqrestore(&wqe->lock, flags);
 
 	if ((work_flags & IO_WQ_WORK_CONCURRENT) ||
 	    !atomic_read(&acct->nr_running))
@@ -858,37 +892,6 @@ void io_wq_hash_work(struct io_wq_work *work, void *val)
 	work->flags |= (IO_WQ_WORK_HASHED | (bit << IO_WQ_HASH_SHIFT));
 }
 
-static bool io_wqe_worker_send_sig(struct io_worker *worker, void *data)
-{
-	send_sig(SIGINT, worker->task, 1);
-	return false;
-}
-
-/*
- * Iterate the passed in list and call the specific function for each
- * worker that isn't exiting
- */
-static bool io_wq_for_each_worker(struct io_wqe *wqe,
-				  bool (*func)(struct io_worker *, void *),
-				  void *data)
-{
-	struct io_worker *worker;
-	bool ret = false;
-
-	list_for_each_entry_rcu(worker, &wqe->all_list, all_list) {
-		if (io_worker_get(worker)) {
-			/* no task if node is/was offline */
-			if (worker->task)
-				ret = func(worker, data);
-			io_worker_release(worker);
-			if (ret)
-				break;
-		}
-	}
-
-	return ret;
-}
-
 void io_wq_cancel_all(struct io_wq *wq)
 {
 	int node;
@@ -907,13 +910,15 @@ void io_wq_cancel_all(struct io_wq *wq)
 struct io_cb_cancel_data {
 	work_cancel_fn *fn;
 	void *data;
+	int nr_running;
+	int nr_pending;
+	bool cancel_all;
 };
 
 static bool io_wq_worker_cancel(struct io_worker *worker, void *data)
 {
 	struct io_cb_cancel_data *match = data;
 	unsigned long flags;
-	bool ret = false;
 
 	/*
 	 * Hold the lock to avoid ->cur_work going out of scope, caller
@@ -924,41 +929,86 @@ static bool io_wq_worker_cancel(struct io_worker *worker, void *data)
 	    !(worker->cur_work->flags & IO_WQ_WORK_NO_CANCEL) &&
 	    match->fn(worker->cur_work, match->data)) {
 		send_sig(SIGINT, worker->task, 1);
-		ret = true;
+		match->nr_running++;
 	}
 	spin_unlock_irqrestore(&worker->lock, flags);
 
-	return ret;
+	return match->nr_running && !match->cancel_all;
 }
 
-static enum io_wq_cancel io_wqe_cancel_work(struct io_wqe *wqe,
-					    struct io_cb_cancel_data *match)
+static inline void io_wqe_remove_pending(struct io_wqe *wqe,
+					 struct io_wq_work *work,
+					 struct io_wq_work_node *prev)
+{
+	unsigned int hash = io_get_work_hash(work);
+	struct io_wq_work *prev_work = NULL;
+
+	if (io_wq_is_hashed(work) && work == wqe->hash_tail[hash]) {
+		if (prev)
+			prev_work = container_of(prev, struct io_wq_work, list);
+		if (prev_work && io_get_work_hash(prev_work) == hash)
+			wqe->hash_tail[hash] = prev_work;
+		else
+			wqe->hash_tail[hash] = NULL;
+	}
+	wq_list_del(&wqe->work_list, &work->list, prev);
+}
+
+static void io_wqe_cancel_pending_work(struct io_wqe *wqe,
+				       struct io_cb_cancel_data *match)
 {
 	struct io_wq_work_node *node, *prev;
 	struct io_wq_work *work;
 	unsigned long flags;
-	bool found = false;
+
+retry:
+	raw_spin_lock_irqsave(&wqe->lock, flags);
+	wq_list_for_each(node, prev, &wqe->work_list) {
+		work = container_of(node, struct io_wq_work, list);
+		if (!match->fn(work, match->data))
+			continue;
+		io_wqe_remove_pending(wqe, work, prev);
+		raw_spin_unlock_irqrestore(&wqe->lock, flags);
+		io_run_cancel(work, wqe);
+		match->nr_pending++;
+		if (!match->cancel_all)
+			return;
+
+		/* not safe to continue after unlock */
+		goto retry;
+	}
+	raw_spin_unlock_irqrestore(&wqe->lock, flags);
+}
+
+static void io_wqe_cancel_running_work(struct io_wqe *wqe,
+				       struct io_cb_cancel_data *match)
+{
+	rcu_read_lock();
+	io_wq_for_each_worker(wqe, io_wq_worker_cancel, match);
+	rcu_read_unlock();
+}
+
+enum io_wq_cancel io_wq_cancel_cb(struct io_wq *wq, work_cancel_fn *cancel,
+				  void *data, bool cancel_all)
+{
+	struct io_cb_cancel_data match = {
+		.fn		= cancel,
+		.data		= data,
+		.cancel_all	= cancel_all,
+	};
+	int node;
 
 	/*
 	 * First check pending list, if we're lucky we can just remove it
 	 * from there. CANCEL_OK means that the work is returned as-new,
 	 * no completion will be posted for it.
 	 */
-	spin_lock_irqsave(&wqe->lock, flags);
-	wq_list_for_each(node, prev, &wqe->work_list) {
-		work = container_of(node, struct io_wq_work, list);
+	for_each_node(node) {
+		struct io_wqe *wqe = wq->wqes[node];
 
-		if (match->fn(work, match->data)) {
-			wq_list_del(&wqe->work_list, node, prev);
-			found = true;
-			break;
-		}
-	}
-	spin_unlock_irqrestore(&wqe->lock, flags);
-
-	if (found) {
-		io_run_cancel(work, wqe);
-		return IO_WQ_CANCEL_OK;
+		io_wqe_cancel_pending_work(wqe, &match);
+		if (match.nr_pending && !match.cancel_all)
+			return IO_WQ_CANCEL_OK;
 	}
 
 	/*
@@ -967,31 +1017,19 @@ static enum io_wq_cancel io_wqe_cancel_work(struct io_wqe *wqe,
 	 * as an indication that we attempt to signal cancellation. The
 	 * completion will run normally in this case.
 	 */
-	rcu_read_lock();
-	found = io_wq_for_each_worker(wqe, io_wq_worker_cancel, match);
-	rcu_read_unlock();
-	return found ? IO_WQ_CANCEL_RUNNING : IO_WQ_CANCEL_NOTFOUND;
-}
-
-enum io_wq_cancel io_wq_cancel_cb(struct io_wq *wq, work_cancel_fn *cancel,
-				  void *data)
-{
-	struct io_cb_cancel_data match = {
-		.fn	= cancel,
-		.data	= data,
-	};
-	enum io_wq_cancel ret = IO_WQ_CANCEL_NOTFOUND;
-	int node;
-
 	for_each_node(node) {
 		struct io_wqe *wqe = wq->wqes[node];
 
-		ret = io_wqe_cancel_work(wqe, &match);
-		if (ret != IO_WQ_CANCEL_NOTFOUND)
-			break;
+		io_wqe_cancel_running_work(wqe, &match);
+		if (match.nr_running && !match.cancel_all)
+			return IO_WQ_CANCEL_RUNNING;
 	}
 
-	return ret;
+	if (match.nr_running)
+		return IO_WQ_CANCEL_RUNNING;
+	if (match.nr_pending)
+		return IO_WQ_CANCEL_OK;
+	return IO_WQ_CANCEL_NOTFOUND;
 }
 
 static bool io_wq_io_cb_cancel_data(struct io_wq_work *work, void *data)
@@ -1001,21 +1039,7 @@ static bool io_wq_io_cb_cancel_data(struct io_wq_work *work, void *data)
 
 enum io_wq_cancel io_wq_cancel_work(struct io_wq *wq, struct io_wq_work *cwork)
 {
-	return io_wq_cancel_cb(wq, io_wq_io_cb_cancel_data, (void *)cwork);
-}
-
-static bool io_wq_pid_match(struct io_wq_work *work, void *data)
-{
-	pid_t pid = (pid_t) (unsigned long) data;
-
-	return work->task_pid == pid;
-}
-
-enum io_wq_cancel io_wq_cancel_pid(struct io_wq *wq, pid_t pid)
-{
-	void *data = (void *) (unsigned long) pid;
-
-	return io_wq_cancel_cb(wq, io_wq_pid_match, data);
+	return io_wq_cancel_cb(wq, io_wq_io_cb_cancel_data, (void *)cwork, false);
 }
 
 struct io_wq *io_wq_create(unsigned bounded, struct io_wq_data *data)
@@ -1023,7 +1047,7 @@ struct io_wq *io_wq_create(unsigned bounded, struct io_wq_data *data)
 	int ret = -ENOMEM, node;
 	struct io_wq *wq;
 
-	if (WARN_ON_ONCE(!data->free_work))
+	if (WARN_ON_ONCE(!data->free_work || !data->do_work))
 		return ERR_PTR(-EINVAL);
 
 	wq = kzalloc(sizeof(*wq), GFP_KERNEL);
@@ -1037,6 +1061,7 @@ struct io_wq *io_wq_create(unsigned bounded, struct io_wq_data *data)
 	}
 
 	wq->free_work = data->free_work;
+	wq->do_work = data->do_work;
 
 	/* caller must already hold a reference to this */
 	wq->user = data->user;
@@ -1060,7 +1085,7 @@ struct io_wq *io_wq_create(unsigned bounded, struct io_wq_data *data)
 		}
 		atomic_set(&wqe->acct[IO_WQ_ACCT_UNBOUND].nr_running, 0);
 		wqe->wq = wq;
-		spin_lock_init(&wqe->lock);
+		raw_spin_lock_init(&wqe->lock);
 		INIT_WQ_LIST(&wqe->work_list);
 		INIT_HLIST_NULLS_HEAD(&wqe->free_list, 0);
 		INIT_LIST_HEAD(&wqe->all_list);
@@ -1093,16 +1118,10 @@ err:
 
 bool io_wq_get(struct io_wq *wq, struct io_wq_data *data)
 {
-	if (data->free_work != wq->free_work)
+	if (data->free_work != wq->free_work || data->do_work != wq->do_work)
 		return false;
 
 	return refcount_inc_not_zero(&wq->use_refs);
-}
-
-static bool io_wq_worker_wake(struct io_worker *worker, void *data)
-{
-	wake_up_process(worker->task);
-	return false;
 }
 
 static void __io_wq_destroy(struct io_wq *wq)

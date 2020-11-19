@@ -504,18 +504,7 @@ static void gsm_print_packet(const char *hdr, int addr, int cr,
 	else
 		pr_cont("(F)");
 
-	if (dlen) {
-		int ct = 0;
-		while (dlen--) {
-			if (ct % 8 == 0) {
-				pr_cont("\n");
-				pr_debug("    ");
-			}
-			pr_cont("%02X ", *data++);
-			ct++;
-		}
-	}
-	pr_cont("\n");
+	print_hex_dump_bytes("", DUMP_PREFIX_NONE, data, dlen);
 }
 
 
@@ -1595,7 +1584,7 @@ static void gsm_dlci_data(struct gsm_dlci *dlci, const u8 *data, int clen)
 			gsm_process_modem(tty, dlci, modem, clen);
 			tty_kref_put(tty);
 		}
-		/* Fall through */
+		fallthrough;
 	case 1:		/* Line state will go via DLCI 0 controls only */
 	default:
 		tty_insert_flip_string(port, data, len);
@@ -1997,7 +1986,7 @@ static void gsm1_receive(struct gsm_mux *gsm, unsigned char c)
 		gsm->address = 0;
 		gsm->state = GSM_ADDRESS;
 		gsm->fcs = INIT_FCS;
-		/* Fall through */
+		fallthrough;
 	case GSM_ADDRESS:	/* Address continuation */
 		gsm->fcs = gsm_fcs_add(gsm->fcs, c);
 		if (gsm_read_ea(&gsm->address, c))

@@ -674,11 +674,6 @@ CONFIG_BCM2835_MBOX=y
 ## file: drivers/media/Kconfig
 ##
 CONFIG_MEDIA_SUPPORT=y
-CONFIG_VIDEO_V4L2_SUBDEV_API=y
-
-##
-## file: drivers/media/mc/Kconfig
-##
 CONFIG_MEDIA_CONTROLLER=y
 
 ##
@@ -721,6 +716,11 @@ CONFIG_IR_GPIO_CIR=m
 CONFIG_IR_SUNXI=m
 
 ##
+## file: drivers/media/v4l2-core/Kconfig
+##
+CONFIG_VIDEO_V4L2_SUBDEV_API=y
+
+##
 ## file: drivers/memory/Kconfig
 ##
 CONFIG_TI_EMIF=m
@@ -737,6 +737,7 @@ CONFIG_TEGRA124_EMC=y
 CONFIG_MFD_AS3722=y
 CONFIG_MFD_AC100=y
 CONFIG_MFD_AXP20X_I2C=y
+CONFIG_MFD_AXP20X_RSB=y
 # CONFIG_MFD_CROS_EC_DEV is not set
 CONFIG_MFD_DA9052_SPI=y
 CONFIG_MFD_DA9052_I2C=y
@@ -1022,6 +1023,7 @@ CONFIG_WLCORE_SDIO=m
 ##
 ## file: drivers/nvmem/Kconfig
 ##
+CONFIG_NVMEM_IMX_OCOTP=m
 CONFIG_ROCKCHIP_EFUSE=m
 CONFIG_NVMEM_SUNXI_SID=m
 CONFIG_MESON_MX_EFUSE=m
@@ -1303,6 +1305,21 @@ CONFIG_SPI_TEGRA20_SFLASH=m
 CONFIG_SPI_SLAVE=y
 
 ##
+## file: drivers/staging/media/Kconfig
+##
+CONFIG_STAGING_MEDIA=y
+
+##
+## file: drivers/staging/media/sunxi/Kconfig
+##
+CONFIG_VIDEO_SUNXI=y
+
+##
+## file: drivers/staging/media/sunxi/cedrus/Kconfig
+##
+CONFIG_VIDEO_SUNXI_CEDRUS=m
+
+##
 ## file: drivers/staging/vc04_services/bcm2835-audio/Kconfig
 ##
 CONFIG_SND_BCM2835=m
@@ -1371,8 +1388,10 @@ CONFIG_SERIAL_8250_CONSOLE=y
 CONFIG_SERIAL_8250_DMA=y
 CONFIG_SERIAL_8250_NR_UARTS=5
 CONFIG_SERIAL_8250_RUNTIME_UARTS=5
-# CONFIG_SERIAL_8250_EXTENDED is not set
+CONFIG_SERIAL_8250_EXTENDED=y
 CONFIG_SERIAL_8250_ASPEED_VUART=m
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+CONFIG_SERIAL_8250_BCM2835AUX=y
 CONFIG_SERIAL_8250_DW=y
 # CONFIG_SERIAL_8250_EM is not set
 CONFIG_SERIAL_OF_PLATFORM=y
@@ -1542,6 +1561,11 @@ CONFIG_CMA=y
 ## file: net/dsa/Kconfig
 ##
 CONFIG_NET_DSA=m
+
+##
+## file: net/ncsi/Kconfig
+##
+CONFIG_NET_NCSI=y
 
 ##
 ## file: net/phonet/Kconfig

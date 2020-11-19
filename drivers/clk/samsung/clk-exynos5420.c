@@ -1165,7 +1165,7 @@ static const struct samsung_gate_clock exynos5x_gate_clks[] __initconst = {
 			CLK_IS_CRITICAL, 0),
 	GATE(CLK_GSCL_WB, "gscl_wb", "sclk_gscl_wb", GATE_IP_GSCL1, 13,
 			CLK_IS_CRITICAL, 0),
-	GATE(CLK_SMMU_FIMCL3, "smmu_fimcl3,", "dout_gscl_blk_333",
+	GATE(CLK_SMMU_FIMCL3, "smmu_fimcl3", "dout_gscl_blk_333",
 			GATE_IP_GSCL1, 16, 0, 0),
 	GATE(CLK_FIMC_LITE3, "fimc_lite3", "aclk333_432_gscl",
 			GATE_IP_GSCL1, 17, 0, 0),
@@ -1655,6 +1655,11 @@ static void __init exynos5x_clk_init(struct device_node *np,
 	 * main G3D clock enablement status.
 	 */
 	clk_prepare_enable(__clk_lookup("mout_sw_aclk_g3d"));
+	/*
+	 * Keep top BPLL mux enabled permanently to ensure that DRAM operates
+	 * properly.
+	 */
+	clk_prepare_enable(__clk_lookup("mout_bpll"));
 
 	samsung_clk_of_add_provider(np, ctx);
 }

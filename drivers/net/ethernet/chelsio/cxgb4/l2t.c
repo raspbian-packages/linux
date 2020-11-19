@@ -231,7 +231,7 @@ again:
 		if (e->state == L2T_STATE_STALE)
 			e->state = L2T_STATE_VALID;
 		spin_unlock_bh(&e->lock);
-		/* fall through */
+		fallthrough;
 	case L2T_STATE_VALID:     /* fast-path, send the packet on */
 		return t4_ofld_send(adap, skb);
 	case L2T_STATE_RESOLVING:
@@ -609,6 +609,7 @@ struct l2t_entry *t4_l2t_alloc_switching(struct adapter *adap, u16 vlan,
 }
 
 /**
+ * cxgb4_l2t_alloc_switching - Allocates an L2T entry for switch filters
  * @dev: net_device pointer
  * @vlan: VLAN Id
  * @port: Associated port

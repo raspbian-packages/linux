@@ -345,6 +345,7 @@ enum {
 	GLF_OBJECT			= 14, /* Used only for tracing */
 	GLF_BLOCKING			= 15,
 	GLF_INODE_CREATING		= 16, /* Inode creation occurring */
+	GLF_PENDING_DELETE		= 17,
 	GLF_FREEING			= 18, /* Wait for glock to be freed */
 };
 
@@ -378,8 +379,11 @@ struct gfs2_glock {
 	atomic_t gl_revokes;
 	struct delayed_work gl_work;
 	union {
-		/* For inode and iopen glocks only */
-		struct work_struct gl_delete;
+		/* For iopen glocks only */
+		struct {
+			struct delayed_work gl_delete;
+			u64 gl_no_formal_ino;
+		};
 		/* For rgrp glocks only */
 		struct {
 			loff_t start;
@@ -397,6 +401,7 @@ enum {
 	GIF_SW_PAGED		= 3,
 	GIF_FREE_VFS_INODE      = 5,
 	GIF_GLOP_PENDING	= 6,
+	GIF_DEFERRED_DELETE	= 7,
 };
 
 struct gfs2_inode {
@@ -700,6 +705,7 @@ struct gfs2_sbd {
 	struct super_block *sd_vfs;
 	struct gfs2_pcpu_lkstats __percpu *sd_lkstats;
 	struct kobject sd_kobj;
+	struct completion sd_kobj_unregister;
 	unsigned long sd_flags;	/* SDF_... */
 	struct gfs2_sb_host sd_sb;
 

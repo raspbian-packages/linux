@@ -25,6 +25,7 @@ static void fsnotify_final_destroy_group(struct fsnotify_group *group)
 		group->ops->free_group_priv(group);
 
 	mem_cgroup_put(group->memcg);
+	mutex_destroy(&group->mark_mutex);
 
 	kfree(group);
 }
@@ -99,7 +100,6 @@ void fsnotify_get_group(struct fsnotify_group *group)
 {
 	refcount_inc(&group->refcnt);
 }
-EXPORT_SYMBOL_GPL(fsnotify_get_group);
 
 /*
  * Drop a reference to a group.  Free it if it's through.

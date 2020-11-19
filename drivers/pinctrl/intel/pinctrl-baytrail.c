@@ -1372,13 +1372,13 @@ static void byt_irq_unmask(struct irq_data *d)
 	switch (irqd_get_trigger_type(d)) {
 	case IRQ_TYPE_LEVEL_HIGH:
 		value |= BYT_TRIG_LVL;
-		/* fall through */
+		fallthrough;
 	case IRQ_TYPE_EDGE_RISING:
 		value |= BYT_TRIG_POS;
 		break;
 	case IRQ_TYPE_LEVEL_LOW:
 		value |= BYT_TRIG_LVL;
-		/* fall through */
+		fallthrough;
 	case IRQ_TYPE_EDGE_FALLING:
 		value |= BYT_TRIG_NEG;
 		break;
@@ -1545,8 +1545,7 @@ static int byt_gpio_probe(struct intel_pinctrl *vg)
 {
 	struct platform_device *pdev = to_platform_device(vg->dev);
 	struct gpio_chip *gc;
-	struct resource *irq_rc;
-	int ret;
+	int irq, ret;
 
 	/* Set up gpio chip */
 	vg->chip	= byt_gpio_chip;
@@ -1566,8 +1565,8 @@ static int byt_gpio_probe(struct intel_pinctrl *vg)
 #endif
 
 	/* set up interrupts  */
-	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (irq_rc && irq_rc->start) {
+	irq = platform_get_irq_optional(pdev, 0);
+	if (irq > 0) {
 		struct gpio_irq_chip *girq;
 
 		vg->irqchip.name = "BYT-GPIO",
@@ -1587,7 +1586,7 @@ static int byt_gpio_probe(struct intel_pinctrl *vg)
 					     sizeof(*girq->parents), GFP_KERNEL);
 		if (!girq->parents)
 			return -ENOMEM;
-		girq->parents[0] = (unsigned int)irq_rc->start;
+		girq->parents[0] = irq;
 		girq->default_type = IRQ_TYPE_NONE;
 		girq->handler = handle_bad_irq;
 	}
@@ -1797,9 +1796,8 @@ static struct platform_driver byt_gpio_driver = {
 	.driver         = {
 		.name			= "byt_gpio",
 		.pm			= &byt_gpio_pm_ops,
+		.acpi_match_table	= byt_gpio_acpi_match,
 		.suppress_bind_attrs	= true,
-
-		.acpi_match_table = ACPI_PTR(byt_gpio_acpi_match),
 	},
 };
 
