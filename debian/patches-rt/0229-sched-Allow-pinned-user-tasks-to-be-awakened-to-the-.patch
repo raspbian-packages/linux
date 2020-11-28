@@ -1,0 +1,42 @@
+From 2091ab4b85468a57e1f3f5b52a75013f62a2926d Mon Sep 17 00:00:00 2001
+Message-Id: <2091ab4b85468a57e1f3f5b52a75013f62a2926d.1606340620.git.zanussi@kernel.org>
+In-Reply-To: <ed9d09c7a4927383a47903a6b59b35853a530a2c.1606340618.git.zanussi@kernel.org>
+References: <ed9d09c7a4927383a47903a6b59b35853a530a2c.1606340618.git.zanussi@kernel.org>
+From: Mike Galbraith <efault@gmx.de>
+Date: Sun, 19 Aug 2018 08:28:35 +0200
+Subject: [PATCH 229/335] sched: Allow pinned user tasks to be awakened to the
+ CPU they pinned
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/4.19/older/patches-4.19.160-rt69.tar.xz
+
+Since commit 7af443ee16976 ("sched/core: Require cpu_active() in
+select_task_rq(), for user tasks") select_fallback_rq() will BUG() if
+the CPU to which a task has pinned itself and pinned becomes
+!cpu_active() while it slept.
+The task will continue running on the to-be-removed CPU and will remove
+itself from the CPU during takedown_cpu() (while cpuhp_pin_lock will be
+acquired) and move to another CPU based on its mask after the
+migrate_disable() section has been left.
+
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index be37b0c9e09a..0aa5662306b8 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -904,7 +904,7 @@ static inline bool is_cpu_allowed(struct task_struct *p, int cpu)
+ 	if (!cpumask_test_cpu(cpu, p->cpus_ptr))
+ 		return false;
+ 
+-	if (is_per_cpu_kthread(p))
++	if (is_per_cpu_kthread(p) || __migrate_disabled(p))
+ 		return cpu_online(cpu);
+ 
+ 	return cpu_active(cpu);
+-- 
+2.17.1
+
