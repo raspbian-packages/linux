@@ -64,8 +64,8 @@ static void rtl92se_fw_cb(const struct firmware *firmware, void *context)
 	struct rtl_priv *rtlpriv = rtl_priv(hw);
 	struct rt_firmware *pfirmware = NULL;
 
-	RT_TRACE(rtlpriv, COMP_ERR, DBG_LOUD,
-			 "Firmware callback routine entered!\n");
+	rtl_dbg(rtlpriv, COMP_ERR, DBG_LOUD,
+		"Firmware callback routine entered!\n");
 	complete(&rtlpriv->firmware_loading_complete);
 	if (!firmware) {
 		rtlpriv->max_fw_size = 0;

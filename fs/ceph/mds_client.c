@@ -3303,7 +3303,7 @@ bad:
 }
 
 static int __decode_session_metadata(void **p, void *end,
-				     bool *blacklisted)
+				     bool *blocklisted)
 {
 	/* map<string,string> */
 	u32 n;
@@ -3317,8 +3317,12 @@ static int __decode_session_metadata(void **p, void *end,
 		*p += len;
 		ceph_decode_32_safe(p, end, len, bad);
 		ceph_decode_need(p, end, len, bad);
+		/*
+		 * Match "blocklisted (blacklisted)" from newer MDSes,
+		 * or "blacklisted" from older MDSes.
+		 */
 		if (err_str && strnstr(*p, "blacklisted", len))
-			*blacklisted = true;
+			*blocklisted = true;
 		*p += len;
 	}
 	return 0;
@@ -3341,7 +3345,7 @@ static void handle_session(struct ceph_mds_session *session,
 	u32 op;
 	u64 seq, features = 0;
 	int wake = 0;
-	bool blacklisted = false;
+	bool blocklisted = false;
 
 	/* decode */
 	ceph_decode_need(&p, end, sizeof(*h), bad);
@@ -3354,7 +3358,7 @@ static void handle_session(struct ceph_mds_session *session,
 	if (msg_version >= 3) {
 		u32 len;
 		/* version >= 2, metadata */
-		if (__decode_session_metadata(&p, end, &blacklisted) < 0)
+		if (__decode_session_metadata(&p, end, &blocklisted) < 0)
 			goto bad;
 		/* version >= 3, feature bits */
 		ceph_decode_32_safe(&p, end, len, bad);
@@ -3445,8 +3449,8 @@ static void handle_session(struct ceph_mds_session *session,
 		session->s_state = CEPH_MDS_SESSION_REJECTED;
 		cleanup_session_requests(mdsc, session);
 		remove_session_caps(session);
-		if (blacklisted)
-			mdsc->fsc->blacklisted = true;
+		if (blocklisted)
+			mdsc->fsc->blocklisted = true;
 		wake = 2; /* for good measure */
 		break;
 
@@ -4227,7 +4231,7 @@ static void handle_lease(struct ceph_mds_client *mdsc,
 	     dname.len, dname.name);
 
 	mutex_lock(&session->s_mutex);
-	session->s_seq++;
+	inc_session_sequence(session);
 
 	if (!inode) {
 		dout("handle_lease no inode %llx\n", vino.ino);
@@ -4367,40 +4371,60 @@ static void maybe_recover_session(struct ceph_mds_client *mdsc)
 	if (READ_ONCE(fsc->mount_state) != CEPH_MOUNT_MOUNTED)
 		return;
 
-	if (!READ_ONCE(fsc->blacklisted))
+	if (!READ_ONCE(fsc->blocklisted))
 		return;
 
 	if (fsc->last_auto_reconnect &&
 	    time_before(jiffies, fsc->last_auto_reconnect + HZ * 60 * 30))
 		return;
 
-	pr_info("auto reconnect after blacklisted\n");
+	pr_info("auto reconnect after blocklisted\n");
 	fsc->last_auto_reconnect = jiffies;
 	ceph_force_reconnect(fsc->sb);
 }
 
 bool check_session_state(struct ceph_mds_session *s)
 {
-	if (s->s_state == CEPH_MDS_SESSION_CLOSING) {
-		dout("resending session close request for mds%d\n",
-				s->s_mds);
-		request_close_session(s);
-		return false;
-	}
-	if (s->s_ttl && time_after(jiffies, s->s_ttl)) {
-		if (s->s_state == CEPH_MDS_SESSION_OPEN) {
+	switch (s->s_state) {
+	case CEPH_MDS_SESSION_OPEN:
+		if (s->s_ttl && time_after(jiffies, s->s_ttl)) {
 			s->s_state = CEPH_MDS_SESSION_HUNG;
 			pr_info("mds%d hung\n", s->s_mds);
 		}
-	}
-	if (s->s_state == CEPH_MDS_SESSION_NEW ||
-	    s->s_state == CEPH_MDS_SESSION_RESTARTING ||
-	    s->s_state == CEPH_MDS_SESSION_CLOSED ||
-	    s->s_state == CEPH_MDS_SESSION_REJECTED)
-		/* this mds is failed or recovering, just wait */
+		break;
+	case CEPH_MDS_SESSION_CLOSING:
+		/* Should never reach this when we're unmounting */
+		WARN_ON_ONCE(true);
+		fallthrough;
+	case CEPH_MDS_SESSION_NEW:
+	case CEPH_MDS_SESSION_RESTARTING:
+	case CEPH_MDS_SESSION_CLOSED:
+	case CEPH_MDS_SESSION_REJECTED:
 		return false;
+	}
 
 	return true;
+}
+
+/*
+ * If the sequence is incremented while we're waiting on a REQUEST_CLOSE reply,
+ * then we need to retransmit that request.
+ */
+void inc_session_sequence(struct ceph_mds_session *s)
+{
+	lockdep_assert_held(&s->s_mutex);
+
+	s->s_seq++;
+
+	if (s->s_state == CEPH_MDS_SESSION_CLOSING) {
+		int ret;
+
+		dout("resending session close request for mds%d\n", s->s_mds);
+		ret = request_close_session(s);
+		if (ret < 0)
+			pr_err("unable to close session to mds%d: %d\n",
+			       s->s_mds, ret);
+	}
 }
 
 /*

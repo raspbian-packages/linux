@@ -398,6 +398,22 @@ void icl_uncore_cpu_init(void)
 	icl_uncore_cbox.num_boxes = icl_get_cbox_num();
 }
 
+static struct intel_uncore_type *tgl_msr_uncores[] = {
+	&icl_uncore_cbox,
+	&snb_uncore_arb,
+	&icl_uncore_clockbox,
+	NULL,
+};
+
+void tgl_uncore_cpu_init(void)
+{
+	uncore_msr_uncores = tgl_msr_uncores;
+	icl_uncore_cbox.num_boxes = icl_get_cbox_num();
+	icl_uncore_cbox.ops = &skl_uncore_msr_ops;
+	icl_uncore_clockbox.ops = &skl_uncore_msr_ops;
+	snb_uncore_arb.ops = &skl_uncore_msr_ops;
+}
+
 enum {
 	SNB_PCI_UNCORE_IMC,
 };
@@ -459,7 +475,7 @@ enum perf_snb_uncore_imc_freerunning_types {
 static struct freerunning_counters snb_uncore_imc_freerunning[] = {
 	[SNB_PCI_UNCORE_IMC_DATA_READS]		= { SNB_UNCORE_PCI_IMC_DATA_READS_BASE,
 							0x0, 0x0, 1, 32 },
-	[SNB_PCI_UNCORE_IMC_DATA_READS]		= { SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE,
+	[SNB_PCI_UNCORE_IMC_DATA_WRITES]	= { SNB_UNCORE_PCI_IMC_DATA_WRITES_BASE,
 							0x0, 0x0, 1, 32 },
 	[SNB_PCI_UNCORE_IMC_GT_REQUESTS]	= { SNB_UNCORE_PCI_IMC_GT_REQUESTS_BASE,
 							0x0, 0x0, 1, 32 },

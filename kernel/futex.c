@@ -788,8 +788,9 @@ static void put_pi_state(struct futex_pi_state *pi_state)
 	 */
 	if (pi_state->owner) {
 		struct task_struct *owner;
+		unsigned long flags;
 
-		raw_spin_lock_irq(&pi_state->pi_mutex.wait_lock);
+		raw_spin_lock_irqsave(&pi_state->pi_mutex.wait_lock, flags);
 		owner = pi_state->owner;
 		if (owner) {
 			raw_spin_lock(&owner->pi_lock);
@@ -797,7 +798,7 @@ static void put_pi_state(struct futex_pi_state *pi_state)
 			raw_spin_unlock(&owner->pi_lock);
 		}
 		rt_mutex_proxy_unlock(&pi_state->pi_mutex, owner);
-		raw_spin_unlock_irq(&pi_state->pi_mutex.wait_lock);
+		raw_spin_unlock_irqrestore(&pi_state->pi_mutex.wait_lock, flags);
 	}
 
 	if (current->pi_state_cache) {
@@ -917,7 +918,7 @@ static inline void exit_pi_state_list(struct task_struct *curr) { }
  * [10] Found  | Found    | task      | !=taskTID | 0/1    | Invalid
  *
  * [1]	Indicates that the kernel can acquire the futex atomically. We
- *	came came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
+ *	came here due to a stale FUTEX_WAITERS/FUTEX_OWNER_DIED bit.
  *
  * [2]	Valid, if TID does not belong to a kernel thread. If no matching
  *      thread is found then it indicates that the owner TID has died.
@@ -2380,10 +2381,22 @@ retry:
 		}
 
 		/*
-		 * Since we just failed the trylock; there must be an owner.
+		 * The trylock just failed, so either there is an owner or
+		 * there is a higher priority waiter than this one.
 		 */
 		newowner = rt_mutex_owner(&pi_state->pi_mutex);
-		BUG_ON(!newowner);
+		/*
+		 * If the higher priority waiter has not yet taken over the
+		 * rtmutex then newowner is NULL. We can't return here with
+		 * that state because it's inconsistent vs. the user space
+		 * state. So drop the locks and try again. It's a valid
+		 * situation and not any different from the other retry
+		 * conditions.
+		 */
+		if (unlikely(!newowner)) {
+			err = -EAGAIN;
+			goto handle_err;
+		}
 	} else {
 		WARN_ON_ONCE(argowner != current);
 		if (oldowner == current) {

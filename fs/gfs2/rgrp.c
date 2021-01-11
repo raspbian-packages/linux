@@ -719,9 +719,9 @@ void gfs2_clear_rgrpd(struct gfs2_sbd *sdp)
 		}
 
 		gfs2_free_clones(rgd);
+		return_all_reservations(rgd);
 		kfree(rgd->rd_bits);
 		rgd->rd_bits = NULL;
-		return_all_reservations(rgd);
 		kmem_cache_free(gfs2_rgrpd_cachep, rgd);
 	}
 }
@@ -878,7 +878,6 @@ static int rgd_insert(struct gfs2_rgrpd *rgd)
 static int read_rindex_entry(struct gfs2_inode *ip)
 {
 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
-	const unsigned bsize = sdp->sd_sb.sb_bsize;
 	loff_t pos = sdp->sd_rgrps * sizeof(struct gfs2_rindex);
 	struct gfs2_rindex buf;
 	int error;
@@ -924,9 +923,6 @@ static int read_rindex_entry(struct gfs2_inode *ip)
 	spin_unlock(&sdp->sd_rindex_spin);
 	if (!error) {
 		glock_set_object(rgd->rd_gl, rgd);
-		rgd->rd_gl->gl_vm.start = (rgd->rd_addr * bsize) & PAGE_MASK;
-		rgd->rd_gl->gl_vm.end = PAGE_ALIGN((rgd->rd_addr +
-						    rgd->rd_length) * bsize) - 1;
 		return 0;
 	}
 
@@ -989,6 +985,10 @@ static int gfs2_ri_update(struct gfs2_inode *ip)
 	if (error < 0)
 		return error;
 
+	if (RB_EMPTY_ROOT(&sdp->sd_rindex_tree)) {
+		fs_err(sdp, "no resource groups found in the file system.\n");
+		return -ENOENT;
+	}
 	set_rgrp_preferences(sdp);
 
 	sdp->sd_rindex_uptodate = 1;
@@ -1373,6 +1373,9 @@ int gfs2_fitrim(struct file *filp, void __user *argp)
 
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
+
+	if (!test_bit(SDF_JOURNAL_LIVE, &sdp->sd_flags))
+		return -EROFS;
 
 	if (!blk_queue_discard(q))
 		return -EOPNOTSUPP;
@@ -2442,8 +2445,8 @@ void __gfs2_free_blocks(struct gfs2_inode *ip, struct gfs2_rgrpd *rgd,
 	gfs2_rgrp_out(rgd, rgd->rd_bits[0].bi_bh->b_data);
 
 	/* Directories keep their data in the metadata address space */
-	if (meta || ip->i_depth)
-		gfs2_meta_wipe(ip, bstart, blen);
+	if (meta || ip->i_depth || gfs2_is_jdata(ip))
+		gfs2_journal_wipe(ip, bstart, blen);
 }
 
 /**
@@ -2499,7 +2502,7 @@ void gfs2_free_di(struct gfs2_rgrpd *rgd, struct gfs2_inode *ip)
 	gfs2_statfs_change(sdp, 0, +1, -1);
 	trace_gfs2_block_alloc(ip, rgd, ip->i_no_addr, 1, GFS2_BLKST_FREE);
 	gfs2_quota_change(ip, -1, ip->i_inode.i_uid, ip->i_inode.i_gid);
-	gfs2_meta_wipe(ip, ip->i_no_addr, 1);
+	gfs2_journal_wipe(ip, ip->i_no_addr, 1);
 }
 
 /**
@@ -2530,13 +2533,13 @@ int gfs2_check_blk_type(struct gfs2_sbd *sdp, u64 no_addr, unsigned int type)
 
 	rbm.rgd = rgd;
 	error = gfs2_rbm_from_block(&rbm, no_addr);
-	if (WARN_ON_ONCE(error))
-		goto fail;
-
-	if (gfs2_testbit(&rbm, false) != type)
-		error = -ESTALE;
+	if (!WARN_ON_ONCE(error)) {
+		if (gfs2_testbit(&rbm, false) != type)
+			error = -ESTALE;
+	}
 
 	gfs2_glock_dq_uninit(&rgd_gh);
+
 fail:
 	return error;
 }

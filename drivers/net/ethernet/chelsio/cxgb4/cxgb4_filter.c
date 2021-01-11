@@ -604,17 +604,14 @@ int cxgb4_get_free_ftid(struct net_device *dev, u8 family, bool hash_en,
 			/* If the new rule wants to get inserted into
 			 * HPFILTER region, but its prio is greater
 			 * than the rule with the highest prio in HASH
-			 * region, then reject the rule.
+			 * region, or if there's not enough slots
+			 * available in HPFILTER region, then skip
+			 * trying to insert this rule into HPFILTER
+			 * region and directly go to the next region.
 			 */
-			if (t->tc_hash_tids_max_prio &&
-			    tc_prio > t->tc_hash_tids_max_prio)
-				break;
-
-			/* If there's not enough slots available
-			 * in HPFILTER region, then move on to
-			 * normal FILTER region immediately.
-			 */
-			if (ftid + n > t->nhpftids) {
+			if ((t->tc_hash_tids_max_prio &&
+			     tc_prio > t->tc_hash_tids_max_prio) ||
+			     (ftid + n) > t->nhpftids) {
 				ftid = t->nhpftids;
 				continue;
 			}
@@ -883,7 +880,8 @@ int set_filter_wr(struct adapter *adapter, int fidx)
 		 FW_FILTER_WR_OVLAN_VLD_V(f->fs.val.ovlan_vld) |
 		 FW_FILTER_WR_IVLAN_VLDM_V(f->fs.mask.ivlan_vld) |
 		 FW_FILTER_WR_OVLAN_VLDM_V(f->fs.mask.ovlan_vld));
-	fwr->smac_sel = f->smt->idx;
+	if (f->fs.newsmac)
+		fwr->smac_sel = f->smt->idx;
 	fwr->rx_chan_rx_rpl_iq =
 		htons(FW_FILTER_WR_RX_CHAN_V(0) |
 		      FW_FILTER_WR_RX_RPL_IQ_V(adapter->sge.fw_evtq.abs_id));

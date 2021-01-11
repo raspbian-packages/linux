@@ -29,7 +29,7 @@ int lock_kernel_down(const char *where, enum lockdown_reason level)
 		return -EPERM;
 
 	kernel_locked_down = level;
-	pr_notice("Kernel is locked down from %s; see https://wiki.debian.org/SecureBoot\n",
+	pr_notice("Kernel is locked down from %s; see man kernel_lockdown.7\n",
 		  where);
 	return 0;
 }
@@ -63,7 +63,7 @@ static int lockdown_is_locked_down(enum lockdown_reason what)
 
 	if (kernel_locked_down >= what) {
 		if (lockdown_reasons[what])
-			pr_notice("Lockdown: %s: %s is restricted; see https://wiki.debian.org/SecureBoot\n",
+			pr_notice("Lockdown: %s: %s is restricted; see man kernel_lockdown.7\n",
 				  current->comm, lockdown_reasons[what]);
 		return -EPERM;
 	}
