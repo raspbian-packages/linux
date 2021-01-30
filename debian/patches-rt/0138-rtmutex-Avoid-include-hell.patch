@@ -1,0 +1,33 @@
+From 00c9862f5ed2a4389f99a42e1e4510880e758dde Mon Sep 17 00:00:00 2001
+Message-Id: <00c9862f5ed2a4389f99a42e1e4510880e758dde.1610128659.git.zanussi@kernel.org>
+In-Reply-To: <f6355f395156d91294a3a1cd62e05e137dda13d5.1610128658.git.zanussi@kernel.org>
+References: <f6355f395156d91294a3a1cd62e05e137dda13d5.1610128658.git.zanussi@kernel.org>
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 29 Jun 2011 20:06:39 +0200
+Subject: [PATCH 138/335] rtmutex: Avoid include hell
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/4.19/older/patches-4.19.165-rt70.tar.xz
+
+Include only the required raw types. This avoids pulling in the
+complete spinlock header which in turn requires rtmutex.h at some point.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/rtmutex.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
+index 81ece6a8291a..a355289b1fa1 100644
+--- a/include/linux/rtmutex.h
++++ b/include/linux/rtmutex.h
+@@ -15,7 +15,7 @@
+ 
+ #include <linux/linkage.h>
+ #include <linux/rbtree.h>
+-#include <linux/spinlock_types.h>
++#include <linux/spinlock_types_raw.h>
+ 
+ extern int max_lock_depth; /* for sysctl */
+ 
+-- 
+2.17.1
+
