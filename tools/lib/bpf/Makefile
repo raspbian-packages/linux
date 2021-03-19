@@ -95,6 +95,7 @@ libdir_SQ = $(subst ','\'',$(libdir))
 libdir_relative_SQ = $(subst ','\'',$(libdir_relative))
 
 LIB_FILE = libbpf.a libbpf.so.$(LIBBPF_VERSION)
+PC_FILE = libbpf.pc
 
 VERSION		= $(BPF_VERSION)
 PATCHLEVEL	= $(BPF_PATCHLEVEL)
@@ -144,8 +145,9 @@ include $(srctree)/tools/build/Makefile.include
 
 BPF_IN    := $(OUTPUT)libbpf-in.o
 LIB_FILE := $(addprefix $(OUTPUT),$(LIB_FILE))
+PC_FILE := $(addprefix $(OUTPUT),$(PC_FILE))
 
-CMD_TARGETS = $(LIB_FILE)
+CMD_TARGETS = $(LIB_FILE) $(PC_FILE)
 
 TARGETS = $(CMD_TARGETS)
 
@@ -175,6 +177,12 @@ $(OUTPUT)libbpf.so.$(LIBBPF_VERSION): $(BPF_IN)
 $(OUTPUT)libbpf.a: $(BPF_IN)
 	$(QUIET_LINK)$(RM) $@; $(AR) rcs $@ $^
 
+$(OUTPUT)libbpf.pc:
+	$(QUIET_GEN)sed -e "s|@PREFIX@|$(prefix)|" \
+		-e "s|@LIBDIR@|$(libdir_SQ)|" \
+		-e "s|@VERSION@|$(LIBBPF_VERSION)|" \
+		< libbpf.pc.template > $@
+
 define do_install
 	if [ ! -d '$(DESTDIR_SQ)$2' ]; then		\
 		$(INSTALL) -d -m 755 '$(DESTDIR_SQ)$2';	\
@@ -193,7 +201,12 @@ install_headers:
 		$(call do_install,libbpf.h,$(prefix)/include/bpf,644);
 		$(call do_install,btf.h,$(prefix)/include/bpf,644);
 
-install: install_lib
+install_pkgconfig: $(PC_FILE)
+	$(call QUIET_INSTALL, $(PC_FILE)) \
+		$(call do_install,$(PC_FILE),$(libdir_SQ)/pkgconfig,644)
+
+
+install: install_lib install_pkgconfig
 
 ### Cleaning rules
 
@@ -202,7 +215,7 @@ config-clean:
 	$(Q)$(MAKE) -C $(srctree)/tools/build/feature/ clean >/dev/null
 
 clean:
-	$(call QUIET_CLEAN, libbpf) $(RM) *.o *~ $(TARGETS) *.a *.so .*.d .*.cmd \
+	$(call QUIET_CLEAN, libbpf) $(RM) *.o *~ $(TARGETS) *.a *.so .*.d .*.cmd *.pc \
 		$(RM) LIBBPF-CFLAGS
 	$(call QUIET_CLEAN, core-gen) $(RM) $(OUTPUT)FEATURE-DUMP.libbpf
 
