@@ -218,6 +218,18 @@ ifeq ("$(origin M)", "command line")
   KBUILD_EXTMOD := $(M)
 endif
 
+# Old syntax make ... SUBDIRS=$PWD should be rejected to avoid mishaps
+# (see Debian bugs #982334, #987575)
+ifndef KBUILD_EXTMOD
+  ifdef SUBDIRS
+    $(warning =============== ERROR ==============)
+    $(warning 'SUBDIRS' was removed in Linux 5.3)
+    $(warning Use 'M=' or 'KBUILD_EXTMOD=' instead)
+    $(warning ====================================)
+    $(error .)
+  endif
+endif
+
 $(if $(word 2, $(KBUILD_EXTMOD)), \
 	$(error building multiple external modules is not supported))
 
