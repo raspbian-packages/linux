@@ -160,6 +160,10 @@ struct vc_data {
 	struct uni_pagedir **vc_uni_pagedir_loc; /* [!] Location of uni_pagedir variable for this console */
 	struct uni_screen *vc_uni_screen;	/* unicode screen content */
 	/* additional information is in vt_kern.h */
+
+#ifndef __GENKSYMS__
+	unsigned int	vc_cell_height;		/* CRTC character cell height */
+#endif
 };
 
 struct vc {
