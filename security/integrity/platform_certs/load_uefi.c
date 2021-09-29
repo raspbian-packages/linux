@@ -154,8 +154,9 @@ load_moklist_certs(const char *list_name, efi_char16_t *list_name_w,
 static int __init load_uefi_certs(void)
 {
 	efi_guid_t secure_var = EFI_IMAGE_SECURITY_DATABASE_GUID;
-	void *db = NULL, *dbx = NULL;
-	unsigned long dbsize = 0, dbxsize = 0;
+	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
+	void *db = NULL, *dbx = NULL, *mokx = NULL;
+	unsigned long dbsize = 0, dbxsize = 0, mokxsize = 0;
 	efi_status_t status;
 	int rc = 0;
 
@@ -200,10 +201,10 @@ static int __init load_uefi_certs(void)
 	}
 
 	/* the MOK and MOKx can not be trusted when secure boot is disabled */
-	if (!efi_enabled(EFI_SECURE_BOOT))
-		return 0;
-
-	/* Load the MokListRT certs */
+ 	if (!efi_enabled(EFI_SECURE_BOOT))
+ 		return 0;
+ 
+ 	/* Load the MokListRT certs */
 	rc = load_moklist_certs("MokListRT", L"MokListRT",
 				get_handler_for_db);
 	if (rc)

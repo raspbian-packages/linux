@@ -1,5 +1,5 @@
 [abi]
-abiname: 8
+abiname: 1
 ignore-changes:
  __cpuhp_*
  __udp_gso_segment
@@ -151,9 +151,10 @@ featuresets:
 debug-info: true
 # Disable code signing by default; this can be overridden per-architecture
 signed-code: false
+trusted-certs: debian/certs/debian-uefi-certs.pem
 
 [featureset-rt_base]
-enabled: true
+enabled: false
 
 [description]
 part-long-up: This kernel is not suitable for SMP (multi-processor,

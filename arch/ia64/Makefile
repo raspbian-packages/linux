@@ -14,7 +14,6 @@
 KBUILD_DEFCONFIG := generic_defconfig
 
 NM := $(CROSS_COMPILE)nm -B
-READELF := $(CROSS_COMPILE)readelf
 
 CHECKFLAGS	+= -D__ia64=1 -D__ia64__=1 -D_LP64 -D__LP64__
 
@@ -43,7 +42,6 @@ core-y				+= arch/ia64/kernel/ arch/ia64/mm/
 core-$(CONFIG_IA64_SGI_UV)	+= arch/ia64/uv/
 
 drivers-y			+= arch/ia64/pci/ arch/ia64/hp/common/
-drivers-$(CONFIG_OPROFILE)	+= arch/ia64/oprofile/
 
 PHONY += compressed check
 
@@ -73,9 +71,3 @@ define archhelp
   echo '* compressed	- Build compressed kernel image'
   echo '  install	- Install compressed kernel image'
 endef
-
-archprepare: make_nr_irqs_h
-PHONY += make_nr_irqs_h
-
-make_nr_irqs_h:
-	$(Q)$(MAKE) $(build)=arch/ia64/kernel include/generated/nr-irqs.h

@@ -1,5 +1,5 @@
-a46eb172db472ccbe5364b1de7eeb2a0  debian/bin/gencontrol.py
-b194c6c22a235737b3e56d0d43bf8cc2  debian/build/version-info
+0a6803e81c5a9d67935cd913f57ea766  debian/bin/gencontrol.py
+16b12a8cfc9bb2eb2489832fb074dd41  debian/build/version-info
 74b180a87aa1f6377d9bf8a10368c657  debian/templates/control.main.in
 d048c1b6a4d834060d0ce8b502aee906  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
@@ -25,7 +25,7 @@ afb508873a44a1f196c2a525fec4b415  debian/templates/image.prerm.in
 850cc4fd419adac7d008df061f958895  debian/templates/perf.meta.maintscript.in
 b8efaa8b4c9bbfd89c08514f860e548e  debian/templates/docs.meta.maintscript.in
 eda4623fb10d5ba1cefa8502ebaeb0fd  debian/templates/control.image-dbg.in
-85a6d9699cab87feefbb6ff98f3d8182  debian/templates/control.source.in
+ff1d878f06d61bef0a786c2156cc4e3e  debian/templates/control.source.in
 91ddd8e344e4b84b61d02c064e47f7d5  debian/templates/control.image.meta.in
 ed25b8839b8e5cb08adfbfde488dd0cd  debian/templates/headers.meta.maintscript.in
 9509e39d8e60906ebd5ee4a8b0355d25  debian/templates/control.docs.in
@@ -38,13 +38,13 @@ ed25b8839b8e5cb08adfbfde488dd0cd  debian/templates/headers.meta.maintscript.in
 817873a7b9fa61d433b2c39f6b2491de  debian/templates/control.image-dbg.meta.in
 fe4456d48e3218fb8980c8577d03a7ae  debian/templates/control.config.in
 769a43efb579711359e12554e34d0baa  debian/templates/image.meta.bug-presubj.in
-49e9b3a63832ab55e378afc715f95789  debian/config/defines
+82391123ba798ec6b6874efe629cbb9f  debian/config/defines
 696fe9dde321cbe6691b9ba63a89441c  debian/config/i386/defines
 aa0dc1c23ac4dee04d5abc5bca888f72  debian/config/mips64el/defines
 8f2e4969633ff660d026f2b7e02e6336  debian/config/sh3/defines
 300cdda5cbaebced93cc02ffd7d5ab5e  debian/config/armhf/defines
 026ce5cdad7814c28f4fd87589786719  debian/config/amd64/defines
-3cffb73a6b8570b2fc03e83a7d0e0772  debian/config/ppc64el/defines
+49ff98c69df71ed1cee1afe01642bdf5  debian/config/ppc64el/defines
 85c1ae5e3f2e17492053f7de76474463  debian/config/mipsr6el/defines
 77050c7df77b8cb300155f7e4876a7bb  debian/config/mips/defines
 e0810ddd6e4add2a26c5668773b69d25  debian/config/sh4/defines
@@ -53,8 +53,8 @@ e411d2dfe0018a7c40b6bf7efd45cd29  debian/config/mipsn32/defines
 174058e52aced932bf02606d6cb5649c  debian/config/mipsn32el/defines
 366b94d652a66b437eabcd165bcc9610  debian/config/featureset-rt/defines
 8d317c1872f3bd8da4feae25a7c61df3  debian/config/sparc/defines
-45a4ad93313c2066248987dfa59dd6da  debian/config/powerpc/defines
-f9a739a574488a070d4811dd6a94cbbb  debian/config/ppc64/defines
+825c82b36a042a7cf513b489996e3771  debian/config/powerpc/defines
+2f6b6e879d027926fc2452edd6a2a835  debian/config/ppc64/defines
 f4b2921156e7b1a038862f848fdfe48f  debian/config/x32/defines
 a70015a9c92407a77e1bf32cd88a5f09  debian/config/mips64/defines
 e741332318227dd4646f0d98735271e5  debian/config/sparc64/defines
