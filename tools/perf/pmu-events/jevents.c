@@ -1050,7 +1050,7 @@ static int ordered_ftw(const char *dirpath,
 
 out:
 	for (i = 0; i < state.n; i++)
-		free(state.entries[i].fpath);
+		free((char *)state.entries[i].fpath);
 	free(state.entries);;
 
 	return rc;
@@ -1368,6 +1368,7 @@ int main(int argc, char *argv[])
 	}
 
 	free_arch_std_events();
+	free_sys_event_tables();
 	free(mapfile);
 	return 0;
 
@@ -1389,6 +1390,7 @@ err_close_eventsfp:
 		create_empty_mapping(output_file);
 err_out:
 	free_arch_std_events();
+	free_sys_event_tables();
 	free(mapfile);
 	return ret;
 }
