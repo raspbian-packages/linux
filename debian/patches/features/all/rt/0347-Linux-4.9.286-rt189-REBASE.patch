@@ -1,0 +1,17 @@
+From: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Date: Mon, 11 Oct 2021 07:52:09 -0300
+Subject: [PATCH 347/347] Linux 4.9.286-rt189 REBASE
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=42443522c101971d58a7ec292cdafe0a03f0703f
+
+Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
+---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 9a218ca23053..4897a28dc47f 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt23
++-rt189
