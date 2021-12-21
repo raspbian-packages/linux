@@ -379,10 +379,6 @@
 	};
 };
 
-&cdn_dp {
-	status = "disabled";
-};
-
 &cpu_b0 {
 	cpu-supply = <&vdd_cpu_b>;
 };

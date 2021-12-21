@@ -87,60 +87,50 @@ static __init void *get_cert_list(efi_char16_t *name, efi_guid_t *guid,
  *
  * Return:	Status
  */
-static int __init
-load_moklist_certs(const char *list_name, efi_char16_t *list_name_w,
-		   efi_element_handler_t (*get_handler)(const efi_guid_t *))
+static int __init load_moklist_certs(void)
 {
 	struct efi_mokvar_table_entry *mokvar_entry;
 	efi_guid_t mok_var = EFI_SHIM_LOCK_GUID;
 	void *mok;
 	unsigned long moksize;
 	efi_status_t status;
-	char mokvar_list_desc[40];
-	char efivar_list_desc[20];
 	int rc;
-
-	snprintf(mokvar_list_desc, sizeof(mokvar_list_desc),
-		 "UEFI:%s (MOKvar table)", list_name);
-	snprintf(efivar_list_desc, sizeof(efivar_list_desc),
-		 "UEFI:%s", list_name);
 
 	/* First try to load certs from the EFI MOKvar config table.
 	 * It's not an error if the MOKvar config table doesn't exist
-	 * or the MokList(X)RT entry is not found in it.
+	 * or the MokListRT entry is not found in it.
 	 */
-	mokvar_entry = efi_mokvar_entry_find(list_name);
+	mokvar_entry = efi_mokvar_entry_find("MokListRT");
 	if (mokvar_entry) {
-		rc = parse_efi_signature_list(mokvar_list_desc,
+		rc = parse_efi_signature_list("UEFI:MokListRT (MOKvar table)",
 					      mokvar_entry->data,
 					      mokvar_entry->data_size,
-					      get_handler);
+					      get_handler_for_db);
 		/* All done if that worked. */
 		if (!rc)
 			return rc;
 
-		pr_err("Couldn't parse %s signatures from EFI MOKvar config table: %d\n",
-		       list_name, rc);
+		pr_err("Couldn't parse MokListRT signatures from EFI MOKvar config table: %d\n",
+		       rc);
 	}
 
-	/* Get MokList(X)RT. It might not exist, so it isn't an error
+	/* Get MokListRT. It might not exist, so it isn't an error
 	 * if we can't get it.
 	 */
-	mok = get_cert_list(list_name_w, &mok_var, &moksize, &status,
+	mok = get_cert_list(L"MokListRT", &mok_var, &moksize, &status,
 				0, EFI_VARIABLE_NON_VOLATILE);
 	if (mok) {
-		rc = parse_efi_signature_list(efivar_list_desc,
-					      mok, moksize, get_handler);
+		rc = parse_efi_signature_list("UEFI:MokListRT",
+					      mok, moksize, get_handler_for_db);
 		kfree(mok);
 		if (rc)
-			pr_err("Couldn't parse %s signatures: %d\n",
-			       list_name, rc);
+			pr_err("Couldn't parse MokListRT signatures: %d\n", rc);
 		return rc;
 	}
 	if (status == EFI_NOT_FOUND)
-		pr_debug("%s variable wasn't found\n", list_name);
+		pr_debug("MokListRT variable wasn't found\n");
 	else
-		pr_info("Couldn't get UEFI %s\n", list_name);
+		pr_info("Couldn't get UEFI MokListRT\n");
 	return 0;
 }
 
@@ -200,17 +190,28 @@ static int __init load_uefi_certs(void)
 		kfree(dbx);
 	}
 
-	/* the MOK and MOKx can not be trusted when secure boot is disabled */
+	/* the MOK can not be trusted when secure boot is disabled */
 	if (!efi_enabled(EFI_SECURE_BOOT))
 		return 0;
 
+	mokx = get_cert_list(L"MokListXRT", &mok_var, &mokxsize, &status,
+							0, EFI_VARIABLE_NON_VOLATILE);
+	if (!mokx) {
+		if (status == EFI_NOT_FOUND)
+			pr_debug("mokx variable wasn't found\n");
+		else
+			pr_info("Couldn't get mokx list\n");
+	} else {
+		rc = parse_efi_signature_list("UEFI:MokListXRT",
+					      mokx, mokxsize,
+					      get_handler_for_dbx);
+		if (rc)
+			pr_err("Couldn't parse mokx signatures %d\n", rc);
+		kfree(mokx);
+	}
+
 	/* Load the MokListRT certs */
-	rc = load_moklist_certs("MokListRT", L"MokListRT",
-				get_handler_for_db);
-	if (rc)
-		return rc;
-	rc = load_moklist_certs("MokListXRT", L"MokListXRT",
-				get_handler_for_dbx);
+	rc = load_moklist_certs();
 
 	return rc;
 }
