@@ -25,9 +25,11 @@ config INTEL_IOMMU
 	  and include PCI device scope covered by these DMA
 	  remapping devices.
 
+if INTEL_IOMMU
+
 config INTEL_IOMMU_DEBUGFS
 	bool "Export Intel IOMMU internals in Debugfs"
-	depends on INTEL_IOMMU && IOMMU_DEBUGFS
+	depends on IOMMU_DEBUGFS
 	select DMAR_PERF
 	help
 	  !!!WARNING!!!
@@ -41,7 +43,7 @@ config INTEL_IOMMU_DEBUGFS
 
 config INTEL_IOMMU_SVM
 	bool "Support for Shared Virtual Memory with Intel IOMMU"
-	depends on INTEL_IOMMU && X86_64
+	depends on X86_64
 	select PCI_PASID
 	select PCI_PRI
 	select MMU_NOTIFIER
@@ -51,8 +53,6 @@ config INTEL_IOMMU_SVM
 	  Shared Virtual Memory (SVM) provides a facility for devices
 	  to access DMA resources through process address space by
 	  means of a Process Address Space ID (PASID).
-
-if INTEL_IOMMU
 
 choice
 	prompt "Default state of Intel DMA Remapping Devices"
@@ -72,12 +72,10 @@ config INTEL_IOMMU_DEFAULT_OFF
 	bool "Disable"
 
 endchoice
-
-endif
-
+ 
 config INTEL_IOMMU_BROKEN_GFX_WA
 	bool "Workaround broken graphics drivers (going away soon)"
-	depends on INTEL_IOMMU && BROKEN && X86
+	depends on BROKEN && X86
 	help
 	  Current Graphics drivers tend to use physical address
 	  for DMA and avoid using DMA APIs. Setting this config
@@ -88,7 +86,7 @@ config INTEL_IOMMU_BROKEN_GFX_WA
 
 config INTEL_IOMMU_FLOPPY_WA
 	def_bool y
-	depends on INTEL_IOMMU && X86
+	depends on X86
 	help
 	  Floppy disk drivers are known to bypass DMA API calls
 	  thereby failing to work when IOMMU is enabled. This
@@ -97,7 +95,7 @@ config INTEL_IOMMU_FLOPPY_WA
 
 config INTEL_IOMMU_SCALABLE_MODE_DEFAULT_ON
 	bool "Enable Intel IOMMU scalable mode by default"
-	depends on INTEL_IOMMU
+	default y
 	help
 	  Selecting this option will enable by default the scalable mode if
 	  hardware presents the capability. The scalable mode is defined in
@@ -106,3 +104,5 @@ config INTEL_IOMMU_SCALABLE_MODE_DEFAULT_ON
 	  is not selected, scalable mode support could also be enabled by
 	  passing intel_iommu=sm_on to the kernel. If not sure, please use
 	  the default value.
+
+endif # INTEL_IOMMU
