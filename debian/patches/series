@@ -129,3 +129,4 @@ bugfix/all/tools-include-uapi-fix-errno.h.patch
 bugfix/all/perf-srcline-Use-long-running-addr2line-per-DSO.patch
 
 # ABI maintenance
+perf-avoid-binutils-buildid.patch

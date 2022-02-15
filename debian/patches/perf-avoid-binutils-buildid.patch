@@ -1,0 +1,32 @@
+Description: Disable libbfd buildid support, it seems to fail to build.
+Author: Peter Michael Green <plugwash@raspbian.org>
+
+--- linux-5.15.15.orig/tools/perf/util/symbol-elf.c
++++ linux-5.15.15/tools/perf/util/symbol-elf.c
+@@ -537,7 +537,7 @@ out:
+ 	return err;
+ }
+ 
+-#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
++/*#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
+ 
+ static int read_build_id(const char *filename, struct build_id *bid)
+ {
+@@ -566,7 +566,7 @@ out_close:
+ 	return err;
+ }
+ 
+-#else // HAVE_LIBBFD_BUILDID_SUPPORT
++#else // HAVE_LIBBFD_BUILDID_SUPPORT */
+ 
+ static int read_build_id(const char *filename, struct build_id *bid)
+ {
+@@ -598,7 +598,7 @@ out:
+ 	return err;
+ }
+ 
+-#endif // HAVE_LIBBFD_BUILDID_SUPPORT
++//#endif // HAVE_LIBBFD_BUILDID_SUPPORT
+ 
+ int filename__read_build_id(const char *filename, struct build_id *bid)
+ {
