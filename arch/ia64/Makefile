@@ -55,8 +55,6 @@ vmlinux.gz: vmlinux.bin FORCE
 vmlinux.bin: vmlinux FORCE
 	$(call if_changed,objcopy)
 
-archclean:
-
 archheaders:
 	$(Q)$(MAKE) $(build)=arch/ia64/kernel/syscalls all
 
