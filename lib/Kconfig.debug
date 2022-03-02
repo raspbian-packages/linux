@@ -343,6 +343,16 @@ config GDB_SCRIPTS
 
 endif # DEBUG_INFO
 
+if !DEBUG_INFO
+
+config DEBUG_INFO_BTF_MODULES_NOOP
+	bool "Provide no-op BTF ABI to modules"
+	help
+	  Enable this option instead of DEBUG_INFO_BTF to avoid an ABI
+	  change when debug info is disabled.
+
+endif
+
 config FRAME_WARN
 	int "Warn for stack frames larger than"
 	range 0 8192
