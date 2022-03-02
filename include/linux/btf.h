@@ -331,7 +331,7 @@ struct kfunc_btf_id_list {
 	struct mutex mutex;
 };
 
-#ifdef CONFIG_DEBUG_INFO_BTF_MODULES
+#if defined(CONFIG_DEBUG_INFO_BTF_MODULES) || defined(CONFIG_DEBUG_INFO_BTF_MODULES_NOOP)
 void register_kfunc_btf_id_set(struct kfunc_btf_id_list *l,
 			       struct kfunc_btf_id_set *s);
 void unregister_kfunc_btf_id_set(struct kfunc_btf_id_list *l,
