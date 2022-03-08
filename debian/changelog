@@ -1,9 +1,26 @@
-linux (5.10.92-1+rpi1) bullseye-staging; urgency=medium
+linux (5.10.92-2+rpi1) bullseye-staging; urgency=medium
 
   [changes brought forward from 4.14.13-1+rpi1 by Peter Michael Green <plugwash@raspbian.org> at Wed, 07 Feb 2018 23:32:32 +0000]
   * Disable kernel builds from this package, we build our kernels from other source packages.
 
- -- Raspbian forward porter <root@raspbian.org>  Tue, 25 Jan 2022 22:08:17 +0000
+ -- Raspbian forward porter <root@raspbian.org>  Tue, 08 Mar 2022 11:13:19 +0000
+
+linux (5.10.92-2) bullseye-security; urgency=high
+
+  * lib/iov_iter: initialize "flags" in new pipe_buffer
+  * [x86] mwifiex: Fix skb_over_panic in mwifiex_usb_recv() (CVE-2021-43976)
+  * [x86] drm/i915: Flush TLBs before releasing backing store (CVE-2022-0330)
+  * [x86] drm/vmwgfx: Fix stale file descriptors on failed usercopy
+    (CVE-2022-22942)
+  * NFSv4: Handle case where the lookup of a directory fails (CVE-2022-24448)
+  * yam: fix a memory leak in yam_siocdevprivate() (CVE-2022-24959)
+  * tipc: improve size validations for received domain records (CVE-2022-0435)
+  * [s390x] KVM: s390: Return error on SIDA memop on normal guest
+    (CVE-2022-0516)
+  * USB: gadget: validate interface OS descriptor requests (CVE-2022-25258)
+  * usb: gadget: rndis: check size of RNDIS_MSG_SET command (CVE-2022-25375)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 28 Feb 2022 12:23:03 +0100
 
 linux (5.10.92-1) bullseye-security; urgency=high
 
