@@ -113,17 +113,15 @@ features/all/db-mok-keyring/KEYS-Make-use-of-platform-keyring-for-module-signatu
 debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
 debian/ntfs-mark-it-as-broken.patch
 bugfix/all/vfs-move-cap_convert_nscap-call-into-vfs_setxattr.patch
-bugfix/all/vfs-fs_context-fix-up-param-length-parsing-in-legacy.patch
-bugfix/all/lib-iov_iter-initialize-flags-in-new-pipe_buffer.patch
-bugfix/x86/mwifiex-Fix-skb_over_panic-in-mwifiex_usb_recv.patch
-bugfix/x86/drm-i915-Flush-TLBs-before-releasing-backing-store.patch
-bugfix/x86/drm-vmwgfx-Fix-stale-file-descriptors-on-failed-user.patch
-bugfix/all/NFSv4-Handle-case-where-the-lookup-of-a-directory-fa.patch
-bugfix/all/yam-fix-a-memory-leak-in-yam_siocdevprivate.patch
-bugfix/all/tipc-improve-size-validations-for-received-domain-re.patch
-bugfix/s390x/KVM-s390-Return-error-on-SIDA-memop-on-normal-guest.patch
-bugfix/all/USB-gadget-validate-interface-OS-descriptor-requests.patch
-bugfix/all/usb-gadget-rndis-check-size-of-RNDIS_MSG_SET-command.patch
+bugfix/x86/bhb/0001-x86-bugs-Unconditionally-allow-spectre_v2-retpoline-.patch
+bugfix/x86/bhb/0002-x86-speculation-Rename-RETPOLINE_AMD-to-RETPOLINE_LF.patch
+bugfix/x86/bhb/0003-x86-speculation-Add-eIBRS-Retpoline-options.patch
+bugfix/x86/bhb/0004-Documentation-hw-vuln-Update-spectre-doc.patch
+bugfix/x86/bhb/0005-x86-speculation-Include-unprivileged-eBPF-status-in-.patch
+bugfix/x86/bhb/0006-x86-speculation-Use-generic-retpoline-by-default-on-.patch
+bugfix/x86/bhb/0007-x86-speculation-Update-link-to-AMD-speculation-white.patch
+bugfix/x86/bhb/0008-x86-speculation-Warn-about-Spectre-v2-LFENCE-mitigat.patch
+bugfix/x86/bhb/0009-x86-speculation-Warn-about-eIBRS-LFENCE-Unprivileged.patch
 
 # Fix exported symbol versions
 bugfix/all/module-disable-matching-missing-version-crc.patch
