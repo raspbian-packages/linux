@@ -1,10 +1,10 @@
 d50bd3f7e1a2609731a80ecae67e7d54  debian/bin/gencontrol.py
-2690f18068078a5373a4958d8e5066d9  debian/build/version-info
+31573b80d4ceb83392e16fcd7be0af43  debian/build/version-info
 74b180a87aa1f6377d9bf8a10368c657  debian/templates/control.main.in
 d048c1b6a4d834060d0ce8b502aee906  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
 ce8590d760adf6efb95181ec626c4aca  debian/templates/control.headers.meta.in
-a99aa807ab6acc2164f2385ee52223ce  debian/templates/control.tools-unversioned.in
+7639cb9874f425870b2ad5d5b8a443a3  debian/templates/control.tools-unversioned.in
 0961d6fa0a85c406d40b83db932807fe  debian/templates/image.meta.maintscript.in
 afb508873a44a1f196c2a525fec4b415  debian/templates/image.prerm.in
 3567921b45b789218f75084809c39b1f  debian/templates/control.tools-versioned.in
@@ -40,7 +40,7 @@ dce8417680d5472087c898ae874931f1  debian/templates/image-dbg.meta.lintian-overri
 039cb3bf80f3f62a426de50b678dcda8  debian/templates/control.image-dbg.meta.in
 fe4456d48e3218fb8980c8577d03a7ae  debian/templates/control.config.in
 769a43efb579711359e12554e34d0baa  debian/templates/image.meta.bug-presubj.in
-636b6dc338360cacc671e653f9b2dee4  debian/config/defines
+ed21e5ef0c2011edd6ff7125af6311e3  debian/config/defines
 bdb36272c5dbc8964b947b17116fd5c8  debian/config/i386/defines
 3007de4e052313d4d02dc8abaa75543f  debian/config/mips64el/defines
 8f2e4969633ff660d026f2b7e02e6336  debian/config/sh3/defines
