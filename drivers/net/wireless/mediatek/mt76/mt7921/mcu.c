@@ -93,9 +93,6 @@ struct mt7921_fw_region {
 #define PATCH_SEC_ENC_SCRAMBLE_INFO_MASK	GENMASK(15, 0)
 #define PATCH_SEC_ENC_AES_KEY_MASK		GENMASK(7, 0)
 
-#define to_wcid_lo(id)			FIELD_GET(GENMASK(7, 0), (u16)id)
-#define to_wcid_hi(id)			FIELD_GET(GENMASK(9, 8), (u16)id)
-
 static enum mcu_cipher_type
 mt7921_mcu_get_cipher(int cipher)
 {
@@ -179,7 +176,7 @@ int mt7921_mcu_parse_response(struct mt76_dev *mdev, int cmd,
 	if (seq != rxd->seq)
 		return -EAGAIN;
 
-	if (cmd == MCU_CMD_PATCH_SEM_CONTROL) {
+	if (cmd == MCU_CMD(PATCH_SEM_CONTROL)) {
 		skb_pull(skb, sizeof(*rxd) - 4);
 		ret = *skb->data;
 	} else if (cmd == MCU_EXT_CMD(THERMAL_CTRL)) {
@@ -237,7 +234,7 @@ int mt7921_mcu_fill_message(struct mt76_dev *mdev, struct sk_buff *skb,
 	if (!seq)
 		seq = ++dev->mt76.mcu.msg_seq & 0xf;
 
-	if (cmd == MCU_CMD_FW_SCATTER)
+	if (cmd == MCU_CMD(FW_SCATTER))
 		goto exit;
 
 	txd_len = cmd & __MCU_CMD_FIELD_UNI ? sizeof(*uni_txd) : sizeof(*mcu_txd);
@@ -589,7 +586,7 @@ int mt7921_mcu_restart(struct mt76_dev *dev)
 		.power_mode = 1,
 	};
 
-	return mt76_mcu_send_msg(dev, MCU_CMD_NIC_POWER_CTRL, &req,
+	return mt76_mcu_send_msg(dev, MCU_CMD(NIC_POWER_CTRL), &req,
 				 sizeof(req), false);
 }
 EXPORT_SYMBOL_GPL(mt7921_mcu_restart);
@@ -695,7 +692,7 @@ static int mt7921_load_patch(struct mt7921_dev *dev)
 			goto out;
 		}
 
-		ret = __mt76_mcu_send_firmware(&dev->mt76, MCU_CMD_FW_SCATTER,
+		ret = __mt76_mcu_send_firmware(&dev->mt76, MCU_CMD(FW_SCATTER),
 					       dl, len, max_len);
 		if (ret) {
 			dev_err(dev->mt76.dev, "Failed to send patch\n");
@@ -706,6 +703,13 @@ static int mt7921_load_patch(struct mt7921_dev *dev)
 	ret = mt76_connac_mcu_start_patch(&dev->mt76);
 	if (ret)
 		dev_err(dev->mt76.dev, "Failed to start patch\n");
+
+	if (mt76_is_sdio(&dev->mt76)) {
+		/* activate again */
+		ret = __mt7921_mcu_fw_pmctrl(dev);
+		if (!ret)
+			ret = __mt7921_mcu_drv_pmctrl(dev);
+	}
 
 out:
 	sem = mt76_connac_mcu_patch_sem_ctrl(&dev->mt76, false);
@@ -769,7 +773,7 @@ mt7921_mcu_send_ram_firmware(struct mt7921_dev *dev,
 			return err;
 		}
 
-		err = __mt76_mcu_send_firmware(&dev->mt76, MCU_CMD_FW_SCATTER,
+		err = __mt76_mcu_send_firmware(&dev->mt76, MCU_CMD(FW_SCATTER),
 					       data + offset, len, max_len);
 		if (err) {
 			dev_err(dev->mt76.dev, "Failed to send firmware.\n");
@@ -869,7 +873,7 @@ fw_loaded:
 	dev->mt76.hw->wiphy->wowlan = &mt76_connac_wowlan_support;
 #endif /* CONFIG_PM */
 
-	dev_err(dev->mt76.dev, "Firmware init done\n");
+	dev_dbg(dev->mt76.dev, "Firmware init done\n");
 
 	return 0;
 }
@@ -912,33 +916,28 @@ EXPORT_SYMBOL_GPL(mt7921_mcu_exit);
 
 int mt7921_mcu_set_tx(struct mt7921_dev *dev, struct ieee80211_vif *vif)
 {
-#define WMM_AIFS_SET		BIT(0)
-#define WMM_CW_MIN_SET		BIT(1)
-#define WMM_CW_MAX_SET		BIT(2)
-#define WMM_TXOP_SET		BIT(3)
-#define WMM_PARAM_SET		GENMASK(3, 0)
-#define TX_CMD_MODE		1
+	struct mt7921_vif *mvif = (struct mt7921_vif *)vif->drv_priv;
+
 	struct edca {
-		u8 queue;
-		u8 set;
-		u8 aifs;
-		u8 cw_min;
+		__le16 cw_min;
 		__le16 cw_max;
 		__le16 txop;
-	};
+		__le16 aifs;
+		u8 guardtime;
+		u8 acm;
+	} __packed;
 	struct mt7921_mcu_tx {
-		u8 total;
-		u8 action;
-		u8 valid;
-		u8 mode;
-
 		struct edca edca[IEEE80211_NUM_ACS];
+		u8 bss_idx;
+		u8 qos;
+		u8 wmm_idx;
+		u8 pad;
 	} __packed req = {
-		.valid = true,
-		.mode = TX_CMD_MODE,
-		.total = IEEE80211_NUM_ACS,
+		.bss_idx = mvif->mt76.idx,
+		.qos = vif->bss_conf.qos,
+		.wmm_idx = mvif->mt76.wmm_idx,
 	};
-	struct mt7921_vif *mvif = (struct mt7921_vif *)vif->drv_priv;
+
 	struct mu_edca {
 		u8 cw_min;
 		u8 cw_max;
@@ -962,30 +961,29 @@ int mt7921_mcu_set_tx(struct mt7921_dev *dev, struct ieee80211_vif *vif)
 		.qos = vif->bss_conf.qos,
 		.wmm_idx = mvif->mt76.wmm_idx,
 	};
+	int to_aci[] = {1, 0, 2, 3};
 	int ac, ret;
 
 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
 		struct ieee80211_tx_queue_params *q = &mvif->queue_params[ac];
-		struct edca *e = &req.edca[ac];
+		struct edca *e = &req.edca[to_aci[ac]];
 
-		e->set = WMM_PARAM_SET;
-		e->queue = ac + mvif->mt76.wmm_idx * MT7921_MAX_WMM_SETS;
 		e->aifs = q->aifs;
 		e->txop = cpu_to_le16(q->txop);
 
 		if (q->cw_min)
-			e->cw_min = fls(q->cw_min);
+			e->cw_min = cpu_to_le16(q->cw_min);
 		else
 			e->cw_min = 5;
 
 		if (q->cw_max)
-			e->cw_max = cpu_to_le16(fls(q->cw_max));
+			e->cw_max = cpu_to_le16(q->cw_max);
 		else
 			e->cw_max = cpu_to_le16(10);
 	}
 
-	ret = mt76_mcu_send_msg(&dev->mt76, MCU_EXT_CMD(EDCA_UPDATE),
-				&req, sizeof(req), true);
+	ret = mt76_mcu_send_msg(&dev->mt76, MCU_CE_CMD(SET_EDCA_PARMS), &req,
+				sizeof(req), false);
 	if (ret)
 		return ret;
 
@@ -995,7 +993,6 @@ int mt7921_mcu_set_tx(struct mt7921_dev *dev, struct ieee80211_vif *vif)
 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
 		struct ieee80211_he_mu_edca_param_ac_rec *q;
 		struct mu_edca *e;
-		int to_aci[] = {1, 0, 2, 3};
 
 		if (!mvif->queue_params[ac].mu_edca)
 			break;

@@ -484,33 +484,48 @@ u64 dm_start_time_ns_from_clone(struct bio *bio)
 }
 EXPORT_SYMBOL_GPL(dm_start_time_ns_from_clone);
 
-static void start_io_acct(struct dm_io *io)
+static bool bio_is_flush_with_data(struct bio *bio)
 {
-	struct mapped_device *md = io->md;
-	struct bio *bio = io->orig_bio;
+	return ((bio->bi_opf & REQ_PREFLUSH) && bio->bi_iter.bi_size);
+}
 
-	bio_start_io_acct_time(bio, io->start_time);
+static void dm_io_acct(bool end, struct mapped_device *md, struct bio *bio,
+		       unsigned long start_time, struct dm_stats_aux *stats_aux)
+{
+	bool is_flush_with_data;
+	unsigned int bi_size;
+
+	/* If REQ_PREFLUSH set save any payload but do not account it */
+	is_flush_with_data = bio_is_flush_with_data(bio);
+	if (is_flush_with_data) {
+		bi_size = bio->bi_iter.bi_size;
+		bio->bi_iter.bi_size = 0;
+	}
+
+	if (!end)
+		bio_start_io_acct_time(bio, start_time);
+	else
+		bio_end_io_acct(bio, start_time);
+
 	if (unlikely(dm_stats_used(&md->stats)))
 		dm_stats_account_io(&md->stats, bio_data_dir(bio),
 				    bio->bi_iter.bi_sector, bio_sectors(bio),
-				    false, 0, &io->stats_aux);
+				    end, start_time, stats_aux);
+
+	/* Restore bio's payload so it does get accounted upon requeue */
+	if (is_flush_with_data)
+		bio->bi_iter.bi_size = bi_size;
+}
+
+static void start_io_acct(struct dm_io *io)
+{
+	dm_io_acct(false, io->md, io->orig_bio, io->start_time, &io->stats_aux);
 }
 
 static void end_io_acct(struct mapped_device *md, struct bio *bio,
 			unsigned long start_time, struct dm_stats_aux *stats_aux)
 {
-	unsigned long duration = jiffies - start_time;
-
-	bio_end_io_acct(bio, start_time);
-
-	if (unlikely(dm_stats_used(&md->stats)))
-		dm_stats_account_io(&md->stats, bio_data_dir(bio),
-				    bio->bi_iter.bi_sector, bio_sectors(bio),
-				    true, duration, stats_aux);
-
-	/* nudge anyone waiting on suspend queue */
-	if (unlikely(wq_has_sleeper(&md->wait)))
-		wake_up(&md->wait);
+	dm_io_acct(true, md, bio, start_time, stats_aux);
 }
 
 static struct dm_io *alloc_io(struct mapped_device *md, struct bio *bio)
@@ -531,11 +546,14 @@ static struct dm_io *alloc_io(struct mapped_device *md, struct bio *bio)
 	io->magic = DM_IO_MAGIC;
 	io->status = 0;
 	atomic_set(&io->io_count, 1);
+	this_cpu_inc(*md->pending_io);
 	io->orig_bio = bio;
 	io->md = md;
 	spin_lock_init(&io->endio_lock);
 
 	io->start_time = jiffies;
+
+	dm_stats_record_start(&md->stats, &io->stats_aux);
 
 	return io;
 }
@@ -637,7 +655,7 @@ static int open_table_device(struct table_device *td, dev_t dev,
 			     struct mapped_device *md)
 {
 	struct block_device *bdev;
-
+	u64 part_off;
 	int r;
 
 	BUG_ON(td->dm_dev.bdev);
@@ -653,7 +671,7 @@ static int open_table_device(struct table_device *td, dev_t dev,
 	}
 
 	td->dm_dev.bdev = bdev;
-	td->dm_dev.dax_dev = fs_dax_get_by_bdev(bdev);
+	td->dm_dev.dax_dev = fs_dax_get_by_bdev(bdev, &part_off);
 	return 0;
 }
 
@@ -826,11 +844,17 @@ void dm_io_dec_pending(struct dm_io *io, blk_status_t error)
 		stats_aux = io->stats_aux;
 		free_io(md, io);
 		end_io_acct(md, bio, start_time, &stats_aux);
+		smp_wmb();
+		this_cpu_dec(*md->pending_io);
+
+		/* nudge anyone waiting on suspend queue */
+		if (unlikely(wq_has_sleeper(&md->wait)))
+			wake_up(&md->wait);
 
 		if (io_error == BLK_STS_DM_REQUEUE)
 			return;
 
-		if ((bio->bi_opf & REQ_PREFLUSH) && bio->bi_iter.bi_size) {
+		if (bio_is_flush_with_data(bio)) {
 			/*
 			 * Preflush done for flush with data, reissue
 			 * without REQ_PREFLUSH.
@@ -1021,74 +1045,6 @@ static long dm_dax_direct_access(struct dax_device *dax_dev, pgoff_t pgoff,
 	nr_pages = min(len, nr_pages);
 	ret = ti->type->direct_access(ti, pgoff, nr_pages, kaddr, pfn);
 
- out:
-	dm_put_live_table(md, srcu_idx);
-
-	return ret;
-}
-
-static bool dm_dax_supported(struct dax_device *dax_dev, struct block_device *bdev,
-		int blocksize, sector_t start, sector_t len)
-{
-	struct mapped_device *md = dax_get_private(dax_dev);
-	struct dm_table *map;
-	bool ret = false;
-	int srcu_idx;
-
-	map = dm_get_live_table(md, &srcu_idx);
-	if (!map)
-		goto out;
-
-	ret = dm_table_supports_dax(map, device_not_dax_capable, &blocksize);
-
-out:
-	dm_put_live_table(md, srcu_idx);
-
-	return ret;
-}
-
-static size_t dm_dax_copy_from_iter(struct dax_device *dax_dev, pgoff_t pgoff,
-				    void *addr, size_t bytes, struct iov_iter *i)
-{
-	struct mapped_device *md = dax_get_private(dax_dev);
-	sector_t sector = pgoff * PAGE_SECTORS;
-	struct dm_target *ti;
-	long ret = 0;
-	int srcu_idx;
-
-	ti = dm_dax_get_live_target(md, sector, &srcu_idx);
-
-	if (!ti)
-		goto out;
-	if (!ti->type->dax_copy_from_iter) {
-		ret = copy_from_iter(addr, bytes, i);
-		goto out;
-	}
-	ret = ti->type->dax_copy_from_iter(ti, pgoff, addr, bytes, i);
- out:
-	dm_put_live_table(md, srcu_idx);
-
-	return ret;
-}
-
-static size_t dm_dax_copy_to_iter(struct dax_device *dax_dev, pgoff_t pgoff,
-		void *addr, size_t bytes, struct iov_iter *i)
-{
-	struct mapped_device *md = dax_get_private(dax_dev);
-	sector_t sector = pgoff * PAGE_SECTORS;
-	struct dm_target *ti;
-	long ret = 0;
-	int srcu_idx;
-
-	ti = dm_dax_get_live_target(md, sector, &srcu_idx);
-
-	if (!ti)
-		goto out;
-	if (!ti->type->dax_copy_to_iter) {
-		ret = copy_to_iter(addr, bytes, i);
-		goto out;
-	}
-	ret = ti->type->dax_copy_to_iter(ti, pgoff, addr, bytes, i);
  out:
 	dm_put_live_table(md, srcu_idx);
 
@@ -1563,15 +1519,10 @@ static void dm_submit_bio(struct bio *bio)
 	struct dm_table *map;
 
 	map = dm_get_live_table(md, &srcu_idx);
-	if (unlikely(!map)) {
-		DMERR_LIMIT("%s: mapping table unavailable, erroring io",
-			    dm_device_name(md));
-		bio_io_error(bio);
-		goto out;
-	}
 
-	/* If suspended, queue this IO for later */
-	if (unlikely(test_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags))) {
+	/* If suspended, or map not yet available, queue this IO for later */
+	if (unlikely(test_bit(DMF_BLOCK_IO_FOR_SUSPEND, &md->flags)) ||
+	    unlikely(!map)) {
 		if (bio->bi_opf & REQ_NOWAIT)
 			bio_wouldblock_error(bio);
 		else if (bio->bi_opf & REQ_RAHEAD)
@@ -1669,11 +1620,13 @@ static void cleanup_mapped_device(struct mapped_device *md)
 	bioset_exit(&md->io_bs);
 
 	if (md->dax_dev) {
+		dax_remove_host(md->disk);
 		kill_dax(md->dax_dev);
 		put_dax(md->dax_dev);
 		md->dax_dev = NULL;
 	}
 
+	dm_cleanup_zoned_dev(md);
 	if (md->disk) {
 		spin_lock(&_minor_lock);
 		md->disk->private_data = NULL;
@@ -1686,6 +1639,11 @@ static void cleanup_mapped_device(struct mapped_device *md)
 		blk_cleanup_disk(md->disk);
 	}
 
+	if (md->pending_io) {
+		free_percpu(md->pending_io);
+		md->pending_io = NULL;
+	}
+
 	cleanup_srcu_struct(&md->io_barrier);
 
 	mutex_destroy(&md->suspend_lock);
@@ -1694,7 +1652,6 @@ static void cleanup_mapped_device(struct mapped_device *md)
 	mutex_destroy(&md->swap_bios_lock);
 
 	dm_mq_cleanup_mapped_device(md);
-	dm_cleanup_zoned_dev(md);
 }
 
 /*
@@ -1764,24 +1721,32 @@ static struct mapped_device *alloc_dev(int minor)
 	md->disk->major = _major;
 	md->disk->first_minor = minor;
 	md->disk->minors = 1;
+	md->disk->flags |= GENHD_FL_NO_PART;
 	md->disk->fops = &dm_blk_dops;
 	md->disk->queue = md->queue;
 	md->disk->private_data = md;
 	sprintf(md->disk->disk_name, "dm-%d", minor);
 
 	if (IS_ENABLED(CONFIG_FS_DAX)) {
-		md->dax_dev = alloc_dax(md, md->disk->disk_name,
-					&dm_dax_ops, 0);
+		md->dax_dev = alloc_dax(md, &dm_dax_ops);
 		if (IS_ERR(md->dax_dev)) {
 			md->dax_dev = NULL;
 			goto bad;
 		}
+		set_dax_nocache(md->dax_dev);
+		set_dax_nomc(md->dax_dev);
+		if (dax_add_host(md->dax_dev, md->disk))
+			goto bad;
 	}
 
 	format_dev_t(md->name, MKDEV(_major, minor));
 
 	md->wq = alloc_workqueue("kdmflush/%s", WQ_MEM_RECLAIM, 0, md->name);
 	if (!md->wq)
+		goto bad;
+
+	md->pending_io = alloc_percpu(unsigned long);
+	if (!md->pending_io)
 		goto bad;
 
 	dm_stats_init(&md->stats);
@@ -2191,16 +2156,13 @@ void dm_put(struct mapped_device *md)
 }
 EXPORT_SYMBOL_GPL(dm_put);
 
-static bool md_in_flight_bios(struct mapped_device *md)
+static bool dm_in_flight_bios(struct mapped_device *md)
 {
 	int cpu;
-	struct block_device *part = dm_disk(md)->part0;
-	long sum = 0;
+	unsigned long sum = 0;
 
-	for_each_possible_cpu(cpu) {
-		sum += part_stat_local_read_cpu(part, in_flight[0], cpu);
-		sum += part_stat_local_read_cpu(part, in_flight[1], cpu);
-	}
+	for_each_possible_cpu(cpu)
+		sum += *per_cpu_ptr(md->pending_io, cpu);
 
 	return sum != 0;
 }
@@ -2213,7 +2175,7 @@ static int dm_wait_for_bios_completion(struct mapped_device *md, unsigned int ta
 	while (true) {
 		prepare_to_wait(&md->wait, &wait, task_state);
 
-		if (!md_in_flight_bios(md))
+		if (!dm_in_flight_bios(md))
 			break;
 
 		if (signal_pending_state(task_state, current)) {
@@ -2224,6 +2186,8 @@ static int dm_wait_for_bios_completion(struct mapped_device *md, unsigned int ta
 		io_schedule();
 	}
 	finish_wait(&md->wait, &wait);
+
+	smp_rmb();
 
 	return r;
 }
@@ -3028,9 +2992,6 @@ static const struct block_device_operations dm_rq_blk_dops = {
 
 static const struct dax_operations dm_dax_ops = {
 	.direct_access = dm_dax_direct_access,
-	.dax_supported = dm_dax_supported,
-	.copy_from_iter = dm_dax_copy_from_iter,
-	.copy_to_iter = dm_dax_copy_to_iter,
 	.zero_page_range = dm_dax_zero_page_range,
 };
 

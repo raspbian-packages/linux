@@ -614,6 +614,10 @@ static inline bool nvme_try_complete_req(struct request *req, __le16 status,
 		union nvme_result result)
 {
 	struct nvme_request *rq = nvme_req(req);
+	struct nvme_ctrl *ctrl = rq->ctrl;
+
+	if (!(ctrl->quirks & NVME_QUIRK_SKIP_CID_GEN))
+		rq->genctr++;
 
 	rq->status = le16_to_cpu(status) >> 1;
 	rq->result = result;
@@ -712,6 +716,25 @@ static inline bool nvme_check_ready(struct nvme_ctrl *ctrl, struct request *rq,
 		return queue_live;
 	return __nvme_check_ready(ctrl, rq, queue_live);
 }
+
+/*
+ * NSID shall be unique for all shared namespaces, or if at least one of the
+ * following conditions is met:
+ *   1. Namespace Management is supported by the controller
+ *   2. ANA is supported by the controller
+ *   3. NVM Set are supported by the controller
+ *
+ * In other case, private namespace are not required to report a unique NSID.
+ */
+static inline bool nvme_is_unique_nsid(struct nvme_ctrl *ctrl,
+		struct nvme_ns_head *head)
+{
+	return head->shared ||
+		(ctrl->oacs & NVME_CTRL_OACS_NS_MNGT_SUPP) ||
+		(ctrl->subsys->cmic & NVME_CTRL_CMIC_ANA) ||
+		(ctrl->ctratt & NVME_CTRL_CTRATT_NVM_SETS);
+}
+
 int nvme_submit_sync_cmd(struct request_queue *q, struct nvme_command *cmd,
 		void *buf, unsigned bufflen);
 int __nvme_submit_sync_cmd(struct request_queue *q, struct nvme_command *cmd,
@@ -763,6 +786,7 @@ static inline bool nvme_ctrl_use_ana(struct nvme_ctrl *ctrl)
 void nvme_mpath_unfreeze(struct nvme_subsystem *subsys);
 void nvme_mpath_wait_freeze(struct nvme_subsystem *subsys);
 void nvme_mpath_start_freeze(struct nvme_subsystem *subsys);
+void nvme_mpath_default_iopolicy(struct nvme_subsystem *subsys);
 bool nvme_mpath_set_disk_name(struct nvme_ns *ns, char *disk_name, int *flags);
 void nvme_failover_req(struct request *req);
 void nvme_kick_requeue_lists(struct nvme_ctrl *ctrl);
@@ -858,6 +882,9 @@ static inline void nvme_mpath_wait_freeze(struct nvme_subsystem *subsys)
 {
 }
 static inline void nvme_mpath_start_freeze(struct nvme_subsystem *subsys)
+{
+}
+static inline void nvme_mpath_default_iopolicy(struct nvme_subsystem *subsys)
 {
 }
 #endif /* CONFIG_NVME_MULTIPATH */

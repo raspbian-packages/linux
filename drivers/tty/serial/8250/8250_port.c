@@ -307,6 +307,14 @@ static const struct serial8250_config uart_config[] = {
 		.rxtrig_bytes	= {1, 32, 64, 112},
 		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
 	},
+	[PORT_ASPEED_VUART] = {
+		.name		= "ASPEED VUART",
+		.fifo_size	= 16,
+		.tx_loadsz	= 16,
+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_00,
+		.rxtrig_bytes	= {1, 4, 8, 14},
+		.flags		= UART_CAP_FIFO,
+	},
 };
 
 /* Uart divisor latch read */
@@ -1615,6 +1623,18 @@ static inline void start_tx_rs485(struct uart_port *port)
 	struct uart_8250_port *up = up_to_u8250p(port);
 	struct uart_8250_em485 *em485 = up->em485;
 
+	/*
+	 * While serial8250_em485_handle_stop_tx() is a noop if
+	 * em485->active_timer != &em485->stop_tx_timer, it might happen that
+	 * the timer is still armed and triggers only after the current bunch of
+	 * chars is send and em485->active_timer == &em485->stop_tx_timer again.
+	 * So cancel the timer. There is still a theoretical race condition if
+	 * the timer is already running and only comes around to check for
+	 * em485->active_timer when &em485->stop_tx_timer is armed again.
+	 */
+	if (em485->active_timer == &em485->stop_tx_timer)
+		hrtimer_try_to_cancel(&em485->stop_tx_timer);
+
 	em485->active_timer = NULL;
 
 	if (em485->tx_stopped) {
@@ -1799,9 +1819,7 @@ void serial8250_tx_chars(struct uart_8250_port *up)
 	int count;
 
 	if (port->x_char) {
-		serial_out(up, UART_TX, port->x_char);
-		port->icount.tx++;
-		port->x_char = 0;
+		uart_xchar_out(port, UART_TX);
 		return;
 	}
 	if (uart_tx_stopped(port)) {
@@ -2026,7 +2044,7 @@ void serial8250_do_set_mctrl(struct uart_port *port, unsigned int mctrl)
 
 	mcr = serial8250_TIOCM_to_MCR(mctrl);
 
-	mcr = (mcr & up->mcr_mask) | up->mcr_force | up->mcr;
+	mcr |= up->mcr;
 
 	serial8250_out_MCR(up, mcr);
 }
@@ -3092,7 +3110,7 @@ static ssize_t rx_trig_bytes_show(struct device *dev,
 	if (rxtrig_bytes < 0)
 		return rxtrig_bytes;
 
-	return snprintf(buf, PAGE_SIZE, "%d\n", rxtrig_bytes);
+	return sysfs_emit(buf, "%d\n", rxtrig_bytes);
 }
 
 static int do_set_rxtrig(struct tty_port *port, unsigned char bytes)

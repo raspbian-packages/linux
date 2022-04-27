@@ -43,7 +43,7 @@
 #define CODA_NAME		"coda"
 
 #define CODADX6_MAX_INSTANCES	4
-#define CODA_MAX_FORMATS	4
+#define CODA_MAX_FORMATS	5
 
 #define CODA_ISRAM_SIZE	(2048 * 2)
 
@@ -247,6 +247,7 @@ static const struct coda_video_device coda9_jpeg_encoder = {
 		V4L2_PIX_FMT_YUV420,
 		V4L2_PIX_FMT_YVU420,
 		V4L2_PIX_FMT_YUV422P,
+		V4L2_PIX_FMT_GREY,
 	},
 	.dst_formats = {
 		V4L2_PIX_FMT_JPEG,
@@ -408,6 +409,7 @@ static struct vdoa_data *coda_get_vdoa_data(void)
 	if (!vdoa_data)
 		vdoa_data = ERR_PTR(-EPROBE_DEFER);
 
+	put_device(&vdoa_pdev->dev);
 out:
 	of_node_put(vdoa_node);
 
@@ -625,6 +627,11 @@ static int coda_try_fmt(struct coda_ctx *ctx, const struct coda_codec *codec,
 		f->fmt.pix.bytesperline = round_up(f->fmt.pix.width, 16);
 		f->fmt.pix.sizeimage = f->fmt.pix.bytesperline *
 					f->fmt.pix.height * 2;
+		break;
+	case V4L2_PIX_FMT_GREY:
+		/* keep 16 pixel alignment of 8-bit pixel data */
+		f->fmt.pix.bytesperline = round_up(f->fmt.pix.width, 16);
+		f->fmt.pix.sizeimage = f->fmt.pix.bytesperline * f->fmt.pix.height;
 		break;
 	case V4L2_PIX_FMT_JPEG:
 	case V4L2_PIX_FMT_H264:

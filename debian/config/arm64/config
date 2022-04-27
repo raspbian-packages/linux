@@ -359,6 +359,7 @@ CONFIG_GPIO_MOXTET=m
 CONFIG_DRM=m
 CONFIG_DRM_RADEON=m
 CONFIG_DRM_AMDGPU=m
+CONFIG_DRM_HYPERV=m
 
 ##
 ## file: drivers/gpu/drm/arm/Kconfig
@@ -489,10 +490,22 @@ CONFIG_DRM_VMWGFX_FBCON=y
 CONFIG_TEGRA_HOST1X=m
 
 ##
+## file: drivers/hid/Kconfig
+##
+CONFIG_HID_HYPERV_MOUSE=m
+
+##
 ## file: drivers/hid/i2c-hid/Kconfig
 ##
 CONFIG_I2C_HID_ACPI=m
 CONFIG_I2C_HID_OF=m
+
+##
+## file: drivers/hv/Kconfig
+##
+CONFIG_HYPERV=m
+CONFIG_HYPERV_UTILS=m
+CONFIG_HYPERV_BALLOON=m
 
 ##
 ## file: drivers/hwmon/Kconfig
@@ -563,7 +576,6 @@ CONFIG_DHT11=m
 ## file: drivers/infiniband/hw/hns/Kconfig
 ##
 CONFIG_INFINIBAND_HNS=m
-CONFIG_INFINIBAND_HNS_HIP06=y
 CONFIG_INFINIBAND_HNS_HIP08=y
 
 ##
@@ -591,6 +603,11 @@ CONFIG_INPUT_HISI_POWERKEY=m
 ## file: drivers/input/mouse/Kconfig
 ##
 CONFIG_MOUSE_ELAN_I2C=m
+
+##
+## file: drivers/input/serio/Kconfig
+##
+CONFIG_HYPERV_KEYBOARD=m
 
 ##
 ## file: drivers/input/touchscreen/Kconfig
@@ -932,6 +949,11 @@ CONFIG_FDDI=y
 CONFIG_SKFP=m
 
 ##
+## file: drivers/net/hyperv/Kconfig
+##
+CONFIG_HYPERV_NET=m
+
+##
 ## file: drivers/net/mdio/Kconfig
 ##
 CONFIG_MDIO_XGENE=m
@@ -1016,6 +1038,7 @@ CONFIG_MESON_EFUSE=m
 CONFIG_PCI=y
 CONFIG_PCI_PRI=y
 CONFIG_PCI_PASID=y
+CONFIG_PCI_HYPERV=m
 
 ##
 ## file: drivers/pci/controller/Kconfig
@@ -1136,11 +1159,11 @@ CONFIG_PHY_TEGRA_XUSB=m
 ##
 ## file: drivers/pinctrl/Kconfig
 ##
-CONFIG_PINCTRL_AXP209=m
 CONFIG_PINCTRL_AMD=y
-CONFIG_PINCTRL_SINGLE=y
+CONFIG_PINCTRL_AXP209=m
 CONFIG_PINCTRL_MAX77620=y
 CONFIG_PINCTRL_RK805=y
+CONFIG_PINCTRL_SINGLE=y
 
 ##
 ## file: drivers/pinctrl/freescale/Kconfig
@@ -1277,6 +1300,7 @@ CONFIG_RTC_DRV_XGENE=y
 ##
 ## file: drivers/scsi/Kconfig
 ##
+CONFIG_HYPERV_STORAGE=m
 CONFIG_SCSI_DMX3191D=m
 
 ##
@@ -1629,6 +1653,11 @@ CONFIG_BT_LEDS=y
 ## file: net/dsa/Kconfig
 ##
 CONFIG_NET_DSA=m
+
+##
+## file: net/vmw_vsock/Kconfig
+##
+CONFIG_HYPERV_VSOCKETS=m
 
 ##
 ## file: sound/pci/hda/Kconfig

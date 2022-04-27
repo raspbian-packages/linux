@@ -6,6 +6,7 @@
 #include <linux/err.h>
 #include <linux/efi.h>
 #include <linux/slab.h>
+#include <linux/ima.h>
 #include <keys/asymmetric-type.h>
 #include <keys/system_keyring.h>
 #include "../integrity.h"
@@ -190,7 +191,7 @@ static int __init load_uefi_certs(void)
 		kfree(dbx);
 	}
 
-	/* the MOK can not be trusted when secure boot is disabled */
+	/* the MOK/MOKx can not be trusted when secure boot is disabled */
 	if (!efi_enabled(EFI_SECURE_BOOT))
 		return 0;
 

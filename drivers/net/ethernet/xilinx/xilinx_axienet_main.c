@@ -857,46 +857,53 @@ static void axienet_recv(struct net_device *ndev)
 	while ((cur_p->status & XAXIDMA_BD_STS_COMPLETE_MASK)) {
 		dma_addr_t phys;
 
-		tail_p = lp->rx_bd_p + sizeof(*lp->rx_bd_v) * lp->rx_bd_ci;
-
 		/* Ensure we see complete descriptor update */
 		dma_rmb();
-		phys = desc_get_phys_addr(lp, cur_p);
-		dma_unmap_single(ndev->dev.parent, phys, lp->max_frm_size,
-				 DMA_FROM_DEVICE);
 
 		skb = cur_p->skb;
 		cur_p->skb = NULL;
-		length = cur_p->app4 & 0x0000FFFF;
 
-		skb_put(skb, length);
-		skb->protocol = eth_type_trans(skb, ndev);
-		/*skb_checksum_none_assert(skb);*/
-		skb->ip_summed = CHECKSUM_NONE;
+		/* skb could be NULL if a previous pass already received the
+		 * packet for this slot in the ring, but failed to refill it
+		 * with a newly allocated buffer. In this case, don't try to
+		 * receive it again.
+		 */
+		if (likely(skb)) {
+			length = cur_p->app4 & 0x0000FFFF;
 
-		/* if we're doing Rx csum offload, set it up */
-		if (lp->features & XAE_FEATURE_FULL_RX_CSUM) {
-			csumstatus = (cur_p->app2 &
-				      XAE_FULL_CSUM_STATUS_MASK) >> 3;
-			if ((csumstatus == XAE_IP_TCP_CSUM_VALIDATED) ||
-			    (csumstatus == XAE_IP_UDP_CSUM_VALIDATED)) {
-				skb->ip_summed = CHECKSUM_UNNECESSARY;
+			phys = desc_get_phys_addr(lp, cur_p);
+			dma_unmap_single(ndev->dev.parent, phys, lp->max_frm_size,
+					 DMA_FROM_DEVICE);
+
+			skb_put(skb, length);
+			skb->protocol = eth_type_trans(skb, ndev);
+			/*skb_checksum_none_assert(skb);*/
+			skb->ip_summed = CHECKSUM_NONE;
+
+			/* if we're doing Rx csum offload, set it up */
+			if (lp->features & XAE_FEATURE_FULL_RX_CSUM) {
+				csumstatus = (cur_p->app2 &
+					      XAE_FULL_CSUM_STATUS_MASK) >> 3;
+				if (csumstatus == XAE_IP_TCP_CSUM_VALIDATED ||
+				    csumstatus == XAE_IP_UDP_CSUM_VALIDATED) {
+					skb->ip_summed = CHECKSUM_UNNECESSARY;
+				}
+			} else if ((lp->features & XAE_FEATURE_PARTIAL_RX_CSUM) != 0 &&
+				   skb->protocol == htons(ETH_P_IP) &&
+				   skb->len > 64) {
+				skb->csum = be32_to_cpu(cur_p->app3 & 0xFFFF);
+				skb->ip_summed = CHECKSUM_COMPLETE;
 			}
-		} else if ((lp->features & XAE_FEATURE_PARTIAL_RX_CSUM) != 0 &&
-			   skb->protocol == htons(ETH_P_IP) &&
-			   skb->len > 64) {
-			skb->csum = be32_to_cpu(cur_p->app3 & 0xFFFF);
-			skb->ip_summed = CHECKSUM_COMPLETE;
+
+			netif_rx(skb);
+
+			size += length;
+			packets++;
 		}
-
-		netif_rx(skb);
-
-		size += length;
-		packets++;
 
 		new_skb = netdev_alloc_skb_ip_align(ndev, lp->max_frm_size);
 		if (!new_skb)
-			return;
+			break;
 
 		phys = dma_map_single(ndev->dev.parent, new_skb->data,
 				      lp->max_frm_size,
@@ -905,13 +912,18 @@ static void axienet_recv(struct net_device *ndev)
 			if (net_ratelimit())
 				netdev_err(ndev, "RX DMA mapping error\n");
 			dev_kfree_skb(new_skb);
-			return;
+			break;
 		}
 		desc_set_phys_addr(lp, phys, cur_p);
 
 		cur_p->cntrl = lp->max_frm_size;
 		cur_p->status = 0;
 		cur_p->skb = new_skb;
+
+		/* Only update tail_p to mark this slot as usable after it has
+		 * been successfully refilled.
+		 */
+		tail_p = lp->rx_bd_p + sizeof(*lp->rx_bd_v) * lp->rx_bd_ci;
 
 		if (++lp->rx_bd_ci >= lp->rx_bd_num)
 			lp->rx_bd_ci = 0;
@@ -1350,8 +1362,11 @@ static void axienet_ethtools_get_regs(struct net_device *ndev,
 	data[39] = axienet_dma_in32(lp, XAXIDMA_RX_TDESC_OFFSET);
 }
 
-static void axienet_ethtools_get_ringparam(struct net_device *ndev,
-					   struct ethtool_ringparam *ering)
+static void
+axienet_ethtools_get_ringparam(struct net_device *ndev,
+			       struct ethtool_ringparam *ering,
+			       struct kernel_ethtool_ringparam *kernel_ering,
+			       struct netlink_ext_ack *extack)
 {
 	struct axienet_local *lp = netdev_priv(ndev);
 
@@ -1365,8 +1380,11 @@ static void axienet_ethtools_get_ringparam(struct net_device *ndev,
 	ering->tx_pending = lp->tx_bd_num;
 }
 
-static int axienet_ethtools_set_ringparam(struct net_device *ndev,
-					  struct ethtool_ringparam *ering)
+static int
+axienet_ethtools_set_ringparam(struct net_device *ndev,
+			       struct ethtool_ringparam *ering,
+			       struct kernel_ethtool_ringparam *kernel_ering,
+			       struct netlink_ext_ack *extack)
 {
 	struct axienet_local *lp = netdev_priv(ndev);
 
@@ -1531,65 +1549,6 @@ static const struct ethtool_ops axienet_ethtool_ops = {
 	.nway_reset	= axienet_ethtools_nway_reset,
 };
 
-static void axienet_validate(struct phylink_config *config,
-			     unsigned long *supported,
-			     struct phylink_link_state *state)
-{
-	struct net_device *ndev = to_net_dev(config->dev);
-	struct axienet_local *lp = netdev_priv(ndev);
-	__ETHTOOL_DECLARE_LINK_MODE_MASK(mask) = { 0, };
-
-	/* Only support the mode we are configured for */
-	switch (state->interface) {
-	case PHY_INTERFACE_MODE_NA:
-		break;
-	case PHY_INTERFACE_MODE_1000BASEX:
-	case PHY_INTERFACE_MODE_SGMII:
-		if (lp->switch_x_sgmii)
-			break;
-		fallthrough;
-	default:
-		if (state->interface != lp->phy_mode) {
-			netdev_warn(ndev, "Cannot use PHY mode %s, supported: %s\n",
-				    phy_modes(state->interface),
-				    phy_modes(lp->phy_mode));
-			linkmode_zero(supported);
-			return;
-		}
-	}
-
-	phylink_set(mask, Autoneg);
-	phylink_set_port_modes(mask);
-
-	phylink_set(mask, Asym_Pause);
-	phylink_set(mask, Pause);
-
-	switch (state->interface) {
-	case PHY_INTERFACE_MODE_NA:
-	case PHY_INTERFACE_MODE_1000BASEX:
-	case PHY_INTERFACE_MODE_SGMII:
-	case PHY_INTERFACE_MODE_GMII:
-	case PHY_INTERFACE_MODE_RGMII:
-	case PHY_INTERFACE_MODE_RGMII_ID:
-	case PHY_INTERFACE_MODE_RGMII_RXID:
-	case PHY_INTERFACE_MODE_RGMII_TXID:
-		phylink_set(mask, 1000baseX_Full);
-		phylink_set(mask, 1000baseT_Full);
-		if (state->interface == PHY_INTERFACE_MODE_1000BASEX)
-			break;
-		fallthrough;
-	case PHY_INTERFACE_MODE_MII:
-		phylink_set(mask, 100baseT_Full);
-		phylink_set(mask, 10baseT_Full);
-		fallthrough;
-	default:
-		break;
-	}
-
-	linkmode_and(supported, supported, mask);
-	linkmode_and(state->advertising, state->advertising, mask);
-}
-
 static void axienet_mac_pcs_get_state(struct phylink_config *config,
 				      struct phylink_link_state *state)
 {
@@ -1715,7 +1674,7 @@ static void axienet_mac_link_up(struct phylink_config *config,
 }
 
 static const struct phylink_mac_ops axienet_phylink_ops = {
-	.validate = axienet_validate,
+	.validate = phylink_generic_validate,
 	.mac_pcs_get_state = axienet_mac_pcs_get_state,
 	.mac_an_restart = axienet_mac_an_restart,
 	.mac_prepare = axienet_mac_prepare,
@@ -2137,6 +2096,17 @@ static int axienet_probe(struct platform_device *pdev)
 
 	lp->phylink_config.dev = &ndev->dev;
 	lp->phylink_config.type = PHYLINK_NETDEV;
+	lp->phylink_config.legacy_pre_march2020 = true;
+	lp->phylink_config.mac_capabilities = MAC_SYM_PAUSE | MAC_ASYM_PAUSE |
+		MAC_10FD | MAC_100FD | MAC_1000FD;
+
+	__set_bit(lp->phy_mode, lp->phylink_config.supported_interfaces);
+	if (lp->switch_x_sgmii) {
+		__set_bit(PHY_INTERFACE_MODE_1000BASEX,
+			  lp->phylink_config.supported_interfaces);
+		__set_bit(PHY_INTERFACE_MODE_SGMII,
+			  lp->phylink_config.supported_interfaces);
+	}
 
 	lp->phylink = phylink_create(&lp->phylink_config, pdev->dev.fwnode,
 				     lp->phy_mode,

@@ -141,9 +141,6 @@ static int get_omac_idx(enum nl80211_iftype type, u64 mask)
 		if (i)
 			return i - 1;
 
-		if (type != NL80211_IFTYPE_STATION)
-			break;
-
 		/* next, try to find a free repeater entry for the sta */
 		i = get_free_idx(mask >> REPEATER_BSSID_START, 0,
 				 REPEATER_BSSID_MAX - REPEATER_BSSID_START);
@@ -685,6 +682,9 @@ static void mt7615_sta_rate_tbl_update(struct ieee80211_hw *hw,
 	struct mt7615_sta *msta = (struct mt7615_sta *)sta->drv_priv;
 	struct ieee80211_sta_rates *sta_rates = rcu_dereference(sta->rates);
 	int i;
+
+	if (!sta_rates)
+		return;
 
 	spin_lock_bh(&dev->mt76.lock);
 	for (i = 0; i < ARRAY_SIZE(msta->rates); i++) {

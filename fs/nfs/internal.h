@@ -42,6 +42,16 @@ static inline bool nfs_lookup_is_soft_revalidate(const struct dentry *dentry)
 	return true;
 }
 
+static inline fmode_t flags_to_mode(int flags)
+{
+	fmode_t res = (__force fmode_t)flags & FMODE_EXEC;
+	if ((flags & O_ACCMODE) != O_WRONLY)
+		res |= FMODE_READ;
+	if ((flags & O_ACCMODE) != O_RDONLY)
+		res |= FMODE_WRITE;
+	return res;
+}
+
 /*
  * Note: RFC 1813 doesn't limit the number of auth flavors that
  * a server can return, so make something up.
@@ -373,6 +383,7 @@ extern unsigned long nfs_access_cache_count(struct shrinker *shrink,
 extern unsigned long nfs_access_cache_scan(struct shrinker *shrink,
 					   struct shrink_control *sc);
 struct dentry *nfs_lookup(struct inode *, struct dentry *, unsigned int);
+void nfs_d_prune_case_insensitive_aliases(struct inode *inode);
 int nfs_create(struct user_namespace *, struct inode *, struct dentry *,
 	       umode_t, bool);
 int nfs_mkdir(struct user_namespace *, struct inode *, struct dentry *,
@@ -570,6 +581,13 @@ nfs_write_match_verf(const struct nfs_writeverf *verf,
 {
 	return verf->committed > NFS_UNSTABLE &&
 		!nfs_write_verifier_cmp(&req->wb_verf, &verf->verifier);
+}
+
+static inline gfp_t nfs_io_gfp_mask(void)
+{
+	if (current->flags & PF_WQ_WORKER)
+		return GFP_KERNEL | __GFP_NORETRY | __GFP_NOWARN;
+	return GFP_KERNEL;
 }
 
 /* unlink.c */

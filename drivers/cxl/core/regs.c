@@ -35,7 +35,7 @@ void cxl_probe_component_regs(struct device *dev, void __iomem *base,
 			      struct cxl_component_reg_map *map)
 {
 	int cap, cap_count;
-	u64 cap_array;
+	u32 cap_array;
 
 	*map = (struct cxl_component_reg_map) { 0 };
 
@@ -45,11 +45,11 @@ void cxl_probe_component_regs(struct device *dev, void __iomem *base,
 	 */
 	base += CXL_CM_OFFSET;
 
-	cap_array = readq(base + CXL_CM_CAP_HDR_OFFSET);
+	cap_array = readl(base + CXL_CM_CAP_HDR_OFFSET);
 
 	if (FIELD_GET(CXL_CM_CAP_HDR_ID_MASK, cap_array) != CM_CAP_HDR_CAP_ID) {
 		dev_err(dev,
-			"Couldn't locate the CXL.cache and CXL.mem capability array header./n");
+			"Couldn't locate the CXL.cache and CXL.mem capability array header.\n");
 		return;
 	}
 
@@ -90,7 +90,7 @@ void cxl_probe_component_regs(struct device *dev, void __iomem *base,
 		}
 	}
 }
-EXPORT_SYMBOL_GPL(cxl_probe_component_regs);
+EXPORT_SYMBOL_NS_GPL(cxl_probe_component_regs, CXL);
 
 /**
  * cxl_probe_device_regs() - Detect CXL Device register blocks
@@ -156,7 +156,7 @@ void cxl_probe_device_regs(struct device *dev, void __iomem *base,
 		}
 	}
 }
-EXPORT_SYMBOL_GPL(cxl_probe_device_regs);
+EXPORT_SYMBOL_NS_GPL(cxl_probe_device_regs, CXL);
 
 static void __iomem *devm_cxl_iomap_block(struct device *dev,
 					  resource_size_t addr,
@@ -199,7 +199,7 @@ int cxl_map_component_regs(struct pci_dev *pdev,
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(cxl_map_component_regs);
+EXPORT_SYMBOL_NS_GPL(cxl_map_component_regs, CXL);
 
 int cxl_map_device_regs(struct pci_dev *pdev,
 			struct cxl_device_regs *regs,
@@ -246,4 +246,4 @@ int cxl_map_device_regs(struct pci_dev *pdev,
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(cxl_map_device_regs);
+EXPORT_SYMBOL_NS_GPL(cxl_map_device_regs, CXL);

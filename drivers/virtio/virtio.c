@@ -202,6 +202,28 @@ static int virtio_features_ok(struct virtio_device *dev)
 	return 0;
 }
 
+/**
+ * virtio_reset_device - quiesce device for removal
+ * @dev: the device to reset
+ *
+ * Prevents device from sending interrupts and accessing memory.
+ *
+ * Generally used for cleanup during driver / device removal.
+ *
+ * Once this has been invoked, caller must ensure that
+ * virtqueue_notify / virtqueue_kick are not in progress.
+ *
+ * Note: this guarantees that vq callbacks are not in progress, however caller
+ * is responsible for preventing access from other contexts, such as a system
+ * call/workqueue/bh.  Invoking virtio_break_device then flushing any such
+ * contexts is one way to handle that.
+ * */
+void virtio_reset_device(struct virtio_device *dev)
+{
+	dev->config->reset(dev);
+}
+EXPORT_SYMBOL_GPL(virtio_reset_device);
+
 static int virtio_dev_probe(struct device *_d)
 {
 	int err, i;
@@ -504,8 +526,9 @@ int virtio_device_restore(struct virtio_device *dev)
 			goto err;
 	}
 
-	/* Finally, tell the device we're all set */
-	virtio_add_status(dev, VIRTIO_CONFIG_S_DRIVER_OK);
+	/* If restore didn't do it, mark device DRIVER_OK ourselves. */
+	if (!(dev->config->get_status(dev) & VIRTIO_CONFIG_S_DRIVER_OK))
+		virtio_device_ready(dev);
 
 	virtio_config_enable(dev);
 

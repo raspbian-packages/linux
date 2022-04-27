@@ -1,6 +1,7 @@
-d50bd3f7e1a2609731a80ecae67e7d54  debian/bin/gencontrol.py
-3e5d6d8d63533be55e0edd1648f92b6b  debian/build/version-info
+e17fe78eb61a7685e8e93615352ace4e  debian/bin/gencontrol.py
+615da1d5c63726487e55f30ca6e4e37c  debian/build/version-info
 74b180a87aa1f6377d9bf8a10368c657  debian/templates/control.main.in
+e2de620a085d7a01f9f09eeb7f314da8  debian/templates/control.image-dbg.in
 d048c1b6a4d834060d0ce8b502aee906  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
 ce8590d760adf6efb95181ec626c4aca  debian/templates/control.headers.meta.in
@@ -13,7 +14,6 @@ d8e697382a909e27145b6f20b1770ad6  debian/templates/control.docs.meta.in
 a4a60fc48b3240e46bbac6a1ddcaad30  debian/templates/image.postrm.in
 36387f47e6bacd1e6995a9d41b292e88  debian/templates/control.libc-dev.in
 0327750d6696dee915a532aec73a0fd6  debian/templates/image.postinst.in
-814dda166c7e3ef02e6e259e805ac66a  debian/templates/tests-control.image.in
 459d2768144a8542116bea0805b24dae  debian/templates/control.image.in
 3a2423e3b52a25d9542b791bbaf0970b  debian/templates/perf.preinst.in
 c3f698e72d83a376e2acb6809f6a4a0c  debian/templates/image-dbg.lintian-overrides.in
@@ -24,7 +24,7 @@ c3f698e72d83a376e2acb6809f6a4a0c  debian/templates/image-dbg.lintian-overrides.i
 f3d6de11709cb832d829d43d520fd3de  debian/templates/perf.prerm.in
 77509b4624f98f87a0b4b1370813935b  debian/templates/control.signed-template.in
 b8efaa8b4c9bbfd89c08514f860e548e  debian/templates/docs.meta.maintscript.in
-e69838187b2ad94092cadd4b440e327e  debian/templates/control.image-dbg.in
+814dda166c7e3ef02e6e259e805ac66a  debian/templates/tests-control.image.in
 f3d6de11709cb832d829d43d520fd3de  debian/templates/perf.postinst.in
 8b51e485dc27a85bd53ceab029db303c  debian/templates/control.source.in
 91ddd8e344e4b84b61d02c064e47f7d5  debian/templates/control.image.meta.in
@@ -37,10 +37,10 @@ dce8417680d5472087c898ae874931f1  debian/templates/image-dbg.meta.lintian-overri
 9f79253204110d036e1c7df0626b5cb9  debian/templates/control.sourcebin.meta.in
 2b3995da9ebe7d2b1a1345241dd90c55  debian/templates/control.headers.in
 0c8744f0d4c4746f1cc203c8b129e3ff  debian/templates/control.extra.in
-039cb3bf80f3f62a426de50b678dcda8  debian/templates/control.image-dbg.meta.in
+4d5d13529fba6c0080ee2ccd12d30515  debian/templates/control.image-dbg.meta.in
 fe4456d48e3218fb8980c8577d03a7ae  debian/templates/control.config.in
 769a43efb579711359e12554e34d0baa  debian/templates/image.meta.bug-presubj.in
-940521445826662766efad11ac7272e3  debian/config/defines
+57f5f62fc21b886f9e9c3b4bf42bb0f5  debian/config/defines
 bdb36272c5dbc8964b947b17116fd5c8  debian/config/i386/defines
 3007de4e052313d4d02dc8abaa75543f  debian/config/mips64el/defines
 8f2e4969633ff660d026f2b7e02e6336  debian/config/sh3/defines
@@ -69,7 +69,7 @@ f6eb4abf894006ec7f947d09d32f57b2  debian/config/m68k/defines
 882fb0fec3cbd0239817994223fa71e5  debian/config/mipsn32r6/defines
 59a811890d2e7129bec940075850f11f  debian/config/alpha/defines
 73e2f095b2485f95bc164bf685684a47  debian/config/mipsn32r6el/defines
-0dc671c9478f87444430fbb3312d62e8  debian/config/hppa/defines
+1e16193331027a22856b5b658b90d3bd  debian/config/hppa/defines
 69ad9a016e41e5d08c7b765e6c8a0275  debian/config/armel/defines
 e887306f112b3efd933c0be828f260f0  debian/config/mips64r6/defines
 3e673c1434c6132c73c0cfb4bfe38763  debian/config/arm64ilp32/defines

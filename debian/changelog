@@ -1,4 +1,4 @@
-linux (5.16.18-1+rpi1) bookworm-staging; urgency=medium
+linux (5.17.3-1+rpi1) bookworm-staging; urgency=medium
 
   [changes brought forward from 4.14.13-1+rpi1 by Peter Michael Green <plugwash@raspbian.org> at Wed, 07 Feb 2018 23:32:32 +0000]
   * Disable kernel builds from this package, we build our kernels from other source packages.
@@ -6,7 +6,128 @@ linux (5.16.18-1+rpi1) bookworm-staging; urgency=medium
   [changes introduced in 5.15.15-2+rpi1 by Peter Michael Green]
   * Disable libbfd buildid support, it seems to fail to build.
 
- -- Raspbian forward porter <root@raspbian.org>  Fri, 08 Apr 2022 03:13:20 +0000
+ -- Raspbian forward porter <root@raspbian.org>  Wed, 27 Apr 2022 05:29:22 +0000
+
+linux (5.17.3-1) unstable; urgency=medium
+
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.17.2
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.17.3
+
+  [ Salvatore Bonaccorso ]
+  * linux-kbuild: Include scripts/pahole-flags.sh (Closes: #1008501)
+  * [x86] drivers/cpufreq: Enable X86_AMD_PSTATE as module (Closes: #1009302)
+  * [rt] Update to 5.17.1-rt17
+  * Set ABI to 1
+
+  [ Adriaan Schmidt ]
+  * tools: install perf python bindings (Closes: #860957)
+
+  [ Ben Hutchings ]
+  * d/bin/gencontrol_signed.py: Add support for pkg.linux.quick profile
+  * lintian: Add lintian-overrides to linux-signed-* for non-issues
+  * d/salsa-ci.yml: Don't disable signed code
+  * d/certs: Add certificate and key to enable test signing in CI
+  * d/salsa-ci.yml: Add jobs to build and test the signed packages
+
+  [ Vagrant Cascadian ]
+  * [arm64] Add nvmem-rockchip-efuse and phy-rockchip-inno-hdmi to fb-modules
+    udeb.
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 18 Apr 2022 14:36:36 +0200
+
+linux (5.17.1-1~exp1) experimental; urgency=medium
+
+  * New upstream release: https://kernelnewbies.org/Linux_5.17
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.17.1
+
+  [ Bastian Blank ]
+  * [arm64] Enable HyperV support.  (closes: #1007023)
+  * Replace FB_HYPERV with DRM_HYPERV.
+  * Allow disabling debug info by build profile.
+  * [arm64] Make sure hyperv-daemons are actually build.
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rt15
+
+  [ Diederik de Haas ]
+  * [armhf] Enable SUN8I_THERMAL as module (Closes: #1007799)
+
+ -- Bastian Blank <waldi@debian.org>  Tue, 29 Mar 2022 09:16:17 +0200
+
+linux (5.17~rc8-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rc7-rt13
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 14 Mar 2022 07:04:37 +0100
+
+linux (5.17~rc7-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rc7-rt12
+
+ -- Ben Hutchings <benh@debian.org>  Wed, 09 Mar 2022 22:49:07 +0100
+
+linux (5.17~rc6-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rc6-rt10
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 03 Mar 2022 06:30:16 +0100
+
+linux (5.17~rc5-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rc5-rt8
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sat, 26 Feb 2022 14:11:52 +0100
+
+linux (5.17~rc4-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Bastian Blank ]
+  * Add pkg.linux.nokerneldbg build profile that excludes kernel debug
+    packages.
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.17-rc4-rt7
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Fri, 18 Feb 2022 13:01:10 +0100
+
+linux (5.17~rc3-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Ben Hutchings ]
+  * Rebase patches:
+    - Drop "x86-32: Disable 3D-Now in generic config"
+    - Drop "RISC-V: Use SBI SRST extension when available"
+    - Drop "objtool: check: give big enough buffer for pv_ops"
+    - Drop part of "sh: Do not use hyphen in exported variable names"
+    - Update "add sysctl to disallow unprivileged CLONE_NEWUSER by default"
+    - Update "Disable uImage generation for mips generic"
+    - Update "MODSIGN: do not load mok when secure boot disabled"
+  * [rt] Update to 5.17-rc2-rt4
+  * linux-kbuild: Build extract-cert in certs/ instead of scripts/
+  * d/rules.real: Pass C compiler options to user-space build in HOSTCFLAGS too
+
+  [ Aurelien Jarno ]
+  * [riscv64] Add basic support for StarFive JH7100 RISC-V SoC: enable
+    I2C_DESIGNWARE_PLATFORM, MFD_TPS65086, REGULATOR_TPS65086, SERIAL_8250_DW,
+    SOC_STARFIVE
+
+ -- Ben Hutchings <benh@debian.org>  Fri, 11 Feb 2022 02:28:15 +0100
 
 linux (5.16.18-1) unstable; urgency=medium
 

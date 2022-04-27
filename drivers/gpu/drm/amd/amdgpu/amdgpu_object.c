@@ -33,6 +33,7 @@
 #include <linux/slab.h>
 #include <linux/dma-buf.h>
 
+#include <drm/drm_drv.h>
 #include <drm/amdgpu_drm.h>
 #include <drm/drm_cache.h>
 #include "amdgpu.h"
@@ -1032,8 +1033,13 @@ int amdgpu_bo_init(struct amdgpu_device *adev)
 	/* On A+A platform, VRAM can be mapped as WB */
 	if (!adev->gmc.xgmi.connected_to_cpu) {
 		/* reserve PAT memory space to WC for VRAM */
-		arch_io_reserve_memtype_wc(adev->gmc.aper_base,
+		int r = arch_io_reserve_memtype_wc(adev->gmc.aper_base,
 				adev->gmc.aper_size);
+
+		if (r) {
+			DRM_ERROR("Unable to set WC memtype for the aperture base\n");
+			return r;
+		}
 
 		/* Add an MTRR for the VRAM */
 		adev->gmc.vram_mtrr = arch_phys_wc_add(adev->gmc.aper_base,
@@ -1056,7 +1062,18 @@ int amdgpu_bo_init(struct amdgpu_device *adev)
  */
 void amdgpu_bo_fini(struct amdgpu_device *adev)
 {
+	int idx;
+
 	amdgpu_ttm_fini(adev);
+
+	if (drm_dev_enter(adev_to_drm(adev), &idx)) {
+
+		if (!adev->gmc.xgmi.connected_to_cpu) {
+			arch_phys_wc_del(adev->gmc.vram_mtrr);
+			arch_io_free_memtype_wc(adev->gmc.aper_base, adev->gmc.aper_size);
+		}
+		drm_dev_exit(idx);
+	}
 }
 
 /**
@@ -1286,7 +1303,8 @@ void amdgpu_bo_release_notify(struct ttm_buffer_object *bo)
 	    !(abo->flags & AMDGPU_GEM_CREATE_VRAM_WIPE_ON_RELEASE))
 		return;
 
-	dma_resv_lock(bo->base.resv, NULL);
+	if (WARN_ON_ONCE(!dma_resv_trylock(bo->base.resv)))
+		return;
 
 	r = amdgpu_fill_buffer(abo, AMDGPU_POISON, bo->base.resv, &fence);
 	if (!WARN_ON(r)) {

@@ -648,6 +648,7 @@ static void gpmi_nfc_compute_timings(struct gpmi_nand_data *this,
 				     const struct nand_sdr_timings *sdr)
 {
 	struct gpmi_nfc_hardware_timing *hw = &this->hw;
+	struct resources *r = &this->resources;
 	unsigned int dll_threshold_ps = this->devdata->max_chain_delay;
 	unsigned int period_ps, reference_period_ps;
 	unsigned int data_setup_cycles, data_hold_cycles, addr_setup_cycles;
@@ -670,6 +671,8 @@ static void gpmi_nfc_compute_timings(struct gpmi_nand_data *this,
 		hw->clk_rate = 100000000;
 		wrn_dly_sel = BV_GPMI_CTRL1_WRN_DLY_SEL_NO_DELAY;
 	}
+
+	hw->clk_rate = clk_round_rate(r->clock[0], hw->clk_rate);
 
 	/* SDR core timings are given in picoseconds */
 	period_ps = div_u64((u64)NSEC_PER_SEC * 1000, hw->clk_rate);
@@ -991,16 +994,13 @@ static int acquire_bch_irq(struct gpmi_nand_data *this, irq_handler_t irq_h)
 {
 	struct platform_device *pdev = this->pdev;
 	const char *res_name = GPMI_NAND_BCH_INTERRUPT_RES_NAME;
-	struct resource *r;
 	int err;
 
-	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, res_name);
-	if (!r) {
-		dev_err(this->dev, "Can't get resource for %s\n", res_name);
-		return -ENODEV;
-	}
+	err = platform_get_irq_byname(pdev, res_name);
+	if (err < 0)
+		return err;
 
-	err = devm_request_irq(this->dev, r->start, irq_h, 0, res_name, this);
+	err = devm_request_irq(this->dev, err, irq_h, 0, res_name, this);
 	if (err)
 		dev_err(this->dev, "error requesting BCH IRQ\n");
 
@@ -1436,7 +1436,6 @@ static int gpmi_ecc_write_page(struct nand_chip *chip, const uint8_t *buf,
 	struct mtd_info *mtd = nand_to_mtd(chip);
 	struct gpmi_nand_data *this = nand_get_controller_data(chip);
 	struct bch_geometry *nfc_geo = &this->bch_geometry;
-	int ret;
 
 	dev_dbg(this->dev, "ecc write page.\n");
 
@@ -1456,9 +1455,7 @@ static int gpmi_ecc_write_page(struct nand_chip *chip, const uint8_t *buf,
 				    this->auxiliary_virt);
 	}
 
-	ret = nand_prog_page_op(chip, page, 0, buf, nfc_geo->page_size);
-
-	return ret;
+	return nand_prog_page_op(chip, page, 0, buf, nfc_geo->page_size);
 }
 
 /*

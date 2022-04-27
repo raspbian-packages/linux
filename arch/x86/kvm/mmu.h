@@ -48,6 +48,7 @@
 			       X86_CR4_SMEP | X86_CR4_SMAP | X86_CR4_PKE)
 
 #define KVM_MMU_CR0_ROLE_BITS (X86_CR0_PG | X86_CR0_WP)
+#define KVM_MMU_EFER_ROLE_BITS (EFER_LME | EFER_NX)
 
 static __always_inline u64 rsvd_bits(int s, int e)
 {
@@ -71,7 +72,8 @@ void kvm_init_mmu(struct kvm_vcpu *vcpu);
 void kvm_init_shadow_npt_mmu(struct kvm_vcpu *vcpu, unsigned long cr0,
 			     unsigned long cr4, u64 efer, gpa_t nested_cr3);
 void kvm_init_shadow_ept_mmu(struct kvm_vcpu *vcpu, bool execonly,
-			     bool accessed_dirty, gpa_t new_eptp);
+			     int huge_page_level, bool accessed_dirty,
+			     gpa_t new_eptp);
 bool kvm_can_do_async_pf(struct kvm_vcpu *vcpu);
 int kvm_handle_page_fault(struct kvm_vcpu *vcpu, u64 error_code,
 				u64 fault_address, char *insn, int insn_len);
@@ -350,5 +352,18 @@ kvm_mmu_slot_lpages(struct kvm_memory_slot *slot, int level)
 static inline void kvm_update_page_stats(struct kvm *kvm, int level, int count)
 {
 	atomic64_add(count, &kvm->stat.pages[level - 1]);
+}
+
+gpa_t translate_nested_gpa(struct kvm_vcpu *vcpu, gpa_t gpa, u32 access,
+			   struct x86_exception *exception);
+
+static inline gpa_t kvm_translate_gpa(struct kvm_vcpu *vcpu,
+				      struct kvm_mmu *mmu,
+				      gpa_t gpa, u32 access,
+				      struct x86_exception *exception)
+{
+	if (mmu != &vcpu->arch.nested_mmu)
+		return gpa;
+	return translate_nested_gpa(vcpu, gpa, access, exception);
 }
 #endif
