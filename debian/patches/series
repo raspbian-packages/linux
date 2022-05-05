@@ -77,6 +77,7 @@ bugfix/powerpc/powerpc-boot-fix-missing-crc32poly.h-when-building-with-kernel_xz
 bugfix/arm64/arm64-acpi-Add-fixup-for-HPE-m400-quirks.patch
 bugfix/x86/x86-32-disable-3dnow-in-generic-config.patch
 bugfix/x86/platform-x86-toshiba_haps-Fix-missing-newline-in-pr_.patch
+bugfix/x86/x86-pci-xen-Disable-PCI-MSI-X-masking-for-XEN_HVM-gu.patch
 
 # Arch features
 features/arm64/arm64-dts-rockchip-Add-basic-support-for-Kobol-s-Hel.patch
@@ -113,15 +114,7 @@ features/all/db-mok-keyring/KEYS-Make-use-of-platform-keyring-for-module-signatu
 debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
 debian/ntfs-mark-it-as-broken.patch
 bugfix/all/vfs-move-cap_convert_nscap-call-into-vfs_setxattr.patch
-bugfix/x86/bhb/0001-x86-bugs-Unconditionally-allow-spectre_v2-retpoline-.patch
-bugfix/x86/bhb/0002-x86-speculation-Rename-RETPOLINE_AMD-to-RETPOLINE_LF.patch
-bugfix/x86/bhb/0003-x86-speculation-Add-eIBRS-Retpoline-options.patch
-bugfix/x86/bhb/0004-Documentation-hw-vuln-Update-spectre-doc.patch
-bugfix/x86/bhb/0005-x86-speculation-Include-unprivileged-eBPF-status-in-.patch
-bugfix/x86/bhb/0006-x86-speculation-Use-generic-retpoline-by-default-on-.patch
-bugfix/x86/bhb/0007-x86-speculation-Update-link-to-AMD-speculation-white.patch
-bugfix/x86/bhb/0008-x86-speculation-Warn-about-Spectre-v2-LFENCE-mitigat.patch
-bugfix/x86/bhb/0009-x86-speculation-Warn-about-eIBRS-LFENCE-Unprivileged.patch
+bugfix/all/floppy-disable-FDRAWCMD-by-default.patch
 
 # Fix exported symbol versions
 bugfix/all/module-disable-matching-missing-version-crc.patch
