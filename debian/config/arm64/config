@@ -167,10 +167,13 @@ CONFIG_TCG_TIS_I2C_INFINEON=m
 ##
 CONFIG_COMMON_CLK_RK808=y
 CONFIG_COMMON_CLK_HI655X=y
+CONFIG_COMMON_CLK_SCPI=m
+CONFIG_COMMON_CLK_SI5341=y
 CONFIG_COMMON_CLK_FSL_SAI=y
 CONFIG_CLK_QORIQ=y
 CONFIG_CLK_LS1028A_PLLDIG=y
 CONFIG_COMMON_CLK_XGENE=y
+CONFIG_COMMON_CLK_PWM=m
 
 ##
 ## file: drivers/clk/bcm/Kconfig
@@ -225,6 +228,7 @@ CONFIG_QORIQ_CPUFREQ=m
 ##
 CONFIG_ACPI_CPPC_CPUFREQ=m
 CONFIG_ARM_ARMADA_37XX_CPUFREQ=m
+CONFIG_ARM_SCPI_CPUFREQ=m
 CONFIG_ARM_IMX_CPUFREQ_DT=m
 CONFIG_ARM_RASPBERRYPI_CPUFREQ=m
 
@@ -232,6 +236,7 @@ CONFIG_ARM_RASPBERRYPI_CPUFREQ=m
 ## file: drivers/cpuidle/Kconfig.arm
 ##
 CONFIG_ARM_CPUIDLE=y
+CONFIG_ARM_PSCI_CPUIDLE=y
 
 ##
 ## file: drivers/crypto/Kconfig
@@ -375,8 +380,11 @@ CONFIG_DRM_AST=m
 ##
 ## file: drivers/gpu/drm/bridge/Kconfig
 ##
+CONFIG_DRM_LVDS_CODEC=m
 CONFIG_DRM_NWL_MIPI_DSI=m
 CONFIG_DRM_NXP_PTN3460=m
+CONFIG_DRM_SIMPLE_BRIDGE=m
+CONFIG_DRM_TI_SN65DSI86=m
 
 ##
 ## file: drivers/gpu/drm/bridge/adv7511/Kconfig
@@ -388,6 +396,11 @@ CONFIG_DRM_I2C_ADV7511_AUDIO=y
 ## file: drivers/gpu/drm/bridge/analogix/Kconfig
 ##
 CONFIG_DRM_ANALOGIX_ANX6345=m
+
+##
+## file: drivers/gpu/drm/bridge/cadence/Kconfig
+##
+CONFIG_DRM_CDNS_MHDP8546=m
 
 ##
 ## file: drivers/gpu/drm/bridge/synopsys/Kconfig
@@ -408,6 +421,11 @@ CONFIG_DRM_HISI_HIBMC=m
 ## file: drivers/gpu/drm/hisilicon/kirin/Kconfig
 ##
 CONFIG_DRM_HISI_KIRIN=m
+
+##
+## file: drivers/gpu/drm/imx/dcss/Kconfig
+##
+CONFIG_DRM_IMX_DCSS=m
 
 ##
 ## file: drivers/gpu/drm/lima/Kconfig
@@ -440,6 +458,7 @@ CONFIG_NOUVEAU_PLATFORM_DRIVER=y
 ##
 ## file: drivers/gpu/drm/panel/Kconfig
 ##
+CONFIG_DRM_PANEL_LVDS=m
 CONFIG_DRM_PANEL_SIMPLE=m
 CONFIG_DRM_PANEL_EDP=m
 CONFIG_DRM_PANEL_RASPBERRYPI_TOUCHSCREEN=m
@@ -536,6 +555,7 @@ CONFIG_I2C_BCM2835=m
 CONFIG_I2C_DESIGNWARE_PLATFORM=m
 CONFIG_I2C_GPIO=m
 CONFIG_I2C_IMX=m
+CONFIG_I2C_IMX_LPI2C=m
 CONFIG_I2C_MESON=m
 CONFIG_I2C_MV64XXX=m
 CONFIG_I2C_PXA=m
@@ -553,6 +573,7 @@ CONFIG_I2C_XGENE_SLIMPRO=m
 ##
 CONFIG_I2C_MUX_PCA954x=m
 CONFIG_I2C_MUX_PINCTRL=m
+CONFIG_I2C_MUX_REG=m
 
 ##
 ## file: drivers/iio/adc/Kconfig
@@ -618,6 +639,12 @@ CONFIG_TOUCHSCREEN_EDT_FT5X06=m
 CONFIG_TOUCHSCREEN_RASPBERRYPI_FW=m
 
 ##
+## file: drivers/interconnect/imx/Kconfig
+##
+CONFIG_INTERCONNECT_IMX=m
+CONFIG_INTERCONNECT_IMX8MQ=m
+
+##
 ## file: drivers/iommu/Kconfig
 ##
 CONFIG_ROCKCHIP_IOMMU=y
@@ -657,7 +684,7 @@ CONFIG_QCOM_APCS_IPC=m
 CONFIG_XGENE_SLIMPRO_MBOX=m
 
 ##
-## file: drivers/media/platform/Kconfig
+## file: drivers/media/platform/qcom/venus/Kconfig
 ##
 CONFIG_VIDEO_QCOM_VENUS=m
 
@@ -683,7 +710,9 @@ CONFIG_MFD_QCOM_RPM=m
 CONFIG_MFD_SPMI_PMIC=m
 CONFIG_MFD_RK808=y
 CONFIG_MFD_SL28CPLD=y
+CONFIG_MFD_WM8994=m
 CONFIG_MFD_ROHM_BD718XX=m
+CONFIG_MFD_KHADAS_MCU=m
 
 ##
 ## file: drivers/misc/Kconfig
@@ -725,14 +754,15 @@ CONFIG_MMC_BCM2835=m
 CONFIG_MMC_SDHCI_XENON=m
 
 ##
-## file: drivers/mtd/spi-nor/Kconfig
-##
-CONFIG_MTD_SPI_NOR=m
-
-##
 ## file: drivers/mtd/spi-nor/controllers/Kconfig
 ##
 CONFIG_SPI_HISI_SFC=m
+
+##
+## file: drivers/mux/Kconfig
+##
+CONFIG_MUX_GPIO=m
+CONFIG_MUX_MMIO=m
 
 ##
 ## file: drivers/net/Kconfig
@@ -743,11 +773,6 @@ CONFIG_VMXNET3=m
 ## file: drivers/net/can/Kconfig
 ##
 CONFIG_CAN_FLEXCAN=m
-
-##
-## file: drivers/net/can/spi/Kconfig
-##
-CONFIG_CAN_MCP251X=m
 
 ##
 ## file: drivers/net/dsa/Kconfig
@@ -1157,6 +1182,11 @@ CONFIG_PHY_ROCKCHIP_USB=m
 CONFIG_PHY_TEGRA_XUSB=m
 
 ##
+## file: drivers/phy/xilinx/Kconfig
+##
+CONFIG_PHY_XILINX_ZYNQMP=m
+
+##
 ## file: drivers/pinctrl/Kconfig
 ##
 CONFIG_PINCTRL_AMD=y
@@ -1281,6 +1311,7 @@ CONFIG_RPMSG_QCOM_SMD=m
 CONFIG_RTC_DRV_DS1307=y
 CONFIG_RTC_DRV_MAX77686=y
 CONFIG_RTC_DRV_RK808=y
+CONFIG_RTC_DRV_PCF8523=m
 CONFIG_RTC_DRV_PCF85063=y
 CONFIG_RTC_DRV_PCF8563=y
 CONFIG_RTC_DRV_M41T80=m
@@ -1428,6 +1459,7 @@ CONFIG_QORIQ_THERMAL=m
 CONFIG_SUN8I_THERMAL=m
 CONFIG_ROCKCHIP_THERMAL=m
 CONFIG_ARMADA_THERMAL=m
+CONFIG_KHADAS_MCU_FAN_THERMAL=m
 
 ##
 ## file: drivers/thermal/broadcom/Kconfig
@@ -1519,6 +1551,7 @@ CONFIG_USB_XHCI_PLATFORM=m
 CONFIG_USB_XHCI_MVEBU=m
 CONFIG_USB_XHCI_TEGRA=m
 CONFIG_USB_EHCI_HCD=m
+CONFIG_USB_EHCI_FSL=m
 CONFIG_USB_EHCI_HCD_ORION=m
 CONFIG_USB_EHCI_TEGRA=m
 CONFIG_USB_EHCI_HCD_PLATFORM=m
@@ -1584,6 +1617,8 @@ CONFIG_VFIO_PCI=m
 ## file: drivers/video/backlight/Kconfig
 ##
 CONFIG_BACKLIGHT_LP855X=m
+CONFIG_BACKLIGHT_GPIO=m
+CONFIG_BACKLIGHT_LED=m
 
 ##
 ## file: drivers/video/fbdev/Kconfig
@@ -1631,8 +1666,6 @@ CONFIG_ENERGY_MODEL=y
 ## file: lib/Kconfig.debug
 ##
 CONFIG_DEBUG_INFO_BTF=y
-#. In case debug info is disabled
-CONFIG_DEBUG_INFO_BTF_MODULES_NOOP=y
 
 ##
 ## file: mm/Kconfig
@@ -1685,12 +1718,18 @@ CONFIG_SND_SOC_SGTL5000=m
 CONFIG_SND_SOC_SIMPLE_AMPLIFIER=m
 CONFIG_SND_SOC_SPDIF=m
 CONFIG_SND_SOC_WM8904=m
+CONFIG_SND_SOC_WM8960=m
 
 ##
 ## file: sound/soc/fsl/Kconfig
 ##
 CONFIG_SND_SOC_FSL_SAI=m
 CONFIG_SND_SOC_FSL_SPDIF=m
+CONFIG_SND_SOC_FSL_MICFIL=m
+CONFIG_SND_IMX_SOC=m
+CONFIG_SND_SOC_FSL_ASOC_CARD=m
+CONFIG_SND_SOC_IMX_AUDMIX=m
+CONFIG_SND_SOC_IMX_HDMI=m
 
 ##
 ## file: sound/soc/generic/Kconfig

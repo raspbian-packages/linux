@@ -83,8 +83,6 @@
 /* Polling time to wait for fDeviceInit */
 #define FDEVICEINIT_COMPL_TIMEOUT 1500 /* millisecs */
 
-#define wlun_dev_to_hba(dv) shost_priv(to_scsi_device(dv)->host)
-
 #define ufshcd_toggle_vreg(_dev, _vreg, _on)				\
 	({                                                              \
 		int _ret;                                               \
@@ -367,7 +365,7 @@ static void ufshcd_add_uic_command_trace(struct ufs_hba *hba,
 static void ufshcd_add_command_trace(struct ufs_hba *hba, unsigned int tag,
 				     enum ufs_trace_str_t str_t)
 {
-	u64 lba;
+	u64 lba = 0;
 	u8 opcode = 0, group_id = 0;
 	u32 intr, doorbell;
 	struct ufshcd_lrb *lrbp = &hba->lrb[tag];
@@ -384,7 +382,6 @@ static void ufshcd_add_command_trace(struct ufs_hba *hba, unsigned int tag,
 		return;
 
 	opcode = cmd->cmnd[0];
-	lba = scsi_get_lba(cmd);
 
 	if (opcode == READ_10 || opcode == WRITE_10) {
 		/*
@@ -392,6 +389,7 @@ static void ufshcd_add_command_trace(struct ufs_hba *hba, unsigned int tag,
 		 */
 		transfer_len =
 		       be32_to_cpu(lrbp->ucd_req_ptr->sc.exp_data_transfer_len);
+		lba = scsi_get_lba(cmd);
 		if (opcode == WRITE_10)
 			group_id = lrbp->cmd->cmnd[6];
 	} else if (opcode == UNMAP) {
@@ -399,6 +397,7 @@ static void ufshcd_add_command_trace(struct ufs_hba *hba, unsigned int tag,
 		 * The number of Bytes to be unmapped beginning with the lba.
 		 */
 		transfer_len = blk_rq_bytes(rq);
+		lba = scsi_get_lba(cmd);
 	}
 
 	intr = ufshcd_readl(hba, REG_INTERRUPT_STATUS);
@@ -5789,6 +5788,47 @@ static bool ufshcd_wb_presrv_usrspc_keep_vcc_on(struct ufs_hba *hba,
 	return false;
 }
 
+static void ufshcd_wb_force_disable(struct ufs_hba *hba)
+{
+	if (!(hba->quirks & UFSHCI_QUIRK_SKIP_MANUAL_WB_FLUSH_CTRL))
+		ufshcd_wb_toggle_flush(hba, false);
+
+	ufshcd_wb_toggle_flush_during_h8(hba, false);
+	ufshcd_wb_toggle(hba, false);
+	hba->caps &= ~UFSHCD_CAP_WB_EN;
+
+	dev_info(hba->dev, "%s: WB force disabled\n", __func__);
+}
+
+static bool ufshcd_is_wb_buf_lifetime_available(struct ufs_hba *hba)
+{
+	u32 lifetime;
+	int ret;
+	u8 index;
+
+	index = ufshcd_wb_get_query_index(hba);
+	ret = ufshcd_query_attr_retry(hba, UPIU_QUERY_OPCODE_READ_ATTR,
+				      QUERY_ATTR_IDN_WB_BUFF_LIFE_TIME_EST,
+				      index, 0, &lifetime);
+	if (ret) {
+		dev_err(hba->dev,
+			"%s: bWriteBoosterBufferLifeTimeEst read failed %d\n",
+			__func__, ret);
+		return false;
+	}
+
+	if (lifetime == UFS_WB_EXCEED_LIFETIME) {
+		dev_err(hba->dev, "%s: WB buf lifetime is exhausted 0x%02X\n",
+			__func__, lifetime);
+		return false;
+	}
+
+	dev_dbg(hba->dev, "%s: WB buf lifetime is 0x%02X\n",
+		__func__, lifetime);
+
+	return true;
+}
+
 static bool ufshcd_wb_need_flush(struct ufs_hba *hba)
 {
 	int ret;
@@ -5797,6 +5837,12 @@ static bool ufshcd_wb_need_flush(struct ufs_hba *hba)
 
 	if (!ufshcd_is_wb_allowed(hba))
 		return false;
+
+	if (!ufshcd_is_wb_buf_lifetime_available(hba)) {
+		ufshcd_wb_force_disable(hba);
+		return false;
+	}
+
 	/*
 	 * The ufs device needs the vcc to be ON to flush.
 	 * With user-space reduction enabled, it's enough to enable flush
@@ -7503,6 +7549,7 @@ static void ufshcd_wb_probe(struct ufs_hba *hba, u8 *desc_buf)
 
 	if (!ufshcd_is_wb_allowed(hba))
 		return;
+
 	/*
 	 * Probe WB only for UFS-2.2 and UFS-3.1 (and later) devices or
 	 * UFS devices with quirk UFS_DEVICE_QUIRK_SUPPORT_EXTENDED_FEATURES
@@ -7554,6 +7601,10 @@ static void ufshcd_wb_probe(struct ufs_hba *hba, u8 *desc_buf)
 		if (!d_lu_wb_buf_alloc)
 			goto wb_disabled;
 	}
+
+	if (!ufshcd_is_wb_buf_lifetime_available(hba))
+		goto wb_disabled;
+
 	return;
 
 wb_disabled:

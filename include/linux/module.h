@@ -471,7 +471,7 @@ struct module {
 	unsigned int num_bpf_raw_events;
 	struct bpf_raw_event_map *bpf_raw_events;
 #endif
-#if defined(CONFIG_DEBUG_INFO_BTF_MODULES) || defined(CONFIG_DEBUG_INFO_BTF_MODULES_NOOP)
+#if 1
 	unsigned int btf_data_size;
 	void *btf_data;
 #endif
