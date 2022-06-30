@@ -1,0 +1,17 @@
+From: Mark Gross <markgross@kernel.org>
+Date: Tue, 10 May 2022 16:03:47 -0700
+Subject: [PATCH 347/347] Linux 4.9.312-rt193 REBASE
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=4ba21d219e662423ef63540bb8042f46dccb4200
+
+Signed-off-by: Mark Gross <markgross@kernel.org>
+---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 9a218ca23053..58dccbc39d0a 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt23
++-rt193
