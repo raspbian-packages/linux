@@ -41,7 +41,6 @@
 #include <linux/string.h>
 #include <subcmd/parse-options.h>
 #include <subcmd/run-command.h>
-#include <tools/dis-asm-compat.h>
 
 /* FIXME: For the HE_COLORSET */
 #include "ui/browser.h"
@@ -1721,6 +1720,7 @@ fallback:
 #include <bpf/btf.h>
 #include <bpf/libbpf.h>
 #include <linux/btf.h>
+#include <tools/dis-asm-compat.h>
 
 static int symbol__disassemble_bpf(struct symbol *sym,
 				   struct annotate_args *args)
