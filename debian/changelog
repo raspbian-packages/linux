@@ -1,9 +1,32 @@
-linux (5.10.127-1+rpi1) bullseye-staging; urgency=medium
+linux (5.10.127-2+rpi1) bullseye-staging; urgency=medium
 
   [changes brought forward from 4.14.13-1+rpi1 by Peter Michael Green <plugwash@raspbian.org> at Wed, 07 Feb 2018 23:32:32 +0000]
   * Disable kernel builds from this package, we build our kernels from other source packages.
 
- -- Raspbian forward porter <root@raspbian.org>  Wed, 13 Jul 2022 14:07:29 +0000
+ -- Raspbian forward porter <root@raspbian.org>  Wed, 27 Jul 2022 12:42:46 +0000
+
+linux (5.10.127-2) bullseye-security; urgency=high
+
+  * [amd64,arm64,armhf] wireguard: Clear keys after suspend despite
+    CONFIG_ANDROID=y
+  * netfilter: nf_tables: stricter validation of element data (CVE-2022-34918)
+  * net: rose: fix UAF bugs caused by timer handler (CVE-2022-2318)
+  * net: rose: fix UAF bug caused by rose_t0timer_expiry
+  * xen/{blk,net}front: fix leaking data in shared pages (CVE-2022-26365,
+    CVE-2022-33740)
+  * xen/{blk,net}front: force data bouncing when backend is untrusted
+    (CVE-2022-33741, CVE-2022-33742)
+  * xen-netfront: restore __skb_queue_tail() positioning in
+    xennet_get_responses() (CVE-2022-33743)
+  * [arm64,armhf] xen/arm: Fix race in RB-tree based P2M accounting
+    (CVE-2022-33744)
+  * fbdev: fbmem: Fix logo center image dx issue
+  * fbdev: Fix potential out-of-bounds writes (CVE-2021-33655):
+    - fbmem: Check virtual screen sizes in fb_set_var()
+    - fbcon: Disallow setting font bigger than screen size
+    - fbcon: Prevent that screen size is smaller than font size
+
+ -- Ben Hutchings <benh@debian.org>  Sun, 24 Jul 2022 00:32:10 +0200
 
 linux (5.10.127-1) bullseye; urgency=medium
 
