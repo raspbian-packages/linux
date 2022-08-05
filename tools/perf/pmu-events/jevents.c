@@ -995,7 +995,8 @@ static FILE *eventsfp;
 static char *mapfile;
 static struct ordered_ftw_state *ordered_ftw_state;
 
-static int ordered_ftw_add(const char *fpath, const struct stat *sb,
+static int ordered_ftw_add(const char *fpath,
+			   const struct stat *sb __maybe_unused,
 			   int typeflag, struct FTW *ftwbuf)
 {
 	struct ordered_ftw_state *state = ordered_ftw_state;

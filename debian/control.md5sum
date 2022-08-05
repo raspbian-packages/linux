@@ -1,6 +1,7 @@
-ac71185852cbf1f452610550db912f0e  debian/bin/gencontrol.py
-b9a2b0dc2fdf16f1dbd60237f707a85c  debian/build/version-info
+56d70a1e28653a7bcd5563bab1bbf462  debian/bin/gencontrol.py
+de802dea59b42b27ea9d43ead57deeca  debian/build/version-info
 74b180a87aa1f6377d9bf8a10368c657  debian/templates/control.main.in
+1b8b8853b8cd046948e0ea33882022c0  debian/templates/tests-control.headers.in
 d048c1b6a4d834060d0ce8b502aee906  debian/templates/control.image-unsigned.in
 38004750aa03cea41d5d3aeafff16fcc  debian/templates/image.preinst.in
 ce8590d760adf6efb95181ec626c4aca  debian/templates/control.headers.meta.in
@@ -18,7 +19,7 @@ a4a60fc48b3240e46bbac6a1ddcaad30  debian/templates/image.postrm.in
 c3f698e72d83a376e2acb6809f6a4a0c  debian/templates/image-dbg.lintian-overrides.in
 0d7f6ea42f52d0a6013535a80111ee3e  debian/templates/headers.postinst.in
 8767f777765b1af15090392c4607a596  debian/templates/image-dbg.meta.maintscript.in
-2388af42bd31895db11f6962648ee65c  debian/templates/control.sourcebin.in
+1037c8be9b0cfc66f78f436d44093cfd  debian/templates/control.sourcebin.in
 77509b4624f98f87a0b4b1370813935b  debian/templates/control.signed-template.in
 b8efaa8b4c9bbfd89c08514f860e548e  debian/templates/docs.meta.maintscript.in
 e2de620a085d7a01f9f09eeb7f314da8  debian/templates/control.image-dbg.in
@@ -28,14 +29,14 @@ ed25b8839b8e5cb08adfbfde488dd0cd  debian/templates/headers.meta.maintscript.in
 ab78b844f046a0bc3e400103ea13307a  debian/templates/control.docs.in
 dce8417680d5472087c898ae874931f1  debian/templates/image-dbg.meta.lintian-overrides.in
 578bb70eb1ed930f2cf8a774666b747f  debian/templates/control.headers.featureset.in
-33d71bfd398d2f9b3bc5c0193b67d17e  debian/templates/tests-control.main.in
+4eea8205f796914aae590b032acd2f38  debian/templates/tests-control.main.in
 9f79253204110d036e1c7df0626b5cb9  debian/templates/control.sourcebin.meta.in
 2b3995da9ebe7d2b1a1345241dd90c55  debian/templates/control.headers.in
 0c8744f0d4c4746f1cc203c8b129e3ff  debian/templates/control.extra.in
 4d5d13529fba6c0080ee2ccd12d30515  debian/templates/control.image-dbg.meta.in
 fe4456d48e3218fb8980c8577d03a7ae  debian/templates/control.config.in
 769a43efb579711359e12554e34d0baa  debian/templates/image.meta.bug-presubj.in
-f870d524e10530b6f0b40453a9c92245  debian/config/defines
+16cff75ac31ba39f93f4d835bd067ba4  debian/config/defines
 bdb36272c5dbc8964b947b17116fd5c8  debian/config/i386/defines
 3007de4e052313d4d02dc8abaa75543f  debian/config/mips64el/defines
 8f2e4969633ff660d026f2b7e02e6336  debian/config/sh3/defines
