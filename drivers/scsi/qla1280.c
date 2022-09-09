@@ -4035,7 +4035,6 @@ qla1280_setup(char *s)
 {
 	char *cp, *ptr;
 	unsigned long val;
-	int toke;
 
 	cp = s;
 
@@ -4050,7 +4049,7 @@ qla1280_setup(char *s)
 		} else
 			val = simple_strtoul(ptr, &ptr, 0);
 
-		switch ((toke = qla1280_get_token(cp))) {
+		switch (qla1280_get_token(cp)) {
 		case TOKEN_NVRAM:
 			if (!val)
 				driver_setup.no_nvram = 1;

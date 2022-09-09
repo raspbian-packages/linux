@@ -62,9 +62,7 @@
 #include "lib/mlx5.h"
 #include "lib/tout.h"
 #include "fpga/core.h"
-#include "fpga/ipsec.h"
-#include "accel/ipsec.h"
-#include "accel/tls.h"
+#include "en_accel/ipsec.h"
 #include "lib/clock.h"
 #include "lib/vxlan.h"
 #include "lib/geneve.h"
@@ -179,30 +177,30 @@ static struct mlx5_profile profile[] = {
 	},
 };
 
-static int fw_initializing(struct mlx5_core_dev *dev)
-{
-	return ioread32be(&dev->iseg->initializing) >> 31;
-}
-
 static int wait_fw_init(struct mlx5_core_dev *dev, u32 max_wait_mili,
 			u32 warn_time_mili)
 {
 	unsigned long warn = jiffies + msecs_to_jiffies(warn_time_mili);
 	unsigned long end = jiffies + msecs_to_jiffies(max_wait_mili);
+	u32 fw_initializing;
 	int err = 0;
 
-	while (fw_initializing(dev)) {
-		if (time_after(jiffies, end)) {
+	do {
+		fw_initializing = ioread32be(&dev->iseg->initializing);
+		if (!(fw_initializing >> 31))
+			break;
+		if (time_after(jiffies, end) ||
+		    test_and_clear_bit(MLX5_BREAK_FW_WAIT, &dev->intf_state)) {
 			err = -EBUSY;
 			break;
 		}
 		if (warn_time_mili && time_after(jiffies, warn)) {
-			mlx5_core_warn(dev, "Waiting for FW initialization, timeout abort in %ds\n",
-				       jiffies_to_msecs(end - warn) / 1000);
+			mlx5_core_warn(dev, "Waiting for FW initialization, timeout abort in %ds (0x%x)\n",
+				       jiffies_to_msecs(end - warn) / 1000, fw_initializing);
 			warn = jiffies + msecs_to_jiffies(warn_time_mili);
 		}
 		msleep(mlx5_tout_ms(dev, FW_PRE_INIT_WAIT));
-	}
+	} while (true);
 
 	return err;
 }
@@ -526,7 +524,7 @@ static int handle_hca_cap(struct mlx5_core_dev *dev, void *set_ctx)
 
 	/* Check log_max_qp from HCA caps to set in current profile */
 	if (prof->log_max_qp == LOG_MAX_SUPPORTED_QPS) {
-		prof->log_max_qp = min_t(u8, 17, MLX5_CAP_GEN_MAX(dev, log_max_qp));
+		prof->log_max_qp = min_t(u8, 18, MLX5_CAP_GEN_MAX(dev, log_max_qp));
 	} else if (MLX5_CAP_GEN_MAX(dev, log_max_qp) < prof->log_max_qp) {
 		mlx5_core_warn(dev, "log_max_qp value in current profile is %d, changing it to HCA capability limit (%d)\n",
 			       prof->log_max_qp,
@@ -1025,8 +1023,6 @@ static int mlx5_function_setup(struct mlx5_core_dev *dev, u64 timeout)
 	if (mlx5_core_is_pf(dev))
 		pcie_print_link_status(dev->pdev);
 
-	mlx5_tout_set_def_val(dev);
-
 	/* wait for firmware to accept initialization segments configurations
 	 */
 	err = wait_fw_init(dev, timeout,
@@ -1192,14 +1188,6 @@ static int mlx5_load(struct mlx5_core_dev *dev)
 		goto err_fpga_start;
 	}
 
-	mlx5_accel_ipsec_init(dev);
-
-	err = mlx5_accel_tls_init(dev);
-	if (err) {
-		mlx5_core_err(dev, "TLS device start failed %d\n", err);
-		goto err_tls_start;
-	}
-
 	err = mlx5_fs_core_init(dev);
 	if (err) {
 		mlx5_core_err(dev, "Failed to init flow steering\n");
@@ -1247,9 +1235,6 @@ err_vhca:
 err_set_hca:
 	mlx5_fs_core_cleanup(dev);
 err_fs:
-	mlx5_accel_tls_cleanup(dev);
-err_tls_start:
-	mlx5_accel_ipsec_cleanup(dev);
 	mlx5_fpga_device_stop(dev);
 err_fpga_start:
 	mlx5_rsc_dump_cleanup(dev);
@@ -1275,8 +1260,6 @@ static void mlx5_unload(struct mlx5_core_dev *dev)
 	mlx5_sf_hw_table_destroy(dev);
 	mlx5_vhca_event_stop(dev);
 	mlx5_fs_core_cleanup(dev);
-	mlx5_accel_ipsec_cleanup(dev);
-	mlx5_accel_tls_cleanup(dev);
 	mlx5_fpga_device_stop(dev);
 	mlx5_rsc_dump_cleanup(dev);
 	mlx5_hv_vhca_cleanup(dev->hv_vhca);
@@ -1489,7 +1472,9 @@ int mlx5_mdev_init(struct mlx5_core_dev *dev, int profile_idx)
 	memcpy(&dev->profile, &profile[profile_idx], sizeof(dev->profile));
 	INIT_LIST_HEAD(&priv->ctx_list);
 	spin_lock_init(&priv->ctx_lock);
+	lockdep_register_key(&dev->lock_key);
 	mutex_init(&dev->intf_state_mutex);
+	lockdep_set_class(&dev->intf_state_mutex, &dev->lock_key);
 
 	mutex_init(&priv->bfregs.reg_head.lock);
 	mutex_init(&priv->bfregs.wc_head.lock);
@@ -1544,6 +1529,7 @@ err_timeout_init:
 	mutex_destroy(&priv->bfregs.wc_head.lock);
 	mutex_destroy(&priv->bfregs.reg_head.lock);
 	mutex_destroy(&dev->intf_state_mutex);
+	lockdep_unregister_key(&dev->lock_key);
 	return err;
 }
 
@@ -1562,6 +1548,7 @@ void mlx5_mdev_uninit(struct mlx5_core_dev *dev)
 	mutex_destroy(&priv->bfregs.wc_head.lock);
 	mutex_destroy(&priv->bfregs.reg_head.lock);
 	mutex_destroy(&dev->intf_state_mutex);
+	lockdep_unregister_key(&dev->lock_key);
 }
 
 static int probe_one(struct pci_dev *pdev, const struct pci_device_id *id)
@@ -1636,6 +1623,7 @@ static void remove_one(struct pci_dev *pdev)
 	 * fw_reset before unregistering the devlink.
 	 */
 	mlx5_drain_fw_reset(dev);
+	set_bit(MLX5_BREAK_FW_WAIT, &dev->intf_state);
 	devlink_unregister(devlink);
 	mlx5_sriov_disable(pdev);
 	mlx5_crdump_disable(dev);
@@ -1783,7 +1771,7 @@ static int mlx5_try_fast_unload(struct mlx5_core_dev *dev)
 	}
 
 	/* Panic tear down fw command will stop the PCI bus communication
-	 * with the HCA, so the health polll is no longer needed.
+	 * with the HCA, so the health poll is no longer needed.
 	 */
 	mlx5_drain_health_wq(dev);
 	mlx5_stop_health_poll(dev, false);
@@ -1819,6 +1807,7 @@ static void shutdown(struct pci_dev *pdev)
 	int err;
 
 	mlx5_core_info(dev, "Shutdown was called\n");
+	set_bit(MLX5_BREAK_FW_WAIT, &dev->intf_state);
 	err = mlx5_try_fast_unload(dev);
 	if (err)
 		mlx5_unload_one(dev);
@@ -1912,7 +1901,6 @@ static struct pci_driver mlx5_core_driver = {
  * Return: Pointer to the associated mlx5_core_dev or NULL.
  */
 struct mlx5_core_dev *mlx5_vf_get_core_dev(struct pci_dev *pdev)
-			__acquires(&mdev->intf_state_mutex)
 {
 	struct mlx5_core_dev *mdev;
 
@@ -1938,7 +1926,6 @@ EXPORT_SYMBOL(mlx5_vf_get_core_dev);
  * access the mdev any more.
  */
 void mlx5_vf_put_core_dev(struct mlx5_core_dev *mdev)
-			__releases(&mdev->intf_state_mutex)
 {
 	mutex_unlock(&mdev->intf_state_mutex);
 }
@@ -1965,7 +1952,6 @@ static int __init init(void)
 	get_random_bytes(&sw_owner_id, sizeof(sw_owner_id));
 
 	mlx5_core_verify_params();
-	mlx5_fpga_ipsec_build_fs_cmds();
 	mlx5_register_debugfs();
 
 	err = pci_register_driver(&mlx5_core_driver);

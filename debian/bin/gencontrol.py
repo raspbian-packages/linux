@@ -2,7 +2,6 @@
 
 import sys
 import locale
-import io
 import os
 import os.path
 import subprocess
@@ -115,12 +114,9 @@ class Gencontrol(Base):
             kw_proc = subprocess.Popen(
                 ['kernel-wedge', 'gen-control', vars['abiname']],
                 stdout=subprocess.PIPE,
+                text=True,
                 env=kw_env)
-            if not isinstance(kw_proc.stdout, io.IOBase):
-                udeb_packages = read_control(io.open(kw_proc.stdout.fileno(),
-                                                     closefd=False))
-            else:
-                udeb_packages = read_control(io.TextIOWrapper(kw_proc.stdout))
+            udeb_packages = read_control(kw_proc.stdout)
             kw_proc.wait()
             if kw_proc.returncode != 0:
                 raise RuntimeError('kernel-wedge exited with code %d' %
@@ -247,16 +243,16 @@ class Gencontrol(Base):
         self._setup_makeflags(self.arch_makeflags, makeflags, config_base)
 
         try:
-            gnu_type_bytes = subprocess.check_output(
+            gnu_type = subprocess.check_output(
                 ['dpkg-architecture', '-f', '-a', arch,
                  '-q', 'DEB_HOST_GNU_TYPE'],
-                stderr=subprocess.DEVNULL)
+                stderr=subprocess.DEVNULL,
+                encoding='utf-8')
         except subprocess.CalledProcessError:
             # This sometimes happens for the newest ports :-/
             print('W: Unable to get GNU type for %s' % arch, file=sys.stderr)
         else:
-            vars['gnu-type-package'] = (
-                gnu_type_bytes.decode('utf-8').strip().replace('_', '-'))
+            vars['gnu-type-package'] = gnu_type.strip().replace('_', '-')
 
     def do_arch_packages(self, packages, makefile, arch, vars, makeflags,
                          extra):
@@ -569,18 +565,15 @@ class Gencontrol(Base):
             self.tests_control_image = tests_control
             self.tests_control.append(tests_control)
 
-        if flavour == self.quick_flavour:
-            tests_control = self.process_package(
-                self.templates['tests-control.headers'][0], vars)
-            tests_control['Depends'].append(
+        if flavour == (self.quick_flavour or self.default_flavour):
+            if not self.tests_control_headers:
+                self.tests_control_headers = self.process_package(
+                    self.templates['tests-control.headers'][0], vars)
+                self.tests_control.append(self.tests_control_headers)
+            self.tests_control_headers['Architecture'].add(arch)
+            self.tests_control_headers['Depends'].append(
                 PackageRelationGroup(package_headers['Package'],
                                      override_arches=(arch,)))
-            if self.tests_control_headers:
-                self.tests_control_headers['Depends'].extend(
-                    tests_control['Depends'])
-            else:
-                self.tests_control_headers = tests_control
-                self.tests_control.append(tests_control)
 
         def get_config(*entry_name):
             entry_real = ('image',) + entry_name

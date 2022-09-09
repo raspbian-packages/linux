@@ -1,4 +1,4 @@
-linux (5.18.14-1+rpi1) bookworm-staging; urgency=medium
+linux (5.19.6-1+rpi1) bookworm-staging; urgency=medium
 
   [changes brought forward from 4.14.13-1+rpi1 by Peter Michael Green <plugwash@raspbian.org> at Wed, 07 Feb 2018 23:32:32 +0000]
   * Disable kernel builds from this package, we build our kernels from other source packages.
@@ -6,7 +6,451 @@ linux (5.18.14-1+rpi1) bookworm-staging; urgency=medium
   [changes introduced in 5.15.15-2+rpi1 by Peter Michael Green]
   * Disable libbfd buildid support, it seems to fail to build.
 
- -- Raspbian forward porter <root@raspbian.org>  Fri, 05 Aug 2022 14:57:49 +0000
+ -- Raspbian forward porter <root@raspbian.org>  Fri, 09 Sep 2022 19:30:28 +0000
+
+linux (5.19.6-1) unstable; urgency=medium
+
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.1
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.2
+    - Revert "net: usb: ax88179_178a needs FLAG_SEND_ZLP" (Closes: #1017894)
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.3
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.4
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.5
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.19.6
+    - mm/gup: fix FOLL_FORCE COW security issue and remove FOLL_COW
+      (CVE-2022-2590)
+    - af_key: Do not call xfrm_probe_algs in parallel (CVE-2022-3028)
+    - [x86] nospec: Unwreck the RSB stuffing
+    - [x86] nospec: Fix i386 RSB stuffing (Closes: #1017425)
+    - bpf: Don't use tnum_range on array range checking for poke descriptors
+      (CVE-2022-2905)
+
+  [ Ben Hutchings ]
+  * d/tests/kbuild: Fix default-flavour lookup for arches with no featuresets
+  * d/tests/kbuild: Make flavour lookup verbose
+  * d/lib/python/debian_linux, d/templates: Use variable for binary package
+    name
+  * lintian: Update overrides in linux-image-*-dbg for lintian 2.115
+  * d/{signing_templates/,}rules.real: Run dh_lintian for all packages
+  * [hppa,mips,mipsel,powerpc] lintian: Override error for 64-bit kernels
+  * [mips64el,mipsel,ppc64el] lintian: Override error for unstripped vmlinux
+  * [arm64] lintian: Override errors for vdso32.so in linux-image-*-dbg
+  * android: Remove CONFIG_ANDROID:
+    - Drop "wireguard: Clear keys after suspend despite CONFIG_ANDROID=y"
+    - pm/sleep: Add PM_USERSPACE_AUTOSLEEP Kconfig
+    - remove CONFIG_ANDROID
+    - Enable/disable ANDROID_BINDER_IPC to match previous configuration
+
+  [ Vincent Blut ]
+  * [x86] drivers/hwmon: Enable SENSORS_ASUS_WMI and SENSORS_ASUS_EC as
+    modules
+  * [x86] drivers/platform/x86: Enable NVIDIA_WMI_EC_BACKLIGHT as module
+    (Closes: #1017972)
+  * [arm64] drivers/spi: Enable SPI_GPIO and SPI_SUN6I as modules
+    (Closes: #1016807)
+
+  [ Diederik de Haas ]
+  * [arm64] drivers/gpu/drm/rockchip: Explicitly enable ROCKCHIP_VOP
+
+  [ Helge Deller ]
+  * [hppa] Drop CONFIG_PATA_LEGACY for hppa architecture
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Refresh "rcutorture: Also force sched priority to timersd on boosting
+    test."
+  * Drop setting of CRYPTO_BLAKE2S
+    crypto: blake2s shash module was removed upstream.
+  * [arm] arch/arm/crypto: Enable CRYPTO_BLAKE2S_ARM
+  * certs: Rotate to use the "Debian Secure Boot Signer 2022 - linux"
+    certificate (Closes: #1018752)
+  * Set ABI to 1
+  * [hppa/parisc64] Drop explicit setting of 64BIT
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Thu, 01 Sep 2022 09:04:35 +0200
+
+linux (5.19-1~exp1) experimental; urgency=medium
+
+  * New upstream release: https://kernelnewbies.org/Linux_5.19
+    - [i386] x86/asm/32: Fix ANNOTATE_UNRET_SAFE use on 32-bit (fixes FTBFS)
+
+  [ Ben Hutchings ]
+  * [riscv64] Disable COMPAT (fixes FTBFS)
+  * linux-kbuild: Add check-local-export script (Closes: #1014633)
+  * [x86,arm64,armhf] Add rtla package for Real-Time Linux Analysis tools
+
+  [ Uwe Kleine-König ]
+  * Enable IOSM modem driver as a module.
+
+  [ Diederik de Haas ]
+  * [arm64] drivers/crypto: Enable CRYPTO_DEV_ROCKCHIP as module
+
+  [ Salvatore Bonaccorso ]
+  * [rt] Update to 5.19-rc8-rt9
+
+  [ Vincent Blut ]
+  * [amd64] crypto: Enable CRYPTO_NHPOLY1305_SSE2 and CRYPTO_NHPOLY1305_AVX2
+    as modules (Closes: #1013870)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Tue, 02 Aug 2022 16:04:51 +0200
+
+linux (5.19~rc6-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Ben Hutchings ]
+  * [mips64el/mips64r2el] Fix package description
+  * [x86] Add mitigations for RETbleed on AMD/Hygon (CVE-2022-29900) and
+    Intel (CVE-2022-29901) processors:
+    - x86/kvm/vmx: Make noinstr clean
+    - x86/cpufeatures: Move RETPOLINE flags to word 11
+    - x86/retpoline: Cleanup some #ifdefery
+    - x86/retpoline: Swizzle retpoline thunk
+    - x86/retpoline: Use -mfunction-return
+    - x86: Undo return-thunk damage
+    - x86,objtool: Create .return_sites
+    - x86,static_call: Use alternative RET encoding
+    - x86/ftrace: Use alternative RET encoding
+    - x86/bpf: Use alternative RET encoding
+    - x86/kvm: Fix SETcc emulation for return thunks
+    - x86/vsyscall_emu/64: Don't use RET in vsyscall emulation
+    - x86/sev: Avoid using __x86_return_thunk
+    - x86: Use return-thunk in asm code
+    - x86/entry: Avoid very early RET
+    - objtool: Treat .text.__x86.* as noinstr
+    - x86: Add magic AMD return-thunk
+    - x86/bugs: Report AMD retbleed vulnerability
+    - x86/bugs: Add AMD retbleed= boot parameter
+    - x86/bugs: Enable STIBP for JMP2RET
+    - x86/bugs: Keep a per-CPU IA32_SPEC_CTRL value
+    - x86/entry: Add kernel IBRS implementation
+    - x86/bugs: Optimize SPEC_CTRL MSR writes
+    - x86/speculation: Add spectre_v2=ibrs option to support Kernel IBRS
+    - x86/bugs: Split spectre_v2_select_mitigation() and
+      spectre_v2_user_select_mitigation()
+    - x86/bugs: Report Intel retbleed vulnerability
+    - intel_idle: Disable IBRS during long idle
+    - objtool: Update Retpoline validation
+    - x86/xen: Rename SYS* entry points
+    - x86/xen: Add UNTRAIN_RET
+    - x86/bugs: Add retbleed=ibpb
+    - x86/bugs: Do IBPB fallback check only once
+    - objtool: Add entry UNRET validation
+    - x86/cpu/amd: Add Spectral Chicken
+    - x86/speculation: Fix RSB filling with CONFIG_RETPOLINE=n
+    - x86/speculation: Fix firmware entry SPEC_CTRL handling
+    - x86/speculation: Fix SPEC_CTRL write on SMT state change
+    - x86/speculation: Use cached host SPEC_CTRL value for guest entry/exit
+    - x86/speculation: Remove x86_spec_ctrl_mask
+    - objtool: Re-add UNWIND_HINT_{SAVE_RESTORE}
+    - KVM: VMX: Flatten __vmx_vcpu_run()
+    - KVM: VMX: Convert launched argument to flags
+    - KVM: VMX: Prevent guest RSB poisoning attacks with eIBRS
+    - KVM: VMX: Fix IBRS handling after vmexit
+    - x86/speculation: Fill RSB on vmexit for IBRS
+    - KVM: VMX: Prevent RSB underflow before vmenter
+    - x86/common: Stamp out the stepping madness
+    - x86/cpu/amd: Enumerate BTC_NO
+    - x86/retbleed: Add fine grained Kconfig knobs
+    - x86/bugs: Add Cannon lake to RETBleed affected CPU list
+    - x86/entry: Move PUSH_AND_CLEAR_REGS() back into error_entry
+    - x86/bugs: Do not enable IBPB-on-entry when IBPB is not supported
+    - x86/kexec: Disable RET on kexec
+    - x86/speculation: Disable RRSBA behavior
+    - x86/static_call: Serialize __static_call_fixup() properly
+  * [amd64] Enable SLS mitigation
+
+ -- Ben Hutchings <benh@debian.org>  Wed, 13 Jul 2022 01:20:17 +0200
+
+linux (5.19~rc4-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * [arm64] Add pwm-imx27, nwl-dsi, ti-sn65dsi86, imx-dcss, mxsfb, mux-mmio
+    and imx8mq-interconnect to fb-modules udeb for the MNT Reform 2.
+
+  [ Julien Massot ]
+  * [arm64] Enable Qualcomm SDA845 SoC:
+    - Enable QCOM_CLK_RPMH, SDM_GCC_845, QCOM_HFPLL, INTERCONNECT_QCOM,
+      INTERCONNECT_QCOM_SDM845, QCOM_PDC, PINCTRL_MSM, PINCTRL_SDM845,
+      RESET_QCOM_AOSS, QCOM_AOSS_QMP, QCOM_COMMAND_DB, QCOM_GENI_SE,
+      QCOM_RPMH, QCOM_RPMHPD, QCOM_RPMPD, SERIAL_QCOM_GENI,
+      SERIAL_QCOM_GENI_CONSOLE as built-in
+    - Enable SDM_CAMCC_845, SDM_GPUCC_845, SDM_VIDEOCC_845, SDM_DISPCC_845,
+      ARM_QCOM_CPUFREQ_HW, REGULATOR_QCOM_RPMH, SCSI_UFSHCD_PLATFORM,
+      SCSI_UFS_QCOM as modules
+
+  [ Diederik de Haas ]
+  * [armel/rpi] drivers/char/hw_random: Enable HW_RANDOM_BCM2835 as module
+  * [armel/rpi] drivers/rtc: Enable RTC_DRV_DS1307 as module (Closes: #958904)
+
+  [ Zhang Ning ]
+  * [arm64] enable gpio polled keyboard which is needed for Khadas SBCs
+  * [arm64] media: enable Amlogic CEC, GE2D, vdec, and Rockchip RGA, ISP1
+  * [arm64] phy: enable Rk3399 Mipi phy which is needed by RK3399 ISP1
+  * [arm64] enable GPIO ir receirer which is needed by Khadas edge SBC
+  * [arm64] enable HYM8563 RTC driver which is needed by Khadas SBCs
+
+  [ Ben Hutchings ]
+  * Refresh our patches for 5.19
+  * [rt] Update to 5.19-rc3-rt5
+  * Update config for 5.19
+  * virtio: disable notification hardening by default (regression in 5.19-rc1)
+  * [rt] printk: Reinstate deferred printing with kthreads
+  * d/bin: Use subprocess text mode support instead of decoding separately
+  * d/bin, d/lib/python: Use open() with encoding instead of codecs.open()
+  * d/lib/python/debian_linux: Introduce {Source,Binary}Package classes
+  * d/lib/python/debian_linux: Add all used fields to {Source,Binary}Package
+  * d/lib/python/debian_linux: Warn about unknown fields in control files
+  * firmware_loader: Enable FW_LOADER_COMPRESS, FW_LOADER_COMPRESS_XZ
+
+ -- Ben Hutchings <benh@debian.org>  Fri, 01 Jul 2022 18:01:46 +0200
+
+linux (5.18.16-1) unstable; urgency=medium
+
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.18.15
+    - [arm64] pinctrl: armada-37xx: use raw spinlocks for regmap to avoid
+      invalid wait context
+    - [armhf] pinctrl: stm32: fix optional IRQ support to gpios
+    - [riscv64] add as-options for modules with assembly compontents
+    - lockdown: Fix kexec lockdown bypass with ima policy (CVE-2022-21505)
+    - [armhf] mmc: sdhci-omap: Fix a lockdep warning for PM runtime init
+    - [armhf] mtd: rawnand: gpmi: Set WAIT_FOR_READY timeout based on
+      program/erase times
+    - drm/ttm: fix locking in vmap/vunmap TTM GEM helpers
+    - drm/amd/display: Fix new dmub notification enabling in DM
+    - drm/scheduler: Don't kill jobs in interrupt context
+    - net: usb: ax88179_178a needs FLAG_SEND_ZLP
+    - PCI: hv: Fix multi-MSI to allow more than one MSI vector
+    - PCI: hv: Fix hv_arch_irq_unmask() for multi-MSI
+    - PCI: hv: Reuse existing IRTE allocation in compose_msi_msg()
+    - PCI: hv: Fix interrupt mapping for multi-MSI
+    - r8152: fix a WOL issue
+    - ip: Fix data-races around sysctl_ip_default_ttl.
+    - xfrm: xfrm_policy: fix a possible double xfrm_pols_put() in
+      xfrm_bundle_lookup() (CVE-2022-36879)
+    - RDMA/irdma: Do not advertise 1GB page size for x722
+    - RDMA/irdma: Fix sleep from invalid context BUG
+    - perf/core: Fix data race between perf_event_set_output() and
+      perf_mmap_close()
+    - e1000e: Enable GPT clock before sending message to CSME
+    - Revert "e1000e: Fix possible HW unit hang after an s0ix exit"
+    - igc: Reinstate IGC_REMOVED logic and implement it properly
+    - ip: Fix data-races around sysctl_ip_no_pmtu_disc.
+    - ip: Fix data-races around sysctl_ip_fwd_use_pmtu.
+    - ip: Fix data-races around sysctl_ip_fwd_update_priority.
+    - ip: Fix data-races around sysctl_ip_nonlocal_bind.
+    - ip: Fix a data-race around sysctl_ip_autobind_reuse.
+    - ip: Fix a data-race around sysctl_fwmark_reflect.
+    - tcp/dccp: Fix a data-race around sysctl_tcp_fwmark_accept.
+    - tcp: sk->sk_bound_dev_if once in inet_request_bound_dev_if()
+    - tcp: Fix data-races around sysctl_tcp_l3mdev_accept.
+    - tcp: Fix data-races around sysctl_tcp_mtu_probing.
+    - tcp: Fix data-races around sysctl_tcp_base_mss.
+    - tcp: Fix data-races around sysctl_tcp_min_snd_mss.
+    - tcp: Fix a data-race around sysctl_tcp_mtu_probe_floor.
+    - tcp: Fix a data-race around sysctl_tcp_probe_threshold.
+    - tcp: Fix a data-race around sysctl_tcp_probe_interval.
+    - net: stmmac: fix pm runtime issue in stmmac_dvr_remove()
+    - net: stmmac: fix unbalanced ptp clock issue in suspend/resume flow
+    - tcp/udp: Make early_demux back namespacified.
+    - net: stmmac: fix dma queue left shift overflow issue
+    - net/tls: Fix race in TLS device down flow
+    - igmp: Fix data-races around sysctl_igmp_llm_reports.
+    - igmp: Fix a data-race around sysctl_igmp_max_memberships.
+    - igmp: Fix data-races around sysctl_igmp_max_msf.
+    - igmp: Fix data-races around sysctl_igmp_qrv.
+    - tcp: Fix data-races around keepalive sysctl knobs.
+    - tcp: Fix data-races around sysctl_tcp_syn(ack)?_retries.
+    - tcp: Fix data-races around sysctl_tcp_syncookies.
+    - tcp: Fix data-races around sysctl_tcp_migrate_req.
+    - tcp: Fix data-races around sysctl_tcp_reordering.
+    - tcp: Fix data-races around some timeout sysctl knobs.
+    - tcp: Fix a data-race around sysctl_tcp_notsent_lowat.
+    - tcp: Fix a data-race around sysctl_tcp_tw_reuse.
+    - tcp: Fix data-races around sysctl_max_syn_backlog.
+    - tcp: Fix data-races around sysctl_tcp_fastopen.
+    - tcp: Fix data-races around sysctl_tcp_fastopen_blackhole_timeout.
+    - iavf: Fix VLAN_V2 addition/rejection
+    - iavf: Disallow changing rx/tx-frames and rx/tx-frames-irq
+    - iavf: Fix handling of dummy receive descriptors
+    - iavf: Fix missing state logs
+    - ACPI: CPPC: Don't require flexible address space if X86_FEATURE_CPPC is
+      supported
+    - [arm64] pinctrl: armada-37xx: Reuse GPIO fwnode in
+      armada_37xx_irqchip_register()
+    - [arm64] pinctrl: armada-37xx: make irq_lock a raw spinlock to avoid
+      invalid wait context
+    - i40e: Fix erroneous adapter reinitialization during recovery process
+    - ixgbe: Add locking to prevent panic when setting sriov_numvfs to zero
+    - [arm64,armhf] net: dsa: fix dsa_port_vlan_filtering when global
+    - [arm64,armhf] net: dsa: move reset of VLAN filtering to
+      dsa_port_switchdev_unsync_attrs
+    - [arm64,armhf] net: dsa: fix NULL pointer dereference in
+      dsa_port_reset_vlan_filtering
+    - net: stmmac: remove redunctant disable xPCS EEE call
+    - [arm64,armhf] gpio: pca953x: only use single read/write for No AI mode
+    - [arm64,armhf] gpio: pca953x: use the correct range when do regmap sync
+    - [arm64,armhf] gpio: pca953x: use the correct register address when
+      regcache sync during init
+    - be2net: Fix buffer overflow in be_get_module_eeprom
+    - [arm64,armhf] drm/panel-edp: Fix variable typo when saving hpd absent
+      delay from DT
+    - [arm64] drm/imx/dcss: Add missing of_node_put() in fail path
+    - ipv4: Fix a data-race around sysctl_fib_multipath_use_neigh.
+    - ipv4: Fix data-races around sysctl_fib_multipath_hash_policy.
+    - ipv4: Fix data-races around sysctl_fib_multipath_hash_fields.
+    - ip: Fix data-races around sysctl_ip_prot_sock.
+    - udp: Fix a data-race around sysctl_udp_l3mdev_accept.
+    - tcp: Fix data-races around sysctl knobs related to SYN option.
+    - tcp: Fix a data-race around sysctl_tcp_early_retrans.
+    - tcp: Fix data-races around sysctl_tcp_recovery.
+    - tcp: Fix a data-race around sysctl_tcp_thin_linear_timeouts.
+    - tcp: Fix data-races around sysctl_tcp_slow_start_after_idle.
+    - tcp: Fix a data-race around sysctl_tcp_retrans_collapse.
+    - tcp: Fix a data-race around sysctl_tcp_stdurg.
+    - tcp: Fix a data-race around sysctl_tcp_rfc1337.
+    - tcp: Fix a data-race around sysctl_tcp_abort_on_overflow.
+    - tcp: Fix data-races around sysctl_tcp_max_reordering.
+    - net/sched: cls_api: Fix flow action initialization
+    - [arm*] spi: bcm2835: bcm2835_spi_handle_err(): fix NULL pointer deref for
+      non DMA transfers
+    - KVM: Don't null dereference ops->destroy
+    - mm/mempolicy: fix uninit-value in mpol_rebind_policy()
+    - bpf: Make sure mac_header was set before using it
+    - sched/deadline: Fix BUG_ON condition for deboosted tasks
+    - [x86] perf/x86/intel/lbr: Fix unchecked MSR access error on HSW
+    - [x86] x86/bugs: Warn when "ibrs" mitigation is selected on Enhanced IBRS
+      parts
+    - dlm: fix pending remove if msg allocation fails
+    - [x86] crypto: qat - set to zero DH parameters before free
+    - [x86] crypto: qat - use pre-allocated buffers in datapath
+    - [x86] crypto: qat - refactor submission logic
+    - [x86] crypto: qat - add backlog mechanism
+    - [x86] crypto: qat - fix memory leak in RSA
+    - [x86] crypto: qat - remove dma_free_coherent() for RSA
+    - [x86] crypto: qat - remove dma_free_coherent() for DH
+    - [x86] crypto: qat - add param check for RSA
+    - [x86] crypto: qat - add param check for DH
+    - [x86] crypto: qat - re-enable registration of algorithms
+    - exfat: fix referencing wrong parent directory information after renaming
+    - exfat: use updated exfat_chain directly during renaming
+    - [x86] amd: Use IBPB for firmware calls
+    - [x86] alternative: Report missing return thunk details
+    - watchqueue: make sure to serialize 'wqueue->defunct' properly
+    - [x86] ASoC: SOF: pm: add explicit behavior for ACPI S1 and S2
+    - [x86] ASoC: SOF: pm: add definitions for S4 and S5 states
+    - [x86] ASoC: SOF: Intel: disable IMR boot when resuming from ACPI S4 and S5
+      states
+    - watch-queue: remove spurious double semicolon
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.18.16
+    - Bluetooth: Always set event mask on suspend
+    - Bluetooth: L2CAP: Fix use-after-free caused by l2cap_chan_put
+    - Revert "ocfs2: mount shared volume without ha stack"
+    - userfaultfd: provide properly masked address for huge-pages
+    - fs: sendfile handles O_NONBLOCK of out_fd
+    - secretmem: fix unhandled fault in truncate
+    - mm: fix page leak with multiple threads mapping the same page
+    - mm: fix missing wake-up event for FSDAX pages
+    - hugetlb: fix memoryleak in hugetlb_mcopy_atomic_pte
+    - [s390x] archrandom: prevent CPACF trng invocations in interrupt context
+    - [x86] intel_idle: Fix false positive RCU splats due to incorrect hardirqs
+      state
+    - watch_queue: Fix missing rcu annotation
+    - watch_queue: Fix missing locking in add_watch_to_object()
+    - tcp: Fix data-races around sysctl_tcp_dsack.
+    - tcp: Fix a data-race around sysctl_tcp_app_win.
+    - tcp: Fix a data-race around sysctl_tcp_adv_win_scale.
+    - tcp: Fix a data-race around sysctl_tcp_frto.
+    - tcp: Fix a data-race around sysctl_tcp_nometrics_save.
+    - tcp: Fix data-races around sysctl_tcp_no_ssthresh_metrics_save.
+    - bridge: Do not send empty IFLA_AF_SPEC attribute
+    - ice: Fix max VLANs available for VF
+    - ice: check (DD | EOF) bits on Rx descriptor rather than (EOP | RS)
+    - ice: do not setup vlan for loopback VSI
+    - ice: Fix VSIs unable to share unicast MAC
+    - Revert "tcp: change pingpong threshold to 3"
+    - tcp: md5: fix IPv4-mapped support
+    - tcp: Fix data-races around sysctl_tcp_moderate_rcvbuf.
+    - tcp: Fix a data-race around sysctl_tcp_limit_output_bytes.
+    - tcp: Fix a data-race around sysctl_tcp_challenge_ack_limit.
+    - scsi: core: Fix warning in scsi_alloc_sgtables()
+    - scsi: mpt3sas: Stop fw fault watchdog work item during system shutdown
+    - net: ping6: Fix memleak in ipv6_renew_options().
+    - ipv6/addrconf: fix a null-ptr-deref bug for ip6_ptr
+    - net/tls: Remove the context from the list in tls_device_down
+    - net: pcs: xpcs: propagate xpcs_read error to xpcs_get_state_c37_sgmii
+    - net: sungem_phy: Add of_node_put() for reference returned by
+      of_get_parent()
+    - tcp: Fix a data-race around sysctl_tcp_min_tso_segs.
+    - tcp: Fix a data-race around sysctl_tcp_tso_rtt_log.
+    - tcp: Fix a data-race around sysctl_tcp_min_rtt_wlen.
+    - tcp: Fix a data-race around sysctl_tcp_autocorking.
+    - tcp: Fix a data-race around sysctl_tcp_invalid_ratelimit.
+    - Documentation: fix sctp_wmem in ip-sysctl.rst
+    - macsec: fix NULL deref in macsec_add_rxsa
+    - macsec: fix error message in macsec_add_rxsa and _txsa
+    - macsec: limit replay window size with XPN
+    - macsec: always read MACSEC_SA_ATTR_PN as a u64
+    - net: macsec: fix potential resource leak in macsec_add_rxsa() and
+      macsec_add_txsa()
+    - net: mld: fix reference count leak in mld_{query | report}_work()
+    - tcp: Fix data-races around sk_pacing_rate.
+    - net: Fix data-races around sysctl_[rw]mem(_offset)?.
+    - tcp: Fix a data-race around sysctl_tcp_comp_sack_delay_ns.
+    - tcp: Fix a data-race around sysctl_tcp_comp_sack_slack_ns.
+    - tcp: Fix a data-race around sysctl_tcp_comp_sack_nr.
+    - tcp: Fix data-races around sysctl_tcp_reflect_tos.
+    - ipv4: Fix data-races around sysctl_fib_notify_on_flag_change.
+    - i40e: Fix interface init with MSI interrupts (no MSI-X)
+    - [arm64,armhf] net: dsa: fix reference counting for LAG FDBs
+    - sctp: fix sleep in atomic context bug in timer handlers
+    - netfilter: nf_queue: do not allow packet truncation below transport header
+      offset (CVE-2022-36946)
+    - scsi: ufs: Support clearing multiple commands at once
+    - scsi: ufs: core: Fix a race condition related to device management
+    - virtio-net: fix the race between refill work and close
+    - perf symbol: Correct address for bss symbols
+    - sfc: disable softirqs for ptp TX
+    - sctp: leave the err path free in sctp_stream_init to sctp_stream_free
+    - mm/hmm: fault non-owner device private entries
+    - page_alloc: fix invalid watermark check on a negative value
+    - tcp: Fix data-races around sysctl_tcp_workaround_signed_windows.
+    - [armel,armhf] 9216/1: Fix MAX_DMA_ADDRESS overflow
+    - docs/kernel-parameters: Update descriptions for "mitigations=" param with
+      retbleed
+    - locking/rwsem: Allow slowpath writer to ignore handoff bit if not set by
+      first waiter
+    - [x86] bugs: Do not enable IBPB at firmware entry when IBPB is not
+      available
+
+  [ Ben Hutchings ]
+  * d/tests: kbuild test case depends on python3
+  * d/tests: Run kbuild test with default flavour if quick flavour not defined
+  * d/lib/python/debian_linux/debian.py: Add Architecture field to TestsControl
+  * d/tests: Restrict kbuild tests to architectures with default or quick
+    flavour
+  * security: Add landlock and bpf to enabled LSM list (Closes: #999551)
+
+  [ Salvatore Bonaccorso ]
+  * Bump ABI to 4
+  * Add mitigations for Post-Barrier Return Stack Buffer Predictions (PBRSB)
+    issue (CVE-2022-26373):
+    - x86/speculation: Add RSB VM Exit protections
+    - x86/speculation: Add LFENCE to RSB fill sequence
+  * posix-cpu-timers: Cleanup CPU timers before freeing them during exec
+    (CVE-2022-2585)
+  * netfilter: nf_tables: do not allow SET_ID to refer to another table
+    (CVE-2022-2586)
+  * netfilter: nf_tables: do not allow CHAIN_ID to refer to another table
+  * netfilter: nf_tables: do not allow RULE_ID to refer to another chain
+  * net_sched: cls_route: remove from list when handle is 0 (CVE-2022-2588)
+  * Revert "mm/shmem: unconditionally set pte dirty in mfill_atomic_install_pte"
+    (CVE-2022-2590)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Wed, 10 Aug 2022 20:11:48 +0200
 
 linux (5.18.14-1) unstable; urgency=medium
 

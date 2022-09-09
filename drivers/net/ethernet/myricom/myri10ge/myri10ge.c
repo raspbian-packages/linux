@@ -579,7 +579,7 @@ static int myri10ge_load_hotplug_firmware(struct myri10ge_priv *mgp, u32 * size)
 	int status;
 	unsigned i;
 
-	if ((status = request_firmware(&fw, mgp->fw_name, dev)) < 0) {
+	if (request_firmware(&fw, mgp->fw_name, dev) < 0) {
 		status = -EINVAL;
 		goto abort_with_nothing;
 	}
@@ -3584,8 +3584,8 @@ static int myri10ge_alloc_slices(struct myri10ge_priv *mgp)
 			goto abort;
 		ss->mgp = mgp;
 		ss->dev = mgp->dev;
-		netif_napi_add(ss->dev, &ss->napi, myri10ge_poll,
-			       myri10ge_napi_weight);
+		netif_napi_add_weight(ss->dev, &ss->napi, myri10ge_poll,
+				      myri10ge_napi_weight);
 	}
 	return 0;
 abort:
