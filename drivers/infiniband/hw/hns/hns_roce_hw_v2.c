@@ -55,6 +55,42 @@ enum {
 	CMD_RST_PRC_EBUSY,
 };
 
+enum ecc_resource_type {
+	ECC_RESOURCE_QPC,
+	ECC_RESOURCE_CQC,
+	ECC_RESOURCE_MPT,
+	ECC_RESOURCE_SRQC,
+	ECC_RESOURCE_GMV,
+	ECC_RESOURCE_QPC_TIMER,
+	ECC_RESOURCE_CQC_TIMER,
+	ECC_RESOURCE_SCCC,
+	ECC_RESOURCE_COUNT,
+};
+
+static const struct {
+	const char *name;
+	u8 read_bt0_op;
+	u8 write_bt0_op;
+} fmea_ram_res[] = {
+	{ "ECC_RESOURCE_QPC",
+	  HNS_ROCE_CMD_READ_QPC_BT0, HNS_ROCE_CMD_WRITE_QPC_BT0 },
+	{ "ECC_RESOURCE_CQC",
+	  HNS_ROCE_CMD_READ_CQC_BT0, HNS_ROCE_CMD_WRITE_CQC_BT0 },
+	{ "ECC_RESOURCE_MPT",
+	  HNS_ROCE_CMD_READ_MPT_BT0, HNS_ROCE_CMD_WRITE_MPT_BT0 },
+	{ "ECC_RESOURCE_SRQC",
+	  HNS_ROCE_CMD_READ_SRQC_BT0, HNS_ROCE_CMD_WRITE_SRQC_BT0 },
+	/* ECC_RESOURCE_GMV is handled by cmdq, not mailbox */
+	{ "ECC_RESOURCE_GMV",
+	  0, 0 },
+	{ "ECC_RESOURCE_QPC_TIMER",
+	  HNS_ROCE_CMD_READ_QPC_TIMER_BT0, HNS_ROCE_CMD_WRITE_QPC_TIMER_BT0 },
+	{ "ECC_RESOURCE_CQC_TIMER",
+	  HNS_ROCE_CMD_READ_CQC_TIMER_BT0, HNS_ROCE_CMD_WRITE_CQC_TIMER_BT0 },
+	{ "ECC_RESOURCE_SCCC",
+	  HNS_ROCE_CMD_READ_SCCC_BT0, HNS_ROCE_CMD_WRITE_SCCC_BT0 },
+};
+
 static inline void set_data_seg_v2(struct hns_roce_v2_wqe_data_seg *dseg,
 				   struct ib_sge *sg)
 {
@@ -82,7 +118,6 @@ static const u32 hns_roce_op_code[] = {
 	HR_OPC_MAP(ATOMIC_CMP_AND_SWP,		ATOM_CMP_AND_SWAP),
 	HR_OPC_MAP(ATOMIC_FETCH_AND_ADD,	ATOM_FETCH_AND_ADD),
 	HR_OPC_MAP(SEND_WITH_INV,		SEND_WITH_INV),
-	HR_OPC_MAP(LOCAL_INV,			LOCAL_INV),
 	HR_OPC_MAP(MASKED_ATOMIC_CMP_AND_SWP,	ATOM_MSK_CMP_AND_SWAP),
 	HR_OPC_MAP(MASKED_ATOMIC_FETCH_AND_ADD,	ATOM_MSK_FETCH_AND_ADD),
 	HR_OPC_MAP(REG_MR,			FAST_REG_PMR),
@@ -524,9 +559,6 @@ static int set_rc_opcode(struct hns_roce_dev *hr_dev,
 		else
 			ret = -EOPNOTSUPP;
 		break;
-	case IB_WR_LOCAL_INV:
-		hr_reg_enable(rc_sq_wqe, RC_SEND_WQE_SO);
-		fallthrough;
 	case IB_WR_SEND_WITH_INV:
 		rc_sq_wqe->inv_key = cpu_to_le32(wr->ex.invalidate_rkey);
 		break;
@@ -1941,7 +1973,7 @@ static void set_default_caps(struct hns_roce_dev *hr_dev)
 
 	caps->num_mtpts		= HNS_ROCE_V2_MAX_MTPT_NUM;
 	caps->num_pds		= HNS_ROCE_V2_MAX_PD_NUM;
-	caps->num_qpc_timer	= HNS_ROCE_V2_MAX_QPC_TIMER_NUM;
+	caps->qpc_timer_bt_num	= HNS_ROCE_V2_MAX_QPC_TIMER_BT_NUM;
 	caps->cqc_timer_bt_num	= HNS_ROCE_V2_MAX_CQC_TIMER_BT_NUM;
 
 	caps->max_qp_init_rdma	= HNS_ROCE_V2_MAX_QP_INIT_RDMA;
@@ -2237,7 +2269,6 @@ static int hns_roce_query_pf_caps(struct hns_roce_dev *hr_dev)
 	caps->max_rq_sg		     = le16_to_cpu(resp_a->max_rq_sg);
 	caps->max_rq_sg = roundup_pow_of_two(caps->max_rq_sg);
 	caps->max_extend_sg	     = le32_to_cpu(resp_a->max_extend_sg);
-	caps->num_qpc_timer	     = le16_to_cpu(resp_a->num_qpc_timer);
 	caps->max_srq_sges	     = le16_to_cpu(resp_a->max_srq_sges);
 	caps->max_srq_sges = roundup_pow_of_two(caps->max_srq_sges);
 	caps->num_aeq_vectors	     = resp_a->num_aeq_vectors;
@@ -2774,7 +2805,11 @@ static int free_mr_modify_qp(struct hns_roce_dev *hr_dev)
 
 static int free_mr_init(struct hns_roce_dev *hr_dev)
 {
+	struct hns_roce_v2_priv *priv = hr_dev->priv;
+	struct hns_roce_v2_free_mr *free_mr = &priv->free_mr;
 	int ret;
+
+	mutex_init(&free_mr->mutex);
 
 	ret = free_mr_alloc_res(hr_dev);
 	if (ret)
@@ -3191,7 +3226,6 @@ static int hns_roce_v2_write_mtpt(struct hns_roce_dev *hr_dev,
 
 	hr_reg_write(mpt_entry, MPT_ST, V2_MPT_ST_VALID);
 	hr_reg_write(mpt_entry, MPT_PD, mr->pd);
-	hr_reg_enable(mpt_entry, MPT_L_INV_EN);
 
 	hr_reg_write_bool(mpt_entry, MPT_BIND_EN,
 			  mr->access & IB_ACCESS_MW_BIND);
@@ -3282,7 +3316,6 @@ static int hns_roce_v2_frmr_write_mtpt(struct hns_roce_dev *hr_dev,
 
 	hr_reg_enable(mpt_entry, MPT_RA_EN);
 	hr_reg_enable(mpt_entry, MPT_R_INV_EN);
-	hr_reg_enable(mpt_entry, MPT_L_INV_EN);
 
 	hr_reg_enable(mpt_entry, MPT_FRE);
 	hr_reg_clear(mpt_entry, MPT_MR_MW);
@@ -3314,7 +3347,6 @@ static int hns_roce_v2_mw_write_mtpt(void *mb_buf, struct hns_roce_mw *mw)
 	hr_reg_write(mpt_entry, MPT_PD, mw->pdn);
 
 	hr_reg_enable(mpt_entry, MPT_R_INV_EN);
-	hr_reg_enable(mpt_entry, MPT_L_INV_EN);
 	hr_reg_enable(mpt_entry, MPT_LW_EN);
 
 	hr_reg_enable(mpt_entry, MPT_MR_MW);
@@ -3763,7 +3795,6 @@ static const u32 wc_send_op_map[] = {
 	HR_WC_OP_MAP(RDMA_READ,			RDMA_READ),
 	HR_WC_OP_MAP(RDMA_WRITE,		RDMA_WRITE),
 	HR_WC_OP_MAP(RDMA_WRITE_WITH_IMM,	RDMA_WRITE),
-	HR_WC_OP_MAP(LOCAL_INV,			LOCAL_INV),
 	HR_WC_OP_MAP(ATOM_CMP_AND_SWAP,		COMP_SWAP),
 	HR_WC_OP_MAP(ATOM_FETCH_AND_ADD,	FETCH_ADD),
 	HR_WC_OP_MAP(ATOM_MSK_CMP_AND_SWAP,	MASKED_COMP_SWAP),
@@ -3812,9 +3843,6 @@ static void fill_send_wc(struct ib_wc *wc, struct hns_roce_v2_cqe *cqe)
 	case HNS_ROCE_V2_WQE_OP_SEND_WITH_IMM:
 	case HNS_ROCE_V2_WQE_OP_RDMA_WRITE_WITH_IMM:
 		wc->wc_flags |= IB_WC_WITH_IMM;
-		break;
-	case HNS_ROCE_V2_WQE_OP_LOCAL_INV:
-		wc->wc_flags |= IB_WC_WITH_INVALIDATE;
 		break;
 	case HNS_ROCE_V2_WQE_OP_ATOM_CMP_AND_SWAP:
 	case HNS_ROCE_V2_WQE_OP_ATOM_FETCH_AND_ADD:
@@ -5855,12 +5883,12 @@ static struct hns_roce_aeqe *next_aeqe_sw_v2(struct hns_roce_eq *eq)
 		!!(eq->cons_index & eq->entries)) ? aeqe : NULL;
 }
 
-static int hns_roce_v2_aeq_int(struct hns_roce_dev *hr_dev,
-			       struct hns_roce_eq *eq)
+static irqreturn_t hns_roce_v2_aeq_int(struct hns_roce_dev *hr_dev,
+				       struct hns_roce_eq *eq)
 {
 	struct device *dev = hr_dev->dev;
 	struct hns_roce_aeqe *aeqe = next_aeqe_sw_v2(eq);
-	int aeqe_found = 0;
+	irqreturn_t aeqe_found = IRQ_NONE;
 	int event_type;
 	u32 queue_num;
 	int sub_type;
@@ -5914,7 +5942,7 @@ static int hns_roce_v2_aeq_int(struct hns_roce_dev *hr_dev,
 		eq->event_type = event_type;
 		eq->sub_type = sub_type;
 		++eq->cons_index;
-		aeqe_found = 1;
+		aeqe_found = IRQ_HANDLED;
 
 		hns_roce_v2_init_irq_work(hr_dev, eq, queue_num);
 
@@ -5922,7 +5950,8 @@ static int hns_roce_v2_aeq_int(struct hns_roce_dev *hr_dev,
 	}
 
 	update_eq_db(eq);
-	return aeqe_found;
+
+	return IRQ_RETVAL(aeqe_found);
 }
 
 static struct hns_roce_ceqe *next_ceqe_sw_v2(struct hns_roce_eq *eq)
@@ -5937,11 +5966,11 @@ static struct hns_roce_ceqe *next_ceqe_sw_v2(struct hns_roce_eq *eq)
 		!!(eq->cons_index & eq->entries)) ? ceqe : NULL;
 }
 
-static int hns_roce_v2_ceq_int(struct hns_roce_dev *hr_dev,
-			       struct hns_roce_eq *eq)
+static irqreturn_t hns_roce_v2_ceq_int(struct hns_roce_dev *hr_dev,
+				       struct hns_roce_eq *eq)
 {
 	struct hns_roce_ceqe *ceqe = next_ceqe_sw_v2(eq);
-	int ceqe_found = 0;
+	irqreturn_t ceqe_found = IRQ_NONE;
 	u32 cqn;
 
 	while (ceqe) {
@@ -5955,21 +5984,21 @@ static int hns_roce_v2_ceq_int(struct hns_roce_dev *hr_dev,
 		hns_roce_cq_completion(hr_dev, cqn);
 
 		++eq->cons_index;
-		ceqe_found = 1;
+		ceqe_found = IRQ_HANDLED;
 
 		ceqe = next_ceqe_sw_v2(eq);
 	}
 
 	update_eq_db(eq);
 
-	return ceqe_found;
+	return IRQ_RETVAL(ceqe_found);
 }
 
 static irqreturn_t hns_roce_v2_msix_interrupt_eq(int irq, void *eq_ptr)
 {
 	struct hns_roce_eq *eq = eq_ptr;
 	struct hns_roce_dev *hr_dev = eq->hr_dev;
-	int int_work;
+	irqreturn_t int_work;
 
 	if (eq->type_flag == HNS_ROCE_CEQ)
 		/* Completion event interrupt */
@@ -5981,24 +6010,19 @@ static irqreturn_t hns_roce_v2_msix_interrupt_eq(int irq, void *eq_ptr)
 	return IRQ_RETVAL(int_work);
 }
 
-static irqreturn_t hns_roce_v2_msix_interrupt_abn(int irq, void *dev_id)
+static irqreturn_t abnormal_interrupt_basic(struct hns_roce_dev *hr_dev,
+					    u32 int_st)
 {
-	struct hns_roce_dev *hr_dev = dev_id;
-	struct device *dev = hr_dev->dev;
-	int int_work = 0;
-	u32 int_st;
+	struct pci_dev *pdev = hr_dev->pci_dev;
+	struct hnae3_ae_dev *ae_dev = pci_get_drvdata(pdev);
+	const struct hnae3_ae_ops *ops = ae_dev->ops;
+	irqreturn_t int_work = IRQ_NONE;
 	u32 int_en;
 
-	/* Abnormal interrupt */
-	int_st = roce_read(hr_dev, ROCEE_VF_ABN_INT_ST_REG);
 	int_en = roce_read(hr_dev, ROCEE_VF_ABN_INT_EN_REG);
 
 	if (int_st & BIT(HNS_ROCE_V2_VF_INT_ST_AEQ_OVERFLOW_S)) {
-		struct pci_dev *pdev = hr_dev->pci_dev;
-		struct hnae3_ae_dev *ae_dev = pci_get_drvdata(pdev);
-		const struct hnae3_ae_ops *ops = ae_dev->ops;
-
-		dev_err(dev, "AEQ overflow!\n");
+		dev_err(hr_dev->dev, "AEQ overflow!\n");
 
 		roce_write(hr_dev, ROCEE_VF_ABN_INT_ST_REG,
 			   1 << HNS_ROCE_V2_VF_INT_ST_AEQ_OVERFLOW_S);
@@ -6013,19 +6037,165 @@ static irqreturn_t hns_roce_v2_msix_interrupt_abn(int irq, void *dev_id)
 		int_en |= 1 << HNS_ROCE_V2_VF_ABN_INT_EN_S;
 		roce_write(hr_dev, ROCEE_VF_ABN_INT_EN_REG, int_en);
 
-		int_work = 1;
-	} else if (int_st & BIT(HNS_ROCE_V2_VF_INT_ST_RAS_INT_S)) {
-		dev_err(dev, "RAS interrupt!\n");
-
-		int_st |= 1 << HNS_ROCE_V2_VF_INT_ST_RAS_INT_S;
-		roce_write(hr_dev, ROCEE_VF_ABN_INT_ST_REG, int_st);
-
-		int_en |= 1 << HNS_ROCE_V2_VF_ABN_INT_EN_S;
-		roce_write(hr_dev, ROCEE_VF_ABN_INT_EN_REG, int_en);
-
-		int_work = 1;
+		int_work = IRQ_HANDLED;
 	} else {
-		dev_err(dev, "There is no abnormal irq found!\n");
+		dev_err(hr_dev->dev, "there is no basic abn irq found.\n");
+	}
+
+	return IRQ_RETVAL(int_work);
+}
+
+static int fmea_ram_ecc_query(struct hns_roce_dev *hr_dev,
+			       struct fmea_ram_ecc *ecc_info)
+{
+	struct hns_roce_cmq_desc desc;
+	struct hns_roce_cmq_req *req = (struct hns_roce_cmq_req *)desc.data;
+	int ret;
+
+	hns_roce_cmq_setup_basic_desc(&desc, HNS_ROCE_QUERY_RAM_ECC, true);
+	ret = hns_roce_cmq_send(hr_dev, &desc, 1);
+	if (ret)
+		return ret;
+
+	ecc_info->is_ecc_err = hr_reg_read(req, QUERY_RAM_ECC_1BIT_ERR);
+	ecc_info->res_type = hr_reg_read(req, QUERY_RAM_ECC_RES_TYPE);
+	ecc_info->index = hr_reg_read(req, QUERY_RAM_ECC_TAG);
+
+	return 0;
+}
+
+static int fmea_recover_gmv(struct hns_roce_dev *hr_dev, u32 idx)
+{
+	struct hns_roce_cmq_desc desc;
+	struct hns_roce_cmq_req *req = (struct hns_roce_cmq_req *)desc.data;
+	u32 addr_upper;
+	u32 addr_low;
+	int ret;
+
+	hns_roce_cmq_setup_basic_desc(&desc, HNS_ROCE_OPC_CFG_GMV_BT, true);
+	hr_reg_write(req, CFG_GMV_BT_IDX, idx);
+
+	ret = hns_roce_cmq_send(hr_dev, &desc, 1);
+	if (ret) {
+		dev_err(hr_dev->dev,
+			"failed to execute cmd to read gmv, ret = %d.\n", ret);
+		return ret;
+	}
+
+	addr_low =  hr_reg_read(req, CFG_GMV_BT_BA_L);
+	addr_upper = hr_reg_read(req, CFG_GMV_BT_BA_H);
+
+	hns_roce_cmq_setup_basic_desc(&desc, HNS_ROCE_OPC_CFG_GMV_BT, false);
+	hr_reg_write(req, CFG_GMV_BT_BA_L, addr_low);
+	hr_reg_write(req, CFG_GMV_BT_BA_H, addr_upper);
+	hr_reg_write(req, CFG_GMV_BT_IDX, idx);
+
+	return hns_roce_cmq_send(hr_dev, &desc, 1);
+}
+
+static u64 fmea_get_ram_res_addr(u32 res_type, __le64 *data)
+{
+	if (res_type == ECC_RESOURCE_QPC_TIMER ||
+	    res_type == ECC_RESOURCE_CQC_TIMER ||
+	    res_type == ECC_RESOURCE_SCCC)
+		return le64_to_cpu(*data);
+
+	return le64_to_cpu(*data) << PAGE_SHIFT;
+}
+
+static int fmea_recover_others(struct hns_roce_dev *hr_dev, u32 res_type,
+			       u32 index)
+{
+	u8 write_bt0_op = fmea_ram_res[res_type].write_bt0_op;
+	u8 read_bt0_op = fmea_ram_res[res_type].read_bt0_op;
+	struct hns_roce_cmd_mailbox *mailbox;
+	u64 addr;
+	int ret;
+
+	mailbox = hns_roce_alloc_cmd_mailbox(hr_dev);
+	if (IS_ERR(mailbox))
+		return PTR_ERR(mailbox);
+
+	ret = hns_roce_cmd_mbox(hr_dev, 0, mailbox->dma, read_bt0_op, index);
+	if (ret) {
+		dev_err(hr_dev->dev,
+			"failed to execute cmd to read fmea ram, ret = %d.\n",
+			ret);
+		goto out;
+	}
+
+	addr = fmea_get_ram_res_addr(res_type, mailbox->buf);
+
+	ret = hns_roce_cmd_mbox(hr_dev, addr, 0, write_bt0_op, index);
+	if (ret)
+		dev_err(hr_dev->dev,
+			"failed to execute cmd to write fmea ram, ret = %d.\n",
+			ret);
+
+out:
+	hns_roce_free_cmd_mailbox(hr_dev, mailbox);
+	return ret;
+}
+
+static void fmea_ram_ecc_recover(struct hns_roce_dev *hr_dev,
+				 struct fmea_ram_ecc *ecc_info)
+{
+	u32 res_type = ecc_info->res_type;
+	u32 index = ecc_info->index;
+	int ret;
+
+	BUILD_BUG_ON(ARRAY_SIZE(fmea_ram_res) != ECC_RESOURCE_COUNT);
+
+	if (res_type >= ECC_RESOURCE_COUNT) {
+		dev_err(hr_dev->dev, "unsupported fmea ram ecc type %u.\n",
+			res_type);
+		return;
+	}
+
+	if (res_type == ECC_RESOURCE_GMV)
+		ret = fmea_recover_gmv(hr_dev, index);
+	else
+		ret = fmea_recover_others(hr_dev, res_type, index);
+	if (ret)
+		dev_err(hr_dev->dev,
+			"failed to recover %s, index = %u, ret = %d.\n",
+			fmea_ram_res[res_type].name, index, ret);
+}
+
+static void fmea_ram_ecc_work(struct work_struct *ecc_work)
+{
+	struct hns_roce_dev *hr_dev =
+		container_of(ecc_work, struct hns_roce_dev, ecc_work);
+	struct fmea_ram_ecc ecc_info = {};
+
+	if (fmea_ram_ecc_query(hr_dev, &ecc_info)) {
+		dev_err(hr_dev->dev, "failed to query fmea ram ecc.\n");
+		return;
+	}
+
+	if (!ecc_info.is_ecc_err) {
+		dev_err(hr_dev->dev, "there is no fmea ram ecc err found.\n");
+		return;
+	}
+
+	fmea_ram_ecc_recover(hr_dev, &ecc_info);
+}
+
+static irqreturn_t hns_roce_v2_msix_interrupt_abn(int irq, void *dev_id)
+{
+	struct hns_roce_dev *hr_dev = dev_id;
+	irqreturn_t int_work = IRQ_NONE;
+	u32 int_st;
+
+	int_st = roce_read(hr_dev, ROCEE_VF_ABN_INT_ST_REG);
+
+	if (int_st) {
+		int_work = abnormal_interrupt_basic(hr_dev, int_st);
+	} else if (hr_dev->pci_dev->revision >= PCI_REVISION_ID_HIP09) {
+		queue_work(hr_dev->irq_workq, &hr_dev->ecc_work);
+		int_work = IRQ_HANDLED;
+	} else {
+		dev_err(hr_dev->dev, "there is no abnormal irq found.\n");
 	}
 
 	return IRQ_RETVAL(int_work);
@@ -6341,6 +6511,8 @@ static int hns_roce_v2_init_eq_table(struct hns_roce_dev *hr_dev)
 			goto err_create_eq_fail;
 		}
 	}
+
+	INIT_WORK(&hr_dev->ecc_work, fmea_ram_ecc_work);
 
 	hr_dev->irq_workq = alloc_ordered_workqueue("hns_roce_irq_workq", 0);
 	if (!hr_dev->irq_workq) {

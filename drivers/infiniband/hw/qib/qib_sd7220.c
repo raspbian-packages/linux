@@ -585,7 +585,7 @@ static int epb_access(struct qib_devdata *dd, int sdnum, int claim)
 		/* Need to release */
 		u64 pollval;
 		/*
-		 * The only writeable bits are the request and CS.
+		 * The only writable bits are the request and CS.
 		 * Both should be clear
 		 */
 		u64 newval = 0;

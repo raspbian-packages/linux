@@ -8,7 +8,7 @@ tp3
 (dp4
 Vabiname
 p5
-V1
+V4
 p6
 sVignore-changes
 p7
@@ -266,7 +266,7 @@ aVx32
 p135
 asVcompiler
 p136
-Vgcc-11
+Vgcc-12
 p137
 sVfeaturesets
 p138
@@ -330,9 +330,9 @@ ass(Vrelations
 p172
 tp173
 (dp174
-Vgcc-11
+Vgcc-12
 p175
-Vgcc-11 <!stage1 !cross !pkg.linux.nokernel>, gcc-11-@gnu-type-package@ <!stage1 cross !pkg.linux.nokernel>
+Vgcc-12 <!stage1 !cross !pkg.linux.nokernel>, gcc-12-@gnu-type-package@ <!stage1 cross !pkg.linux.nokernel>
 p176
 sVinitramfs-fallback
 p177
@@ -492,9 +492,9 @@ p260
 g231
 tp261
 (dp262
-Vheaders%gcc-11
+Vheaders%gcc-12
 p263
-Vlinux-compiler-gcc-11-x86
+Vlinux-compiler-gcc-12-x86
 p264
 ss(Vdescription
 p265
@@ -665,13 +665,13 @@ p354
 g309
 tp355
 (dp356
-Vgcc-11
+Vgcc-12
 p357
-Vgcc-11 <!stage1 !cross !pkg.linux.nokernel>, gcc-11-aarch64-linux-gnu <!stage1 cross !pkg.linux.nokernel>, gcc-arm-linux-gnueabihf <!stage1 !pkg.linux.nokernel>
+Vgcc-12 <!stage1 !cross !pkg.linux.nokernel>, gcc-12-aarch64-linux-gnu <!stage1 cross !pkg.linux.nokernel>, gcc-arm-linux-gnueabihf <!stage1 !pkg.linux.nokernel>
 p358
-sVheaders%gcc-11
+sVheaders%gcc-12
 p359
-Vgcc-11
+Vgcc-12
 p360
 ss(Vbase
 p361
@@ -775,9 +775,9 @@ p415
 g397
 tp416
 (dp417
-Vheaders%gcc-11
+Vheaders%gcc-12
 p418
-Vlinux-compiler-gcc-11-arm
+Vlinux-compiler-gcc-12-arm
 p419
 ss(Vdescription
 p420
@@ -948,9 +948,9 @@ p507
 g462
 tp508
 (dp509
-Vgcc-11
+Vgcc-12
 p510
-Vgcc-11 <!stage1 !cross !pkg.linux.nokernel>, gcc-11-hppa-linux-gnu <!stage1 cross !pkg.linux.nokernel>, binutils-hppa64-linux-gnu <!stage1 !pkg.linux.nokernel>, gcc-11-hppa64-linux-gnu <!stage1 !pkg.linux.nokernel>
+Vgcc-12 <!stage1 !cross !pkg.linux.nokernel>, gcc-12-hppa-linux-gnu <!stage1 cross !pkg.linux.nokernel>, binutils-hppa64-linux-gnu <!stage1 !pkg.linux.nokernel>, gcc-12-hppa64-linux-gnu <!stage1 !pkg.linux.nokernel>
 p511
 ss(g222
 g462
@@ -1034,9 +1034,9 @@ p552
 g518
 tp553
 (dp554
-Vheaders%gcc-11
+Vheaders%gcc-12
 p555
-Vlinux-compiler-gcc-11-x86
+Vlinux-compiler-gcc-12-x86
 p556
 ss(Vdescription
 p557
@@ -2658,9 +2658,9 @@ p1424
 g1402
 tp1425
 (dp1426
-Vheaders%gcc-11
+Vheaders%gcc-12
 p1427
-Vlinux-compiler-gcc-11-s390
+Vlinux-compiler-gcc-12-s390
 p1428
 ss(Vdescription
 p1429
@@ -2954,18 +2954,18 @@ tp1585
 (dp1586
 Vsource
 p1587
-V5.19.6-1+rpi1
+V6.0.8-1+rpi1
 p1588
 sVupstream
 p1589
-V5.19
+V6.0
 p1590
 sVabiname_base
 p1591
-V5.19.0
+V6.0.0
 p1592
 sVabiname
 p1593
-V5.19.0-1
+V6.0.0-4
 p1594
 ss.

@@ -81,6 +81,9 @@ bool kvm_gfn_to_pfn_cache_check(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 {
 	struct kvm_memslots *slots = kvm_memslots(kvm);
 
+	if (!gpc->active)
+		return false;
+
 	if ((gpa & ~PAGE_MASK) + len > PAGE_SIZE)
 		return false;
 
@@ -95,20 +98,16 @@ bool kvm_gfn_to_pfn_cache_check(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 }
 EXPORT_SYMBOL_GPL(kvm_gfn_to_pfn_cache_check);
 
-static void gpc_release_pfn_and_khva(struct kvm *kvm, kvm_pfn_t pfn, void *khva)
+static void gpc_unmap_khva(struct kvm *kvm, kvm_pfn_t pfn, void *khva)
 {
-	/* Unmap the old page if it was mapped before, and release it */
-	if (!is_error_noslot_pfn(pfn)) {
-		if (khva) {
-			if (pfn_valid(pfn))
-				kunmap(pfn_to_page(pfn));
+	/* Unmap the old pfn/page if it was mapped before. */
+	if (!is_error_noslot_pfn(pfn) && khva) {
+		if (pfn_valid(pfn))
+			kunmap(pfn_to_page(pfn));
 #ifdef CONFIG_HAS_IOMEM
-			else
-				memunmap(khva);
+		else
+			memunmap(khva);
 #endif
-		}
-
-		kvm_release_pfn(pfn, false);
 	}
 }
 
@@ -116,27 +115,28 @@ static inline bool mmu_notifier_retry_cache(struct kvm *kvm, unsigned long mmu_s
 {
 	/*
 	 * mn_active_invalidate_count acts for all intents and purposes
-	 * like mmu_notifier_count here; but the latter cannot be used
-	 * here because the invalidation of caches in the mmu_notifier
-	 * event occurs _before_ mmu_notifier_count is elevated.
+	 * like mmu_invalidate_in_progress here; but the latter cannot
+	 * be used here because the invalidation of caches in the
+	 * mmu_notifier event occurs _before_ mmu_invalidate_in_progress
+	 * is elevated.
 	 *
 	 * Note, it does not matter that mn_active_invalidate_count
 	 * is not protected by gpc->lock.  It is guaranteed to
 	 * be elevated before the mmu_notifier acquires gpc->lock, and
-	 * isn't dropped until after mmu_notifier_seq is updated.
+	 * isn't dropped until after mmu_invalidate_seq is updated.
 	 */
 	if (kvm->mn_active_invalidate_count)
 		return true;
 
 	/*
 	 * Ensure mn_active_invalidate_count is read before
-	 * mmu_notifier_seq.  This pairs with the smp_wmb() in
+	 * mmu_invalidate_seq.  This pairs with the smp_wmb() in
 	 * mmu_notifier_invalidate_range_end() to guarantee either the
 	 * old (non-zero) value of mn_active_invalidate_count or the
-	 * new (incremented) value of mmu_notifier_seq is observed.
+	 * new (incremented) value of mmu_invalidate_seq is observed.
 	 */
 	smp_rmb();
-	return kvm->mmu_notifier_seq != mmu_seq;
+	return kvm->mmu_invalidate_seq != mmu_seq;
 }
 
 static kvm_pfn_t hva_to_pfn_retry(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
@@ -159,7 +159,7 @@ static kvm_pfn_t hva_to_pfn_retry(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
 	gpc->valid = false;
 
 	do {
-		mmu_seq = kvm->mmu_notifier_seq;
+		mmu_seq = kvm->mmu_invalidate_seq;
 		smp_rmb();
 
 		write_unlock_irq(&gpc->lock);
@@ -176,10 +176,10 @@ static kvm_pfn_t hva_to_pfn_retry(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
 			 * Keep the mapping if the previous iteration reused
 			 * the existing mapping and didn't create a new one.
 			 */
-			if (new_khva == old_khva)
-				new_khva = NULL;
+			if (new_khva != old_khva)
+				gpc_unmap_khva(kvm, new_pfn, new_khva);
 
-			gpc_release_pfn_and_khva(kvm, new_pfn, new_khva);
+			kvm_release_pfn_clean(new_pfn);
 
 			cond_resched();
 		}
@@ -222,6 +222,14 @@ static kvm_pfn_t hva_to_pfn_retry(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
 	gpc->valid = true;
 	gpc->pfn = new_pfn;
 	gpc->khva = new_khva + (gpc->gpa & ~PAGE_MASK);
+
+	/*
+	 * Put the reference to the _new_ pfn.  The pfn is now tracked by the
+	 * cache and can be safely migrated, swapped, etc... as the cache will
+	 * invalidate any mappings in response to relevant mmu_notifier events.
+	 */
+	kvm_release_pfn_clean(new_pfn);
+
 	return 0;
 
 out_error:
@@ -235,10 +243,11 @@ int kvm_gfn_to_pfn_cache_refresh(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 {
 	struct kvm_memslots *slots = kvm_memslots(kvm);
 	unsigned long page_offset = gpa & ~PAGE_MASK;
-	kvm_pfn_t old_pfn, new_pfn;
+	bool unmap_old = false;
 	unsigned long old_uhva;
+	kvm_pfn_t old_pfn;
 	void *old_khva;
-	int ret = 0;
+	int ret;
 
 	/*
 	 * If must fit within a single page. The 'len' argument is
@@ -255,6 +264,11 @@ int kvm_gfn_to_pfn_cache_refresh(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 	mutex_lock(&gpc->refresh_lock);
 
 	write_lock_irq(&gpc->lock);
+
+	if (!gpc->active) {
+		ret = -EINVAL;
+		goto out_unlock;
+	}
 
 	old_pfn = gpc->pfn;
 	old_khva = gpc->khva - offset_in_page(gpc->khva);
@@ -286,6 +300,7 @@ int kvm_gfn_to_pfn_cache_refresh(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 		/* If the HVA→PFN mapping was already valid, don't unmap it. */
 		old_pfn = KVM_PFN_ERR_FAULT;
 		old_khva = NULL;
+		ret = 0;
 	}
 
  out:
@@ -300,15 +315,16 @@ int kvm_gfn_to_pfn_cache_refresh(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
 		gpc->khva = NULL;
 	}
 
-	/* Snapshot the new pfn before dropping the lock! */
-	new_pfn = gpc->pfn;
+	/* Detect a pfn change before dropping the lock! */
+	unmap_old = (old_pfn != gpc->pfn);
 
+out_unlock:
 	write_unlock_irq(&gpc->lock);
 
 	mutex_unlock(&gpc->refresh_lock);
 
-	if (old_pfn != new_pfn)
-		gpc_release_pfn_and_khva(kvm, old_pfn, old_khva);
+	if (unmap_old)
+		gpc_unmap_khva(kvm, old_pfn, old_khva);
 
 	return ret;
 }
@@ -337,46 +353,65 @@ void kvm_gfn_to_pfn_cache_unmap(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
 	write_unlock_irq(&gpc->lock);
 	mutex_unlock(&gpc->refresh_lock);
 
-	gpc_release_pfn_and_khva(kvm, old_pfn, old_khva);
+	gpc_unmap_khva(kvm, old_pfn, old_khva);
 }
 EXPORT_SYMBOL_GPL(kvm_gfn_to_pfn_cache_unmap);
 
+void kvm_gpc_init(struct gfn_to_pfn_cache *gpc)
+{
+	rwlock_init(&gpc->lock);
+	mutex_init(&gpc->refresh_lock);
+}
+EXPORT_SYMBOL_GPL(kvm_gpc_init);
 
-int kvm_gfn_to_pfn_cache_init(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
-			      struct kvm_vcpu *vcpu, enum pfn_cache_usage usage,
-			      gpa_t gpa, unsigned long len)
+int kvm_gpc_activate(struct kvm *kvm, struct gfn_to_pfn_cache *gpc,
+		     struct kvm_vcpu *vcpu, enum pfn_cache_usage usage,
+		     gpa_t gpa, unsigned long len)
 {
 	WARN_ON_ONCE(!usage || (usage & KVM_GUEST_AND_HOST_USE_PFN) != usage);
 
 	if (!gpc->active) {
-		rwlock_init(&gpc->lock);
-		mutex_init(&gpc->refresh_lock);
-
 		gpc->khva = NULL;
 		gpc->pfn = KVM_PFN_ERR_FAULT;
 		gpc->uhva = KVM_HVA_ERR_BAD;
 		gpc->vcpu = vcpu;
 		gpc->usage = usage;
 		gpc->valid = false;
-		gpc->active = true;
 
 		spin_lock(&kvm->gpc_lock);
 		list_add(&gpc->list, &kvm->gpc_list);
 		spin_unlock(&kvm->gpc_lock);
+
+		/*
+		 * Activate the cache after adding it to the list, a concurrent
+		 * refresh must not establish a mapping until the cache is
+		 * reachable by mmu_notifier events.
+		 */
+		write_lock_irq(&gpc->lock);
+		gpc->active = true;
+		write_unlock_irq(&gpc->lock);
 	}
 	return kvm_gfn_to_pfn_cache_refresh(kvm, gpc, gpa, len);
 }
-EXPORT_SYMBOL_GPL(kvm_gfn_to_pfn_cache_init);
+EXPORT_SYMBOL_GPL(kvm_gpc_activate);
 
-void kvm_gfn_to_pfn_cache_destroy(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
+void kvm_gpc_deactivate(struct kvm *kvm, struct gfn_to_pfn_cache *gpc)
 {
 	if (gpc->active) {
+		/*
+		 * Deactivate the cache before removing it from the list, KVM
+		 * must stall mmu_notifier events until all users go away, i.e.
+		 * until gpc->lock is dropped and refresh is guaranteed to fail.
+		 */
+		write_lock_irq(&gpc->lock);
+		gpc->active = false;
+		write_unlock_irq(&gpc->lock);
+
 		spin_lock(&kvm->gpc_lock);
 		list_del(&gpc->list);
 		spin_unlock(&kvm->gpc_lock);
 
 		kvm_gfn_to_pfn_cache_unmap(kvm, gpc);
-		gpc->active = false;
 	}
 }
-EXPORT_SYMBOL_GPL(kvm_gfn_to_pfn_cache_destroy);
+EXPORT_SYMBOL_GPL(kvm_gpc_deactivate);
