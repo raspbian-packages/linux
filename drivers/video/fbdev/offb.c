@@ -692,7 +692,7 @@ MODULE_DEVICE_TABLE(of, offb_of_match_display);
 
 static struct platform_driver offb_driver_display = {
 	.driver = {
-		.name = "of-display",
+		.name = "of-display.0",
 		.of_match_table = offb_of_match_display,
 	},
 	.probe = offb_probe_display,
