@@ -33,7 +33,7 @@ include ../scripts/utilities.mak
 #
 # Define LDFLAGS=-static to build a static binary.
 #
-# Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
+# Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds, and similarly EXTRA_CXXFLAGS.
 #
 # Define EXCLUDE_EXTLIBS=-lmylib to exclude libmylib from the auto-generated
 # EXTLIBS.
