@@ -203,24 +203,27 @@ static ssize_t iio_buffer_write(struct file *filp, const char __user *buf,
 				break;
 			}
 
+			if (filp->f_flags & O_NONBLOCK) {
+				if (!written)
+					ret = -EAGAIN;
+				break;
+			}
+
 			wait_woken(&wait, TASK_INTERRUPTIBLE,
 					MAX_SCHEDULE_TIMEOUT);
 			continue;
 		}
 
 		ret = rb->access->write(rb, n - written, buf + written);
-		if (ret == 0 && (filp->f_flags & O_NONBLOCK))
-			ret = -EAGAIN;
+		if (ret < 0)
+			break;
 
-		if (ret > 0) {
-			written += ret;
-			if (written != n && !(filp->f_flags & O_NONBLOCK))
-				continue;
-		}
-	} while (ret == 0);
+		written += ret;
+
+	} while (written != n);
 	remove_wait_queue(&rb->pollq, &wait);
 
-	return ret < 0 ? ret : n;
+	return ret < 0 ? ret : written;
 }
 
 /**
@@ -843,8 +846,8 @@ static int iio_verify_update(struct iio_dev *indio_dev,
 	 * to verify.
 	 */
 	if (remove_buffer && !insert_buffer &&
-		list_is_singular(&iio_dev_opaque->buffer_list))
-			return 0;
+	    list_is_singular(&iio_dev_opaque->buffer_list))
+		return 0;
 
 	modes = indio_dev->modes;
 
@@ -940,6 +943,7 @@ struct iio_demux_table {
 static void iio_buffer_demux_free(struct iio_buffer *buffer)
 {
 	struct iio_demux_table *p, *q;
+
 	list_for_each_entry_safe(p, q, &buffer->demux_list, l) {
 		list_del(&p->l);
 		kfree(p);

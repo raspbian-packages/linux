@@ -486,6 +486,8 @@ static const struct it87_devices it87_devices[] = {
 #define has_pwm_freq2(data)	((data)->features & FEAT_PWM_FREQ2)
 #define has_six_temp(data)	((data)->features & FEAT_SIX_TEMP)
 #define has_vin3_5v(data)	((data)->features & FEAT_VIN3_5V)
+#define has_scaling(data)	((data)->features & (FEAT_12MV_ADC | \
+						     FEAT_10_9MV_ADC))
 
 struct it87_sio_data {
 	int sioaddr;
@@ -3098,7 +3100,7 @@ static int it87_probe(struct platform_device *pdev)
 			 "Detected broken BIOS defaults, disabling PWM interface\n");
 
 	/* Starting with IT8721F, we handle scaling of internal voltages */
-	if (has_12mv_adc(data)) {
+	if (has_scaling(data)) {
 		if (sio_data->internal & BIT(0))
 			data->in_scaled |= BIT(3);	/* in3 is AVCC */
 		if (sio_data->internal & BIT(1))
@@ -3179,7 +3181,7 @@ static int it87_probe(struct platform_device *pdev)
 	return PTR_ERR_OR_ZERO(hwmon_dev);
 }
 
-static void __maybe_unused it87_resume_sio(struct platform_device *pdev)
+static void it87_resume_sio(struct platform_device *pdev)
 {
 	struct it87_data *data = dev_get_drvdata(&pdev->dev);
 	int err;
@@ -3211,7 +3213,7 @@ static void __maybe_unused it87_resume_sio(struct platform_device *pdev)
 	superio_exit(data->sioaddr);
 }
 
-static int __maybe_unused it87_resume(struct device *dev)
+static int it87_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct it87_data *data = dev_get_drvdata(dev);
@@ -3238,12 +3240,12 @@ static int __maybe_unused it87_resume(struct device *dev)
 	return 0;
 }
 
-static SIMPLE_DEV_PM_OPS(it87_dev_pm_ops, NULL, it87_resume);
+static DEFINE_SIMPLE_DEV_PM_OPS(it87_dev_pm_ops, NULL, it87_resume);
 
 static struct platform_driver it87_driver = {
 	.driver = {
 		.name	= DRVNAME,
-		.pm     = &it87_dev_pm_ops,
+		.pm     = pm_sleep_ptr(&it87_dev_pm_ops),
 	},
 	.probe	= it87_probe,
 };

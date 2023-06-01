@@ -1393,8 +1393,7 @@ static inline void nullb_complete_cmd(struct nullb_cmd *cmd)
 	case NULL_IRQ_SOFTIRQ:
 		switch (cmd->nq->dev->queue_mode) {
 		case NULL_Q_MQ:
-			if (likely(!blk_should_fake_timeout(cmd->rq->q)))
-				blk_mq_complete_request(cmd->rq);
+			blk_mq_complete_request(cmd->rq);
 			break;
 		case NULL_Q_BIO:
 			/*
@@ -1528,7 +1527,7 @@ static bool should_requeue_request(struct request *rq)
 	return false;
 }
 
-static int null_map_queues(struct blk_mq_tag_set *set)
+static void null_map_queues(struct blk_mq_tag_set *set)
 {
 	struct nullb *nullb = set->driver_data;
 	int i, qoff;
@@ -1555,7 +1554,9 @@ static int null_map_queues(struct blk_mq_tag_set *set)
 		} else {
 			pr_warn("tag set has unexpected nr_hw_queues: %d\n",
 				set->nr_hw_queues);
-			return -EINVAL;
+			WARN_ON_ONCE(true);
+			submit_queues = 1;
+			poll_queues = 0;
 		}
 	}
 
@@ -1577,8 +1578,6 @@ static int null_map_queues(struct blk_mq_tag_set *set)
 		qoff += map->nr_queues;
 		blk_mq_map_queues(map);
 	}
-
-	return 0;
 }
 
 static int null_poll(struct blk_mq_hw_ctx *hctx, struct io_comp_batch *iob)
@@ -1655,7 +1654,8 @@ static blk_status_t null_queue_rq(struct blk_mq_hw_ctx *hctx,
 	cmd->rq = bd->rq;
 	cmd->error = BLK_STS_OK;
 	cmd->nq = nq;
-	cmd->fake_timeout = should_timeout_request(bd->rq);
+	cmd->fake_timeout = should_timeout_request(bd->rq) ||
+		blk_should_fake_timeout(bd->rq->q);
 
 	blk_mq_start_request(bd->rq);
 

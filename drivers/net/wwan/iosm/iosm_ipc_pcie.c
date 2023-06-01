@@ -259,6 +259,7 @@ static int ipc_pcie_probe(struct pci_dev *pci,
 			  const struct pci_device_id *pci_id)
 {
 	struct iosm_pcie *ipc_pcie = kzalloc(sizeof(*ipc_pcie), GFP_KERNEL);
+	int ret;
 
 	pr_debug("Probing device 0x%X from the vendor 0x%X", pci_id->device,
 		 pci_id->vendor);
@@ -291,6 +292,12 @@ static int ipc_pcie_probe(struct pci_dev *pci,
 		goto pci_enable_fail;
 	}
 
+	ret = dma_set_mask(ipc_pcie->dev, DMA_BIT_MASK(64));
+	if (ret) {
+		dev_err(ipc_pcie->dev, "Could not set PCI DMA mask: %d", ret);
+		goto set_mask_fail;
+	}
+
 	ipc_pcie_config_aspm(ipc_pcie);
 	dev_dbg(ipc_pcie->dev, "PCIe device enabled.");
 
@@ -316,6 +323,7 @@ static int ipc_pcie_probe(struct pci_dev *pci,
 imem_init_fail:
 	ipc_pcie_resources_release(ipc_pcie);
 resources_req_fail:
+set_mask_fail:
 	pci_disable_device(pci);
 pci_enable_fail:
 	kfree(ipc_pcie);

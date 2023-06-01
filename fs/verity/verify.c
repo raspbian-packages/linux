@@ -39,16 +39,6 @@ static void hash_at_level(const struct merkle_tree_params *params,
 		   (params->log_blocksize - params->log_arity);
 }
 
-/* Extract a hash from a hash page */
-static void extract_hash(struct page *hpage, unsigned int hoffset,
-			 unsigned int hsize, u8 *out)
-{
-	void *virt = kmap_atomic(hpage);
-
-	memcpy(out, virt + hoffset, hsize);
-	kunmap_atomic(virt);
-}
-
 static inline int cmp_hashes(const struct fsverity_info *vi,
 			     const u8 *want_hash, const u8 *real_hash,
 			     pgoff_t index, int level)
@@ -129,7 +119,7 @@ static bool verify_page(struct inode *inode, const struct fsverity_info *vi,
 		}
 
 		if (PageChecked(hpage)) {
-			extract_hash(hpage, hoffset, hsize, _want_hash);
+			memcpy_from_page(_want_hash, hpage, hoffset, hsize);
 			want_hash = _want_hash;
 			put_page(hpage);
 			pr_debug_ratelimited("Hash page already checked, want %s:%*phN\n",
@@ -158,7 +148,7 @@ descend:
 		if (err)
 			goto out;
 		SetPageChecked(hpage);
-		extract_hash(hpage, hoffset, hsize, _want_hash);
+		memcpy_from_page(_want_hash, hpage, hoffset, hsize);
 		want_hash = _want_hash;
 		put_page(hpage);
 		pr_debug("Verified hash page at level %d, now want %s:%*phN\n",
@@ -279,15 +269,15 @@ EXPORT_SYMBOL_GPL(fsverity_enqueue_verify_work);
 int __init fsverity_init_workqueue(void)
 {
 	/*
-	 * Use an unbound workqueue to allow bios to be verified in parallel
-	 * even when they happen to complete on the same CPU.  This sacrifices
-	 * locality, but it's worthwhile since hashing is CPU-intensive.
+	 * Use a high-priority workqueue to prioritize verification work, which
+	 * blocks reads from completing, over regular application tasks.
 	 *
-	 * Also use a high-priority workqueue to prioritize verification work,
-	 * which blocks reads from completing, over regular application tasks.
+	 * For performance reasons, don't use an unbound workqueue.  Using an
+	 * unbound workqueue for crypto operations causes excessive scheduler
+	 * latency on ARM64.
 	 */
 	fsverity_read_workqueue = alloc_workqueue("fsverity_read_queue",
-						  WQ_UNBOUND | WQ_HIGHPRI,
+						  WQ_HIGHPRI,
 						  num_online_cpus());
 	if (!fsverity_read_workqueue)
 		return -ENOMEM;

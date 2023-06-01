@@ -75,6 +75,7 @@ static int cxl_nvdimm_probe(struct device *dev)
 		goto out;
 
 	set_bit(NDD_LABELING, &flags);
+	set_bit(NDD_REGISTER_SYNC, &flags);
 	set_bit(ND_CMD_GET_CONFIG_SIZE, &cmd_mask);
 	set_bit(ND_CMD_GET_CONFIG_DATA, &cmd_mask);
 	set_bit(ND_CMD_SET_CONFIG_DATA, &cmd_mask);
@@ -110,7 +111,7 @@ static int cxl_pmem_get_config_size(struct cxl_dev_state *cxlds,
 
 	*cmd = (struct nd_cmd_get_config_size) {
 		 .config_size = cxlds->lsa_size,
-		 .max_xfer = cxlds->payload_size,
+		 .max_xfer = cxlds->payload_size - sizeof(struct cxl_mbox_set_lsa),
 	};
 
 	return 0;

@@ -76,7 +76,7 @@ properties:
 
       - items:
           - enum:
-              - renesas,scif-r9a07g043      # RZ/G2UL
+              - renesas,scif-r9a07g043      # RZ/G2UL and RZ/Five
               - renesas,scif-r9a07g054      # RZ/V2L
           - const: renesas,scif-r9a07g044   # RZ/G2{L,LC} fallback
 
@@ -91,7 +91,7 @@ properties:
           - description: Error interrupt
           - description: Receive buffer full interrupt
           - description: Transmit buffer empty interrupt
-          - description: Transmit End interrupt
+          - description: Break interrupt
       - items:
           - description: Error interrupt
           - description: Receive buffer full interrupt
@@ -106,7 +106,7 @@ properties:
           - const: eri
           - const: rxi
           - const: txi
-          - const: tei
+          - const: bri
       - items:
           - const: eri
           - const: rxi

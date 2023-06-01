@@ -345,6 +345,7 @@ static int mt7615_mac_fill_rx(struct mt7615_dev *dev, struct sk_buff *skb)
 	u32 rxd1 = le32_to_cpu(rxd[1]);
 	u32 rxd2 = le32_to_cpu(rxd[2]);
 	u32 csum_mask = MT_RXD0_NORMAL_IP_SUM | MT_RXD0_NORMAL_UDP_TCP_SUM;
+	u32 csum_status = *(u32 *)skb->cb;
 	bool unicast, hdr_trans, remove_pad, insert_ccmp_hdr = false;
 	u16 hdr_gap;
 	int phy_idx;
@@ -394,7 +395,8 @@ static int mt7615_mac_fill_rx(struct mt7615_dev *dev, struct sk_buff *skb)
 		spin_unlock_bh(&dev->sta_poll_lock);
 	}
 
-	if ((rxd0 & csum_mask) == csum_mask)
+	if (mt76_is_mmio(&dev->mt76) && (rxd0 & csum_mask) == csum_mask &&
+	    !(csum_status & (BIT(0) | BIT(2) | BIT(3))))
 		skb->ip_summed = CHECKSUM_UNNECESSARY;
 
 	if (rxd2 & MT_RXD2_NORMAL_FCS_ERR)
@@ -610,14 +612,14 @@ static int mt7615_mac_fill_rx(struct mt7615_dev *dev, struct sk_buff *skb)
 			 * When header translation failure is indicated,
 			 * the hardware will insert an extra 2-byte field
 			 * containing the data length after the protocol
-			 * type field.
+			 * type field. This happens either when the LLC-SNAP
+			 * pattern did not match, or if a VLAN header was
+			 * detected.
 			 */
 			pad_start = 12;
 			if (get_unaligned_be16(skb->data + pad_start) == ETH_P_8021Q)
 				pad_start += 4;
-
-			if (get_unaligned_be16(skb->data + pad_start) !=
-			    skb->len - pad_start - 2)
+			else
 				pad_start = 0;
 		}
 
@@ -1178,8 +1180,7 @@ EXPORT_SYMBOL_GPL(mt7615_mac_set_rates);
 static int
 mt7615_mac_wtbl_update_key(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 			   struct ieee80211_key_conf *key,
-			   enum mt76_cipher_type cipher, u16 cipher_mask,
-			   enum set_key_cmd cmd)
+			   enum mt76_cipher_type cipher, u16 cipher_mask)
 {
 	u32 addr = mt7615_mac_wtbl_addr(dev, wcid->idx) + 30 * 4;
 	u8 data[32] = {};
@@ -1188,27 +1189,18 @@ mt7615_mac_wtbl_update_key(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 		return -EINVAL;
 
 	mt76_rr_copy(dev, addr, data, sizeof(data));
-	if (cmd == SET_KEY) {
-		if (cipher == MT_CIPHER_TKIP) {
-			/* Rx/Tx MIC keys are swapped */
-			memcpy(data, key->key, 16);
-			memcpy(data + 16, key->key + 24, 8);
-			memcpy(data + 24, key->key + 16, 8);
-		} else {
-			if (cipher_mask == BIT(cipher))
-				memcpy(data, key->key, key->keylen);
-			else if (cipher != MT_CIPHER_BIP_CMAC_128)
-				memcpy(data, key->key, 16);
-			if (cipher == MT_CIPHER_BIP_CMAC_128)
-				memcpy(data + 16, key->key, 16);
-		}
+	if (cipher == MT_CIPHER_TKIP) {
+		/* Rx/Tx MIC keys are swapped */
+		memcpy(data, key->key, 16);
+		memcpy(data + 16, key->key + 24, 8);
+		memcpy(data + 24, key->key + 16, 8);
 	} else {
+		if (cipher_mask == BIT(cipher))
+			memcpy(data, key->key, key->keylen);
+		else if (cipher != MT_CIPHER_BIP_CMAC_128)
+			memcpy(data, key->key, 16);
 		if (cipher == MT_CIPHER_BIP_CMAC_128)
-			memset(data + 16, 0, 16);
-		else if (cipher_mask)
-			memset(data, 0, 16);
-		if (!cipher_mask)
-			memset(data, 0, sizeof(data));
+			memcpy(data + 16, key->key, 16);
 	}
 
 	mt76_wr_copy(dev, addr, data, sizeof(data));
@@ -1219,7 +1211,7 @@ mt7615_mac_wtbl_update_key(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 static int
 mt7615_mac_wtbl_update_pk(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 			  enum mt76_cipher_type cipher, u16 cipher_mask,
-			  int keyidx, enum set_key_cmd cmd)
+			  int keyidx)
 {
 	u32 addr = mt7615_mac_wtbl_addr(dev, wcid->idx), w0, w1;
 
@@ -1238,9 +1230,7 @@ mt7615_mac_wtbl_update_pk(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 	else
 		w0 &= ~MT_WTBL_W0_RX_IK_VALID;
 
-	if (cmd == SET_KEY &&
-	    (cipher != MT_CIPHER_BIP_CMAC_128 ||
-	     cipher_mask == BIT(cipher))) {
+	if (cipher != MT_CIPHER_BIP_CMAC_128 || cipher_mask == BIT(cipher)) {
 		w0 &= ~MT_WTBL_W0_KEY_IDX;
 		w0 |= FIELD_PREP(MT_WTBL_W0_KEY_IDX, keyidx);
 	}
@@ -1257,18 +1247,9 @@ mt7615_mac_wtbl_update_pk(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 
 static void
 mt7615_mac_wtbl_update_cipher(struct mt7615_dev *dev, struct mt76_wcid *wcid,
-			      enum mt76_cipher_type cipher, u16 cipher_mask,
-			      enum set_key_cmd cmd)
+			      enum mt76_cipher_type cipher, u16 cipher_mask)
 {
 	u32 addr = mt7615_mac_wtbl_addr(dev, wcid->idx);
-
-	if (!cipher_mask) {
-		mt76_clear(dev, addr + 2 * 4, MT_WTBL_W2_KEY_TYPE);
-		return;
-	}
-
-	if (cmd != SET_KEY)
-		return;
 
 	if (cipher == MT_CIPHER_BIP_CMAC_128 &&
 	    cipher_mask & ~BIT(MT_CIPHER_BIP_CMAC_128))
@@ -1280,8 +1261,7 @@ mt7615_mac_wtbl_update_cipher(struct mt7615_dev *dev, struct mt76_wcid *wcid,
 
 int __mt7615_mac_wtbl_set_key(struct mt7615_dev *dev,
 			      struct mt76_wcid *wcid,
-			      struct ieee80211_key_conf *key,
-			      enum set_key_cmd cmd)
+			      struct ieee80211_key_conf *key)
 {
 	enum mt76_cipher_type cipher;
 	u16 cipher_mask = wcid->cipher;
@@ -1291,19 +1271,14 @@ int __mt7615_mac_wtbl_set_key(struct mt7615_dev *dev,
 	if (cipher == MT_CIPHER_NONE)
 		return -EOPNOTSUPP;
 
-	if (cmd == SET_KEY)
-		cipher_mask |= BIT(cipher);
-	else
-		cipher_mask &= ~BIT(cipher);
-
-	mt7615_mac_wtbl_update_cipher(dev, wcid, cipher, cipher_mask, cmd);
-	err = mt7615_mac_wtbl_update_key(dev, wcid, key, cipher, cipher_mask,
-					 cmd);
+	cipher_mask |= BIT(cipher);
+	mt7615_mac_wtbl_update_cipher(dev, wcid, cipher, cipher_mask);
+	err = mt7615_mac_wtbl_update_key(dev, wcid, key, cipher, cipher_mask);
 	if (err < 0)
 		return err;
 
 	err = mt7615_mac_wtbl_update_pk(dev, wcid, cipher, cipher_mask,
-					key->keyidx, cmd);
+					key->keyidx);
 	if (err < 0)
 		return err;
 
@@ -1314,13 +1289,12 @@ int __mt7615_mac_wtbl_set_key(struct mt7615_dev *dev,
 
 int mt7615_mac_wtbl_set_key(struct mt7615_dev *dev,
 			    struct mt76_wcid *wcid,
-			    struct ieee80211_key_conf *key,
-			    enum set_key_cmd cmd)
+			    struct ieee80211_key_conf *key)
 {
 	int err;
 
 	spin_lock_bh(&dev->mt76.lock);
-	err = __mt7615_mac_wtbl_set_key(dev, wcid, key, cmd);
+	err = __mt7615_mac_wtbl_set_key(dev, wcid, key);
 	spin_unlock_bh(&dev->mt76.lock);
 
 	return err;

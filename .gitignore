@@ -37,6 +37,8 @@
 *.o
 *.o.*
 *.patch
+*.rmeta
+*.rsi
 *.s
 *.so
 *.so.dbg
@@ -147,6 +149,9 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+# Rust analyzer configuration
+/rust-project.json
 
 #
 # Debian packaging: ignore everything at the top level, since it isn't

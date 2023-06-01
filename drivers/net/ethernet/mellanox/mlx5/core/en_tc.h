@@ -54,6 +54,7 @@
 			    ESW_FLOW_ATTR_SZ :\
 			    NIC_FLOW_ATTR_SZ)
 
+struct mlx5_fs_chains *mlx5e_nic_chains(struct mlx5e_tc_table *tc);
 int mlx5e_tc_num_filters(struct mlx5e_priv *priv, unsigned long flags);
 
 struct mlx5e_tc_update_priv {
@@ -81,7 +82,6 @@ struct mlx5_flow_attr {
 	struct mlx5_flow_table *dest_ft;
 	u8 inner_match_level;
 	u8 outer_match_level;
-	u8 ip_version;
 	u8 tun_ip_version;
 	int tunnel_id; /* mapped tunnel id */
 	u32 flags;
@@ -128,7 +128,6 @@ struct mlx5_rx_tun_attr {
 		__be32 v4;
 		struct in6_addr v6;
 	} dst_ip; /* Valid if decap_vport is not zero */
-	u32 vni;
 };
 
 #define MLX5E_TC_TABLE_CHAIN_TAG_BITS 16

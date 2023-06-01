@@ -59,4 +59,4 @@ config LOCK_DOWN_IN_EFI_SECURE_BOOT
 	  not indicated by the boot parameters.
 
 	  Enabling this option results in kernel lockdown being
-	  triggered in confidentiality mode if EFI Secure Boot is set.
+	  triggered in integrity mode if EFI Secure Boot is set.
