@@ -6,7 +6,11 @@ linux (6.1.27-1+rpi1) bookworm-staging; urgency=medium
   [changes introduced in 5.15.15-2+rpi1 by Peter Michael Green]
   * Disable libbfd buildid support, it seems to fail to build.
 
- -- Raspbian forward porter <root@raspbian.org>  Thu, 01 Jun 2023 21:41:46 +0000
+  [changed introduced in 6.1.27-1+rpi1 by Peter Michael Green]
+  * Disable calls to kernel-wedge, one of them seems to be failing and we
+    aren't building kernels from this package anyway.
+
+ -- Peter Michael Green <plugwash@raspbian.org>  Tue, 06 Jun 2023 16:56:39 +0000
 
 linux (6.1.27-1) unstable; urgency=medium
 

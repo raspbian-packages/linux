@@ -487,8 +487,8 @@ binary_udeb binary_udeb_test: export KW_CONFIG_DIR=debian/installer
 binary_udeb:
 	dh_testdir
 	dh_prep
-	kernel-wedge install-files $(ABINAME)
-	kernel-wedge check $(PACKAGE_NAMES)
+	#kernel-wedge install-files $(ABINAME)
+	#kernel-wedge check $(PACKAGE_NAMES)
 	dh_fixperms
 	dh_gencontrol
 	dh_builddeb -- $(BUILDDEB_ARGS)
@@ -496,10 +496,10 @@ binary_udeb:
 # Want only to run if all build profiles are fulfilled
 binary_udeb_test: DEB_BUILD_PROFILES += pkg.linux.udeb-unsigned-test-build
 binary_udeb_test:
-	if [ -n "$$(dh_listpackages)" ]; then \
-		kernel-wedge install-files $(ABINAME); \
-		kernel-wedge check $(PACKAGE_NAMES); \
-	fi
+	#if [ -n "$$(dh_listpackages)" ]; then \
+	#	kernel-wedge install-files $(ABINAME); \
+	#	kernel-wedge check $(PACKAGE_NAMES); \
+	#fi
 
 build_source:
 
