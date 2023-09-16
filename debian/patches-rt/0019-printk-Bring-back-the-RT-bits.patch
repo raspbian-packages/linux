@@ -1,8 +1,8 @@
-From 7c32690ea7972a0a99d4c81ee5431d825d26ebdc Mon Sep 17 00:00:00 2001
+From b2252036197232c673f3024dc577fcf14ee8854c Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 19 Jul 2022 20:08:01 +0200
 Subject: [PATCH 19/52] printk: Bring back the RT bits.
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.33-rt11.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.46-rt13.tar.xz
 
 This is a revert of the commits:
 | 07a22b61946f0 Revert "printk: add functions to prefer direct printing"
@@ -1214,7 +1214,7 @@ index 8e61f21e7e33..41596c415111 100644
  
  	return HRTIMER_RESTART;
 diff --git a/kernel/watchdog_hld.c b/kernel/watchdog_hld.c
-index 247bf0b1582c..701f35f0e2d4 100644
+index 1e8a49dc956e..7c977b945c92 100644
 --- a/kernel/watchdog_hld.c
 +++ b/kernel/watchdog_hld.c
 @@ -135,6 +135,8 @@ static void watchdog_overflow_callback(struct perf_event *event,
@@ -1236,5 +1236,5 @@ index 247bf0b1582c..701f35f0e2d4 100644
  		return;
  	}
 -- 
-2.40.1
+2.41.0
 

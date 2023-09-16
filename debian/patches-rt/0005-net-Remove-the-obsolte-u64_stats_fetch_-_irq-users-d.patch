@@ -1,9 +1,9 @@
-From d40366b5a5dc68e98dad1e5a6fcfcb67a027397a Mon Sep 17 00:00:00 2001
+From 29f7fd5200dfc429144d0d843799f0d398182099 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 25 Aug 2022 16:15:44 +0200
 Subject: [PATCH 05/52] net: Remove the obsolte u64_stats_fetch_*_irq() users
  (drivers).
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.33-rt11.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.46-rt13.tar.xz
 
 Now that the 32bit UP oddity is gone and 32bit uses always a sequence
 count, there is no need for the fetch_irq() variants anymore.
@@ -426,7 +426,7 @@ index 77edc3d9b505..a29de29bdf23 100644
  	}
  }
 diff --git a/drivers/net/ethernet/emulex/benet/be_main.c b/drivers/net/ethernet/emulex/benet/be_main.c
-index a92a74761546..46fe3d74e2e9 100644
+index b12152e2fca0..52d6d43e7bfe 100644
 --- a/drivers/net/ethernet/emulex/benet/be_main.c
 +++ b/drivers/net/ethernet/emulex/benet/be_main.c
 @@ -665,10 +665,10 @@ static void be_get_stats64(struct net_device *netdev,
@@ -455,7 +455,7 @@ index a92a74761546..46fe3d74e2e9 100644
  		stats->tx_packets += pkts;
  		stats->tx_bytes += bytes;
  	}
-@@ -2155,16 +2155,16 @@ static int be_get_new_eqd(struct be_eq_obj *eqo)
+@@ -2156,16 +2156,16 @@ static int be_get_new_eqd(struct be_eq_obj *eqo)
  
  	for_all_rx_queues_on_eq(adapter, eqo, rxo, i) {
  		do {
@@ -493,7 +493,7 @@ index 671f51135c26..53b7e95213a8 100644
  #define FUN_INT_NAME_LEN (IFNAMSIZ + 16)
  
 diff --git a/drivers/net/ethernet/google/gve/gve_ethtool.c b/drivers/net/ethernet/google/gve/gve_ethtool.c
-index 38df602f2869..274891a18ae5 100644
+index 033f17cb96be..0a5953089a24 100644
 --- a/drivers/net/ethernet/google/gve/gve_ethtool.c
 +++ b/drivers/net/ethernet/google/gve/gve_ethtool.c
 @@ -177,14 +177,14 @@ gve_get_ethtool_stats(struct net_device *netdev,
@@ -597,7 +597,7 @@ index 2e5e0a887270..07b2ab8d054c 100644
  				.stat_name = cpu_to_be32(TX_WAKE_CNT),
  				.value = cpu_to_be64(priv->tx[idx].wake_queue),
 diff --git a/drivers/net/ethernet/hisilicon/hns3/hns3_enet.c b/drivers/net/ethernet/hisilicon/hns3/hns3_enet.c
-index 248f15dac86b..b4c4fb873568 100644
+index 61f833d61f58..25a2152d9caf 100644
 --- a/drivers/net/ethernet/hisilicon/hns3/hns3_enet.c
 +++ b/drivers/net/ethernet/hisilicon/hns3/hns3_enet.c
 @@ -2488,7 +2488,7 @@ static void hns3_fetch_stats(struct rtnl_link_stats64 *stats,
@@ -793,7 +793,7 @@ index 0e01b1927c1c..9eef9d47efec 100644
  			tx_p += packets;
  			tx_restart += p->tx_stats.restart_queue;
 diff --git a/drivers/net/ethernet/intel/iavf/iavf_ethtool.c b/drivers/net/ethernet/intel/iavf/iavf_ethtool.c
-index 83cfc54a4706..6f171d1d85b7 100644
+index f544d2b0abdb..460ca561819a 100644
 --- a/drivers/net/ethernet/intel/iavf/iavf_ethtool.c
 +++ b/drivers/net/ethernet/intel/iavf/iavf_ethtool.c
 @@ -147,7 +147,7 @@ __iavf_add_ethtool_stats(u64 **data, void *pointer,
@@ -824,10 +824,10 @@ index 83cfc54a4706..6f171d1d85b7 100644
  	/* Once we successfully copy the stats in, update the data pointer */
  	*data += size;
 diff --git a/drivers/net/ethernet/intel/ice/ice_main.c b/drivers/net/ethernet/intel/ice/ice_main.c
-index 6a50f8ba3940..dbcaf197ecb5 100644
+index a771e597795d..f425cf916498 100644
 --- a/drivers/net/ethernet/intel/ice/ice_main.c
 +++ b/drivers/net/ethernet/intel/ice/ice_main.c
-@@ -6393,10 +6393,10 @@ ice_fetch_u64_stats_per_ring(struct u64_stats_sync *syncp,
+@@ -6406,10 +6406,10 @@ ice_fetch_u64_stats_per_ring(struct u64_stats_sync *syncp,
  	unsigned int start;
  
  	do {
@@ -841,10 +841,10 @@ index 6a50f8ba3940..dbcaf197ecb5 100644
  
  /**
 diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index ff911af16a4b..7d60da1b7bf4 100644
+index 96fa1c420f91..319ed601eaa1 100644
 --- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
 +++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-@@ -2313,15 +2313,15 @@ static void igb_get_ethtool_stats(struct net_device *netdev,
+@@ -2316,15 +2316,15 @@ static void igb_get_ethtool_stats(struct net_device *netdev,
  
  		ring = adapter->tx_ring[j];
  		do {
@@ -864,7 +864,7 @@ index ff911af16a4b..7d60da1b7bf4 100644
  		data[i+2] += restart2;
  
  		i += IGB_TX_QUEUE_STATS_LEN;
-@@ -2329,13 +2329,13 @@ static void igb_get_ethtool_stats(struct net_device *netdev,
+@@ -2332,13 +2332,13 @@ static void igb_get_ethtool_stats(struct net_device *netdev,
  	for (j = 0; j < adapter->num_rx_queues; j++) {
  		ring = adapter->rx_ring[j];
  		do {
@@ -881,7 +881,7 @@ index ff911af16a4b..7d60da1b7bf4 100644
  	}
  	spin_unlock(&adapter->stats64_lock);
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index b3aed4e2ca91..c25ddcdc3150 100644
+index 3e0444354632..30ad659fb5bf 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -6656,10 +6656,10 @@ void igb_update_stats(struct igb_adapter *adapter)
@@ -911,7 +911,7 @@ index b3aed4e2ca91..c25ddcdc3150 100644
  		packets += _packets;
  	}
 diff --git a/drivers/net/ethernet/intel/igc/igc_ethtool.c b/drivers/net/ethernet/intel/igc/igc_ethtool.c
-index 8cc077b712ad..5a26a7805ef8 100644
+index 511fc3f41208..2899109e6fb5 100644
 --- a/drivers/net/ethernet/intel/igc/igc_ethtool.c
 +++ b/drivers/net/ethernet/intel/igc/igc_ethtool.c
 @@ -839,15 +839,15 @@ static void igc_ethtool_get_stats(struct net_device *netdev,
@@ -951,10 +951,10 @@ index 8cc077b712ad..5a26a7805ef8 100644
  	}
  	spin_unlock(&adapter->stats64_lock);
 diff --git a/drivers/net/ethernet/intel/igc/igc_main.c b/drivers/net/ethernet/intel/igc/igc_main.c
-index 1d9b70e0ff67..56d611fbeee8 100644
+index d877dc0f87f7..60ca36649a47 100644
 --- a/drivers/net/ethernet/intel/igc/igc_main.c
 +++ b/drivers/net/ethernet/intel/igc/igc_main.c
-@@ -4802,10 +4802,10 @@ void igc_update_stats(struct igc_adapter *adapter)
+@@ -4862,10 +4862,10 @@ void igc_update_stats(struct igc_adapter *adapter)
  		}
  
  		do {
@@ -967,7 +967,7 @@ index 1d9b70e0ff67..56d611fbeee8 100644
  		bytes += _bytes;
  		packets += _packets;
  	}
-@@ -4819,10 +4819,10 @@ void igc_update_stats(struct igc_adapter *adapter)
+@@ -4879,10 +4879,10 @@ void igc_update_stats(struct igc_adapter *adapter)
  		struct igc_ring *ring = adapter->tx_ring[i];
  
  		do {
@@ -1011,7 +1011,7 @@ index 0051aa676e19..1c22ff2dba9b 100644
  	}
  
 diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 9b8848daeb43..03e583cf4815 100644
+index 6105419ae2d5..ec8864beb1ac 100644
 --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
 +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
 @@ -9051,10 +9051,10 @@ static void ixgbe_get_ring_stats64(struct rtnl_link_stats64 *stats,
@@ -1114,7 +1114,7 @@ index e338fa572793..a9479ddf68eb 100644
  		stats->rx_packets += packets;
  	}
 diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-index 5aefaaff0871..cbff5512e9f3 100644
+index aca5b72cfeec..8d146b6b0305 100644
 --- a/drivers/net/ethernet/marvell/mvneta.c
 +++ b/drivers/net/ethernet/marvell/mvneta.c
 @@ -813,14 +813,14 @@ mvneta_get_stats64(struct net_device *dev,
@@ -1218,7 +1218,7 @@ index ab33ba1c3023..ff97b140886a 100644
  	stats->tx_packets = _packets;
  	stats->tx_bytes = _bytes;
 diff --git a/drivers/net/ethernet/mediatek/mtk_eth_soc.c b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-index 49975924e242..7d6257fbc772 100644
+index 7e318133423a..8fef69ae59e3 100644
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 @@ -866,7 +866,7 @@ static void mtk_get_stats64(struct net_device *dev,
@@ -1239,7 +1239,7 @@ index 49975924e242..7d6257fbc772 100644
  
  	storage->tx_errors = dev->stats.tx_errors;
  	storage->rx_dropped = dev->stats.rx_dropped;
-@@ -3708,13 +3708,13 @@ static void mtk_get_ethtool_stats(struct net_device *dev,
+@@ -3691,13 +3691,13 @@ static void mtk_get_ethtool_stats(struct net_device *dev,
  
  	do {
  		data_dst = data;
@@ -1275,10 +1275,10 @@ index 67ecdb9e708f..8345499563a4 100644
  		stats->rx_packets	+= rx_packets;
  		stats->rx_bytes		+= rx_bytes;
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index 27a0f3af8aab..aec4bab6be56 100644
+index 4f4204432aaa..9cca75423933 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -315,10 +315,10 @@ static void mana_get_stats64(struct net_device *ndev,
+@@ -316,10 +316,10 @@ static void mana_get_stats64(struct net_device *ndev,
  		rx_stats = &apc->rxqs[q]->stats;
  
  		do {
@@ -1291,7 +1291,7 @@ index 27a0f3af8aab..aec4bab6be56 100644
  
  		st->rx_packets += packets;
  		st->rx_bytes += bytes;
-@@ -328,10 +328,10 @@ static void mana_get_stats64(struct net_device *ndev,
+@@ -329,10 +329,10 @@ static void mana_get_stats64(struct net_device *ndev,
  		tx_stats = &apc->tx_qp[q].txq.stats;
  
  		do {
@@ -1592,7 +1592,7 @@ index 0fb15a17b547..d716e6fe26e1 100644
  
  static void rhine_set_rx_mode(struct net_device *dev)
 diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-index d1d772580da9..441e1058104f 100644
+index d14648558338..f000e3986b35 100644
 --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
 +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
 @@ -1305,16 +1305,16 @@ axienet_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
@@ -1810,7 +1810,7 @@ index 2e9742952c4e..f6d53e63ef4e 100644
  		*packets += tpackets;
  	}
 diff --git a/drivers/net/macsec.c b/drivers/net/macsec.c
-index 038a78794392..bf8ac7a3ded7 100644
+index 6a7965ed6300..928e8fb17ed3 100644
 --- a/drivers/net/macsec.c
 +++ b/drivers/net/macsec.c
 @@ -2801,9 +2801,9 @@ static void get_rx_sc_stats(struct net_device *dev,
@@ -1915,7 +1915,7 @@ index 9a1a5b203624..e470e3398abc 100644
  
  static int
 diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index b524bd374d68..555b0b1e9a78 100644
+index 509ba706781e..d3dc22509ea5 100644
 --- a/drivers/net/team/team.c
 +++ b/drivers/net/team/team.c
 @@ -1866,13 +1866,13 @@ team_get_stats64(struct net_device *dev, struct rtnl_link_stats64 *stats)
@@ -2001,10 +2001,10 @@ index a71786b3e7ba..9d42a8c6aab7 100644
  		result->xdp_tx_err += xdp_tx_err;
  		result->xdp_packets += packets;
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 47788f093551..fe6b567de3e5 100644
+index 075d5d42f5eb..0713bc832ddf 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -2105,18 +2105,18 @@ static void virtnet_stats(struct net_device *dev,
+@@ -2107,18 +2107,18 @@ static void virtnet_stats(struct net_device *dev,
  		struct send_queue *sq = &vi->sq[i];
  
  		do {
@@ -2027,7 +2027,7 @@ index 47788f093551..fe6b567de3e5 100644
  
  		tot->rx_packets += rpackets;
  		tot->tx_packets += tpackets;
-@@ -2724,12 +2724,12 @@ static void virtnet_get_ethtool_stats(struct net_device *dev,
+@@ -2726,12 +2726,12 @@ static void virtnet_get_ethtool_stats(struct net_device *dev,
  
  		stats_base = (u8 *)&rq->stats;
  		do {
@@ -2042,7 +2042,7 @@ index 47788f093551..fe6b567de3e5 100644
  		idx += VIRTNET_RQ_STATS_LEN;
  	}
  
-@@ -2738,12 +2738,12 @@ static void virtnet_get_ethtool_stats(struct net_device *dev,
+@@ -2740,12 +2740,12 @@ static void virtnet_get_ethtool_stats(struct net_device *dev,
  
  		stats_base = (u8 *)&sq->stats;
  		do {
@@ -2078,7 +2078,7 @@ index f6dcec66f0a4..bdb3a76a352e 100644
  		stats->tx_packets += tpkts;
  		stats->tx_dropped += tdrops;
 diff --git a/drivers/net/vxlan/vxlan_vnifilter.c b/drivers/net/vxlan/vxlan_vnifilter.c
-index 3e04af4c5daa..a3de081cda5e 100644
+index c5cf55030158..c3ff30ab782e 100644
 --- a/drivers/net/vxlan/vxlan_vnifilter.c
 +++ b/drivers/net/vxlan/vxlan_vnifilter.c
 @@ -129,9 +129,9 @@ static void vxlan_vnifilter_stats_get(const struct vxlan_vni_node *vninode,
@@ -2147,5 +2147,5 @@ index dc404e05970c..14aec417fa06 100644
  		tot->rx_packets += rx_packets;
  		tot->tx_packets += tx_packets;
 -- 
-2.40.1
+2.41.0
 
