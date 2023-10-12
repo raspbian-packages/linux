@@ -217,7 +217,7 @@ static int handle_itdb(struct kvm_vcpu *vcpu)
 		return 0;
 	if (current->thread.per_flags & PER_FLAG_NO_TE)
 		return 0;
-	itdb = (struct kvm_s390_itdb *)vcpu->arch.sie_block->itdba;
+	itdb = phys_to_virt(vcpu->arch.sie_block->itdba);
 	rc = write_guest_lc(vcpu, __LC_PGM_TDB, itdb, sizeof(*itdb));
 	if (rc)
 		return rc;
@@ -389,8 +389,8 @@ static int handle_partial_execution(struct kvm_vcpu *vcpu)
  */
 int handle_sthyi(struct kvm_vcpu *vcpu)
 {
-	int reg1, reg2, r = 0;
-	u64 code, addr, cc = 0, rc = 0;
+	int reg1, reg2, cc = 0, r = 0;
+	u64 code, addr, rc = 0;
 	struct sthyi_sctns *sctns = NULL;
 
 	if (!test_kvm_facility(vcpu->kvm, 74))
@@ -421,12 +421,14 @@ int handle_sthyi(struct kvm_vcpu *vcpu)
 		return -ENOMEM;
 
 	cc = sthyi_fill(sctns, &rc);
-
+	if (cc < 0) {
+		free_page((unsigned long)sctns);
+		return cc;
+	}
 out:
 	if (!cc) {
 		if (kvm_s390_pv_cpu_is_protected(vcpu)) {
-			memcpy((void *)(sida_origin(vcpu->arch.sie_block)),
-			       sctns, PAGE_SIZE);
+			memcpy(sida_addr(vcpu->arch.sie_block), sctns, PAGE_SIZE);
 		} else {
 			r = write_guest(vcpu, addr, reg2, sctns, PAGE_SIZE);
 			if (r) {
@@ -480,7 +482,7 @@ static int handle_operexc(struct kvm_vcpu *vcpu)
 
 static int handle_pv_spx(struct kvm_vcpu *vcpu)
 {
-	u32 pref = *(u32 *)vcpu->arch.sie_block->sidad;
+	u32 pref = *(u32 *)sida_addr(vcpu->arch.sie_block);
 
 	kvm_s390_set_prefix(vcpu, pref);
 	trace_kvm_s390_handle_prefix(vcpu, 1, pref);
@@ -513,7 +515,7 @@ static int handle_pv_sclp(struct kvm_vcpu *vcpu)
 
 static int handle_pv_uvc(struct kvm_vcpu *vcpu)
 {
-	struct uv_cb_share *guest_uvcb = (void *)vcpu->arch.sie_block->sidad;
+	struct uv_cb_share *guest_uvcb = sida_addr(vcpu->arch.sie_block);
 	struct uv_cb_cts uvcb = {
 		.header.cmd	= UVC_CMD_UNPIN_PAGE_SHARED,
 		.header.len	= sizeof(uvcb),
@@ -631,7 +633,7 @@ int kvm_handle_sie_intercept(struct kvm_vcpu *vcpu)
 		return -EOPNOTSUPP;
 	}
 
-	/* process PER, also if the instrution is processed in user space */
+	/* process PER, also if the instruction is processed in user space */
 	if (vcpu->arch.sie_block->icptstatus & 0x02 &&
 	    (!rc || rc == -EOPNOTSUPP))
 		per_rc = kvm_s390_handle_per_ifetch_icpt(vcpu);

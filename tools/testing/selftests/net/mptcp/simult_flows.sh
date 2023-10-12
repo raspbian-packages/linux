@@ -3,6 +3,7 @@
 
 . "$(dirname "${0}")/mptcp_lib.sh"
 
+sec=$(date +%s)
 rndh=$(printf %x $sec)-$(mktemp -u XXXXXX)
 ns1="ns1-$rndh"
 ns2="ns2-$rndh"
@@ -152,9 +153,6 @@ do_transfer()
 	:> "$sout"
 	:> "$capout"
 
-	local addr_port
-	addr_port=$(printf "%s:%d" ${connect_addr} ${port})
-
 	if $capture; then
 		local capuser
 		if [ -z $SUDO_USER ] ; then
@@ -177,7 +175,7 @@ do_transfer()
 
 	timeout ${timeout_test} \
 		ip netns exec ${ns3} \
-			./mptcp_connect -jt ${timeout_poll} -l -p $port -T $time \
+			./mptcp_connect -jt ${timeout_poll} -l -p $port -T $max_time \
 				0.0.0.0 < "$sin" > "$sout" &
 	local spid=$!
 
@@ -185,7 +183,7 @@ do_transfer()
 
 	timeout ${timeout_test} \
 		ip netns exec ${ns1} \
-			./mptcp_connect -jt ${timeout_poll} -p $port -T $time \
+			./mptcp_connect -jt ${timeout_poll} -p $port -T $max_time \
 				10.0.3.3 < "$cin" > "$cout" &
 	local cpid=$!
 

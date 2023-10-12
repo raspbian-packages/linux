@@ -792,10 +792,7 @@ static void max310x_handle_tx(struct uart_port *port)
 		} else {
 			max310x_batch_write(port, xmit->buf + xmit->tail, to_send);
 		}
-
-		/* Add data to send */
-		port->icount.tx += to_send;
-		xmit->tail = (xmit->tail + to_send) & (UART_XMIT_SIZE - 1);
+		uart_xmit_advance(port, to_send);
 	}
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
@@ -827,8 +824,7 @@ static irqreturn_t max310x_port_irq(struct max310x_port *s, int portno)
 
 		if (ists & MAX310X_IRQ_CTS_BIT) {
 			lsr = max310x_port_read(port, MAX310X_LSR_IRQSTS_REG);
-			uart_handle_cts_change(port,
-					       !!(lsr & MAX310X_LSR_CTS_BIT));
+			uart_handle_cts_change(port, lsr & MAX310X_LSR_CTS_BIT);
 		}
 		if (rxlen)
 			max310x_handle_rx(port, rxlen);
@@ -1640,7 +1636,7 @@ static struct i2c_driver max310x_i2c_driver = {
 		.of_match_table	= max310x_dt_ids,
 		.pm		= &max310x_pm_ops,
 	},
-	.probe_new	= max310x_i2c_probe,
+	.probe		= max310x_i2c_probe,
 	.remove		= max310x_i2c_remove,
 };
 #endif

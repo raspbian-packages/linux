@@ -309,6 +309,26 @@ enum {
 	 * to support it.
 	 */
 	HCI_QUIRK_BROKEN_SET_RPA_TIMEOUT,
+
+	/* When this quirk is set, MSFT extension monitor tracking by
+	 * address filter is supported. Since tracking quantity of each
+	 * pattern is limited, this feature supports tracking multiple
+	 * devices concurrently if controller supports multiple
+	 * address filters.
+	 *
+	 * This quirk must be set before hci_register_dev is called.
+	 */
+	HCI_QUIRK_USE_MSFT_EXT_ADDRESS_FILTER,
+
+	/*
+	 * When this quirk is set, LE Coded PHY shall not be used. This is
+	 * required for some Intel controllers which erroneously claim to
+	 * support it but it causes problems with extended scanning.
+	 *
+	 * This quirk can be set before hci_register_dev is called or
+	 * during the hdev->setup vendor callback.
+	 */
+	HCI_QUIRK_BROKEN_LE_CODED,
 };
 
 /* HCI device flags */
@@ -2172,7 +2192,7 @@ struct hci_cp_le_big_create_sync {
 	__u8    mse;
 	__le16  timeout;
 	__u8    num_bis;
-	__u8    bis[0];
+	__u8    bis[];
 } __packed;
 
 #define HCI_OP_LE_BIG_TERM_SYNC			0x206c
@@ -2190,7 +2210,7 @@ struct hci_cp_le_setup_iso_path {
 	__le16  codec_vid;
 	__u8    delay[3];
 	__u8    codec_cfg_len;
-	__u8    codec_cfg[0];
+	__u8    codec_cfg[];
 } __packed;
 
 struct hci_rp_le_setup_iso_path {
@@ -2626,6 +2646,7 @@ struct hci_ev_le_conn_complete {
 #define LE_EXT_ADV_DIRECT_IND		0x0004
 #define LE_EXT_ADV_SCAN_RSP		0x0008
 #define LE_EXT_ADV_LEGACY_PDU		0x0010
+#define LE_EXT_ADV_EVT_TYPE_MASK	0x007f
 
 #define ADDR_LE_DEV_PUBLIC		0x00
 #define ADDR_LE_DEV_RANDOM		0x01

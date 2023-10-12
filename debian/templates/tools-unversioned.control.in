@@ -5,6 +5,7 @@ Section: devel
 Architecture: linux-any
 Build-Depends:
   python3-docutils <!stage1 !nodoc !pkg.linux.notools>,
+  binutils-dev [hppa],
   libelf-dev,
   zlib1g-dev,
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -66,12 +67,12 @@ Build-Depends:
  libaudit-dev,
  libbabeltrace-dev,
  libdw-dev,
- libiberty-dev,
  libnewt-dev,
  libnuma-dev,
  libopencsd-dev (>= 1.1.1),
  libperl-dev,
  libpython3-dev,
+ libtraceevent-dev (>= 1:1.5),
  libunwind-dev [amd64 arm64 armel armhf hppa i386 mips mips64 mips64el mipsel powerpc ppc64 ppc64el sh4],
  libzstd-dev,
  python3-dev:any,

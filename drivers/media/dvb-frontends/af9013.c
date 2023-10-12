@@ -1424,8 +1424,7 @@ err:
 	return ret;
 }
 
-static int af9013_probe(struct i2c_client *client,
-			const struct i2c_device_id *id)
+static int af9013_probe(struct i2c_client *client)
 {
 	struct af9013_state *state;
 	struct af9013_platform_data *pdata = client->dev.platform_data;

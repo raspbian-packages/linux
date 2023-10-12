@@ -12,6 +12,7 @@
 
 #include "qrtr.h"
 
+#include <trace/events/sock.h>
 #define CREATE_TRACE_POINTS
 #include <trace/events/qrtr.h>
 
@@ -758,6 +759,8 @@ static void qrtr_ns_worker(struct work_struct *work)
 
 static void qrtr_ns_data_ready(struct sock *sk)
 {
+	trace_sk_data_ready(sk);
+
 	queue_work(qrtr_ns.workqueue, &qrtr_ns.work);
 }
 
@@ -780,7 +783,7 @@ int qrtr_ns_init(void)
 		goto err_sock;
 	}
 
-	qrtr_ns.workqueue = alloc_workqueue("qrtr_ns_handler", WQ_UNBOUND, 1);
+	qrtr_ns.workqueue = alloc_ordered_workqueue("qrtr_ns_handler", 0);
 	if (!qrtr_ns.workqueue) {
 		ret = -ENOMEM;
 		goto err_sock;

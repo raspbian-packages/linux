@@ -355,8 +355,8 @@ struct ceph_snapid_map {
 	struct rb_node node;
 	struct list_head lru;
 	atomic_t ref;
-	u64 snap;
 	dev_t dev;
+	u64 snap;
 	unsigned long last_used;
 };
 
@@ -378,6 +378,11 @@ struct cap_wait {
 	pid_t			tgid;
 	int			need;
 	int			want;
+};
+
+enum {
+       CEPH_MDSC_STOPPING_BEGIN = 1,
+       CEPH_MDSC_STOPPING_FLUSHED = 2,
 };
 
 /*

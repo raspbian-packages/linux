@@ -156,10 +156,6 @@ do {						\
 	 (IS_ENABLED(CONFIG_X86_X32_ABI) && x32_enabled &&		\
 	  (x)->e_machine == EM_X86_64))
 
-#if __USER32_DS != __USER_DS
-# error "The following code assumes __USER32_DS == __USER_DS"
-#endif
-
 static inline void elf_common_init(struct thread_struct *t,
 				   struct pt_regs *regs, const u16 ds)
 {
@@ -230,7 +226,6 @@ do {								\
 /* I'm not sure if we can use '-' here */
 #define ELF_PLATFORM       ("x86_64")
 extern void set_personality_64bit(void);
-extern unsigned int sysctl_vsyscall32;
 extern int force_personality32;
 
 #endif /* !CONFIG_X86_32 */

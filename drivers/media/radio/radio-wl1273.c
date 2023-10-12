@@ -1974,7 +1974,7 @@ static const struct video_device wl1273_viddev_template = {
 				  V4L2_CAP_RDS_OUTPUT,
 };
 
-static int wl1273_fm_radio_remove(struct platform_device *pdev)
+static void wl1273_fm_radio_remove(struct platform_device *pdev)
 {
 	struct wl1273_device *radio = platform_get_drvdata(pdev);
 	struct wl1273_core *core = radio->core;
@@ -1987,8 +1987,6 @@ static int wl1273_fm_radio_remove(struct platform_device *pdev)
 	v4l2_ctrl_handler_free(&radio->ctrl_handler);
 	video_unregister_device(&radio->videodev);
 	v4l2_device_unregister(&radio->v4l2dev);
-
-	return 0;
 }
 
 static int wl1273_fm_radio_probe(struct platform_device *pdev)
@@ -2144,7 +2142,7 @@ pdata_err:
 
 static struct platform_driver wl1273_fm_radio_driver = {
 	.probe		= wl1273_fm_radio_probe,
-	.remove		= wl1273_fm_radio_remove,
+	.remove_new	= wl1273_fm_radio_remove,
 	.driver		= {
 		.name	= "wl1273_fm_radio",
 	},
