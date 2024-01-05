@@ -1,8 +1,8 @@
-From 84f467201dd25da830aa6c950fd7e6d7ff64ce9a Mon Sep 17 00:00:00 2001
+From 6779399c1acfc91f6e9b0bd4dc4abb4f3cb30c78 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Fri, 1 Oct 2021 20:01:03 +0200
-Subject: [PATCH 30/52] drm/i915: Drop the irqs_disabled() check
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.46-rt13.tar.xz
+Subject: [PATCH 30/62] drm/i915: Drop the irqs_disabled() check
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.69-rt21.tar.xz
 
 The !irqs_disabled() check triggers on PREEMPT_RT even with
 i915_sched_engine::lock acquired. The reason is the lock is transformed
@@ -21,10 +21,10 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/i915_request.c b/drivers/gpu/drm/i915/i915_request.c
-index 803cd2ad4deb..73d434b091f6 100644
+index 7ce126a01cbf..64a032dfaa90 100644
 --- a/drivers/gpu/drm/i915/i915_request.c
 +++ b/drivers/gpu/drm/i915/i915_request.c
-@@ -612,7 +612,6 @@ bool __i915_request_submit(struct i915_request *request)
+@@ -609,7 +609,6 @@ bool __i915_request_submit(struct i915_request *request)
  
  	RQ_TRACE(request, "\n");
  
@@ -32,7 +32,7 @@ index 803cd2ad4deb..73d434b091f6 100644
  	lockdep_assert_held(&engine->sched_engine->lock);
  
  	/*
-@@ -721,7 +720,6 @@ void __i915_request_unsubmit(struct i915_request *request)
+@@ -718,7 +717,6 @@ void __i915_request_unsubmit(struct i915_request *request)
  	 */
  	RQ_TRACE(request, "\n");
  
@@ -41,5 +41,5 @@ index 803cd2ad4deb..73d434b091f6 100644
  
  	/*
 -- 
-2.41.0
+2.43.0
 

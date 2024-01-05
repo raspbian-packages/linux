@@ -1,8 +1,8 @@
-From 651f7b876321571448e65fccda46f025cf0210e2 Mon Sep 17 00:00:00 2001
+From 47c9956482a592a16b58831ded27e3c0f62ec11d Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Fri, 11 Oct 2019 13:14:29 +0200
-Subject: [PATCH 43/52] ARM: Allow to enable RT
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.46-rt13.tar.xz
+Subject: [PATCH 43/62] ARM: Allow to enable RT
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.69-rt21.tar.xz
 
 Allow to select RT.
 
@@ -33,5 +33,5 @@ index f170f29e98ac..d1f2e062ce0b 100644
  	select MMU_GATHER_RCU_TABLE_FREE if SMP && ARM_LPAE
  	select HAVE_REGS_AND_STACK_ACCESS_API
 -- 
-2.41.0
+2.43.0
 

@@ -71,7 +71,6 @@ bugfix/arm/arm-mm-export-__sync_icache_dcache-for-xen-privcmd.patch
 bugfix/powerpc/powerpc-boot-fix-missing-crc32poly.h-when-building-with-kernel_xz.patch
 bugfix/arm64/arm64-acpi-Add-fixup-for-HPE-m400-quirks.patch
 bugfix/alpha/alpha-fix-missing-symbol-versions-for-str-n-cat-cpy.patch
-bugfix/x86/tpm-Enable-hwrng-only-for-Pluton-on-AMD-CPUs.patch
 
 # Arch features
 features/arm64/dt-bindings-rockchip-Add-Hardkernel-ODROID-M1-board.patch
@@ -104,6 +103,7 @@ features/arm64/quartz64/arm64-dts-rockchip-Add-SOQuartz-Model-A-baseboard.patch
 # Miscellaneous bug fixes
 bugfix/all/disable-some-marvell-phys.patch
 bugfix/all/fs-add-module_softdep-declarations-for-hard-coded-cr.patch
+bugfix/all/Revert-scsi-aacraid-Reply-queue-mapping-to-CPUs-base.patch
 
 # Miscellaneous features
 
@@ -121,6 +121,8 @@ features/all/db-mok-keyring/trust-machine-keyring-by-default.patch
 # Security fixes
 debian/i386-686-pae-pci-set-pci-nobios-by-default.patch
 debian/ntfs-mark-it-as-broken.patch
+bugfix/all/Bluetooth-af_bluetooth-Fix-Use-After-Free-in-bt_sock.patch
+bugfix/all/netfilter-nf_tables-skip-set-commit-for-deleted-dest.patch
 
 # Fix exported symbol versions
 bugfix/all/module-disable-matching-missing-version-crc.patch
@@ -140,6 +142,38 @@ bugfix/all/tools-perf-fix-missing-ldflags-for-some-programs.patch
 
 # debian-installer fixes
 bugfix/powerpc/fbdev-offb-Update-expected-device-name.patch
+
+# Backport of Microsoft Azure Network Adapter to 6.6
+features/all/ethernet-microsoft/0001-net-Remove-the-obsolte-u64_stats_fetch_-_irq-users-d.patch
+features/all/ethernet-microsoft/0002-net-mana-Assign-interrupts-to-CPUs-based-on-NUMA-nod.patch
+features/all/ethernet-microsoft/0003-net-mana-Add-support-for-auxiliary-device.patch
+features/all/ethernet-microsoft/0004-net-mana-Record-the-physical-address-for-doorbell-pa.patch
+features/all/ethernet-microsoft/0005-net-mana-Handle-vport-sharing-between-devices.patch
+features/all/ethernet-microsoft/0006-net-mana-Set-the-DMA-device-max-segment-size.patch
+features/all/ethernet-microsoft/0007-net-mana-Export-Work-Queue-functions-for-use-by-RDMA.patch
+features/all/ethernet-microsoft/0008-net-mana-Record-port-number-in-netdev.patch
+features/all/ethernet-microsoft/0009-net-mana-Move-header-files-to-a-common-location.patch
+features/all/ethernet-microsoft/0010-net-mana-Define-max-values-for-SGL-entries.patch
+features/all/ethernet-microsoft/0011-net-mana-Define-and-process-GDMA-response-code-GDMA_.patch
+features/all/ethernet-microsoft/0012-net-mana-Define-data-structures-for-protection-domai.patch
+features/all/ethernet-microsoft/0013-net-mana-Fix-return-type-of-mana_start_xmit.patch
+features/all/ethernet-microsoft/0014-net-mana-Fix-accessing-freed-irq-affinity_hint.patch
+features/all/ethernet-microsoft/0015-net-mana-Add-new-MANA-VF-performance-counters-for-ea.patch
+features/all/ethernet-microsoft/0016-net-mana-Remove-redundant-pci_clear_master.patch
+features/all/ethernet-microsoft/0017-net-mana-Use-napi_build_skb-in-RX-path.patch
+features/all/ethernet-microsoft/0018-net-mana-Refactor-RX-buffer-allocation-code-to-prepa.patch
+features/all/ethernet-microsoft/0019-net-mana-Enable-RX-path-to-handle-various-MTU-sizes.patch
+features/all/ethernet-microsoft/0020-net-mana-Add-support-for-jumbo-frame.patch
+features/all/ethernet-microsoft/0021-net-mana-Check-if-netdev-napi_alloc_frag-returns-sin.patch
+features/all/ethernet-microsoft/0022-net-mana-Fix-perf-regression-remove-rx_cqes-tx_cqes-.patch
+features/all/ethernet-microsoft/0023-net-mana-Add-support-for-vlan-tagging.patch
+features/all/ethernet-microsoft/0024-RDMA-mana_ib-Use-v2-version-of-cfg_rx_steer_req-to-e.patch
+features/all/ethernet-microsoft/0025-net-mana-use-vmalloc_array-and-vcalloc.patch
+features/all/ethernet-microsoft/0026-net-mana-Batch-ringing-RX-queue-doorbell-on-receivin.patch
+features/all/ethernet-microsoft/0027-net-mana-Use-the-correct-WQE-count-for-ringing-RQ-do.patch
+features/all/ethernet-microsoft/0028-net-mana-Configure-hwc-timeout-from-hardware.patch
+features/all/ethernet-microsoft/0029-net-mana-Rename-mana_refill_rxoob-and-remove-some-em.patch
+features/all/ethernet-microsoft/0030-net-mana-Add-gdma-stats-to-ethtool-output-for-mana.patch
 
 # ABI maintenance
 perf-avoid-binutils-buildid.patch
