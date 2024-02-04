@@ -10,4 +10,4 @@
 
 .. _cn_features:
 
-.. kernel-feat:: features mips
+.. kernel-feat:: $srctree/Documentation/features mips

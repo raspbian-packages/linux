@@ -1,3 +1,3 @@
 .. SPDX-License-Identifier: GPL-2.0
 
-.. kernel-feat:: features sparc
+.. kernel-feat:: $srctree/Documentation/features sparc
