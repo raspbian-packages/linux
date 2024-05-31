@@ -1,0 +1,28 @@
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Fri, 1 Mar 2024 22:45:29 +0100
+Subject: [PATCH 16/18] serial: pch: Don't initialize uart_port's spin_lock.
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patches-6.8.2-rt11.tar.xz
+
+There is no need to directly initialize the spinlock_t in struct
+uart_port. The structure is later passed to uart_add_one_port() which
+initialize the complete struct including the lock member.
+
+Remove spin_lock_init() on uart_port's internal lock.
+
+Link: https://lore.kernel.org/r/20240301215246.891055-17-bigeasy@linutronix.de
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/pch_uart.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1725,8 +1725,6 @@ static struct eg20t_port *pch_uart_init_
+ 		 KBUILD_MODNAME ":" PCH_UART_DRIVER_DEVICE "%d",
+ 		 priv->port.line);
+ 
+-	spin_lock_init(&priv->port.lock);
+-
+ 	pci_set_drvdata(pdev, priv);
+ 	priv->trigger_level = 1;
+ 	priv->fcr = 0;
