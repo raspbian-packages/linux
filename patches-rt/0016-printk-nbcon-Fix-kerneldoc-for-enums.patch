@@ -1,0 +1,36 @@
+From: John Ogness <john.ogness@linutronix.de>
+Date: Fri, 9 Feb 2024 10:46:58 +0000
+Subject: [PATCH 16/48] printk: nbcon: Fix kerneldoc for enums
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patches-6.8.2-rt11.tar.xz
+
+Kerneldoc requires enums to be specified as such. Otherwise it is
+interpreted as function documentation.
+
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+Reviewed-by: Petr Mladek <pmladek@suse.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ include/linux/console.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -137,7 +137,7 @@ static inline int con_debug_leave(void)
+  */
+ 
+ /**
+- * cons_flags - General console flags
++ * enum cons_flags - General console flags
+  * @CON_PRINTBUFFER:	Used by newly registered consoles to avoid duplicate
+  *			output of messages that were already shown by boot
+  *			consoles or read by userspace via syslog() syscall.
+@@ -218,7 +218,7 @@ struct nbcon_state {
+ static_assert(sizeof(struct nbcon_state) <= sizeof(int));
+ 
+ /**
+- * nbcon_prio - console owner priority for nbcon consoles
++ * enum nbcon_prio - console owner priority for nbcon consoles
+  * @NBCON_PRIO_NONE:		Unused
+  * @NBCON_PRIO_NORMAL:		Normal (non-emergency) usage
+  * @NBCON_PRIO_EMERGENCY:	Emergency output (WARN/OOPS...)

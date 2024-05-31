@@ -1,0 +1,84 @@
+From: John Ogness <john.ogness@linutronix.de>
+Date: Thu, 14 Dec 2023 14:38:42 +0000
+Subject: [PATCH 23/48] printk: nbcon: Assign priority based on CPU state
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patches-6.8.2-rt11.tar.xz
+
+Use the current state of the CPU to determine which priority to
+assign to the printing context.
+
+The EMERGENCY priority handling is added in a follow-up commit.
+It will use a per-CPU variable.
+
+Note: nbcon_driver_acquire(), which is used by console drivers
+      to acquire the nbcon console for non-printing activities,
+      will always use NORMAL priority.
+
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Reviewed-by: Petr Mladek <pmladek@suse.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/printk/internal.h |    2 ++
+ kernel/printk/nbcon.c    |   20 ++++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
+
+--- a/kernel/printk/internal.h
++++ b/kernel/printk/internal.h
+@@ -86,6 +86,7 @@ void nbcon_seq_force(struct console *con
+ bool nbcon_alloc(struct console *con);
+ void nbcon_init(struct console *con);
+ void nbcon_free(struct console *con);
++enum nbcon_prio nbcon_get_default_prio(void);
+ void nbcon_atomic_flush_pending(void);
+ bool nbcon_legacy_emit_next_record(struct console *con, bool *handover,
+ 				   int cookie);
+@@ -143,6 +144,7 @@ static inline void nbcon_seq_force(struc
+ static inline bool nbcon_alloc(struct console *con) { return false; }
+ static inline void nbcon_init(struct console *con) { }
+ static inline void nbcon_free(struct console *con) { }
++static inline enum nbcon_prio nbcon_get_default_prio(void) { return NBCON_PRIO_NONE; }
+ static inline void nbcon_atomic_flush_pending(void) { }
+ static inline bool nbcon_legacy_emit_next_record(struct console *con, bool *handover,
+ 						 int cookie) { return false; }
+--- a/kernel/printk/nbcon.c
++++ b/kernel/printk/nbcon.c
+@@ -968,6 +968,22 @@ static bool nbcon_atomic_emit_one(struct
+ }
+ 
+ /**
++ * nbcon_get_default_prio - The appropriate nbcon priority to use for nbcon
++ *				printing on the current CPU
++ *
++ * Context:	Any context which could not be migrated to another CPU.
++ * Return:	The nbcon_prio to use for acquiring an nbcon console in this
++ *		context for printing.
++ */
++enum nbcon_prio nbcon_get_default_prio(void)
++{
++	if (this_cpu_in_panic())
++		return NBCON_PRIO_PANIC;
++
++	return NBCON_PRIO_NORMAL;
++}
++
++/**
+  * nbcon_legacy_emit_next_record - Print one record for an nbcon console
+  *					in legacy contexts
+  * @con:	The console to print on
+@@ -1001,7 +1017,7 @@ bool nbcon_legacy_emit_next_record(struc
+ 	stop_critical_timings();
+ 
+ 	ctxt->console	= con;
+-	ctxt->prio	= NBCON_PRIO_NORMAL;
++	ctxt->prio	= nbcon_get_default_prio();
+ 
+ 	progress = nbcon_atomic_emit_one(&wctxt);
+ 
+@@ -1032,7 +1048,7 @@ static bool __nbcon_atomic_flush_pending
+ 
+ 	ctxt->console			= con;
+ 	ctxt->spinwait_max_us		= 2000;
+-	ctxt->prio			= NBCON_PRIO_NORMAL;
++	ctxt->prio			= nbcon_get_default_prio();
+ 
+ 	if (!nbcon_context_try_acquire(ctxt))
+ 		return false;

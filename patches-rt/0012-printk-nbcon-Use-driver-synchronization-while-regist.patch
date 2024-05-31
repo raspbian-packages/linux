@@ -1,0 +1,68 @@
+From: John Ogness <john.ogness@linutronix.de>
+Date: Fri, 15 Mar 2024 15:38:22 +0000
+Subject: [PATCH 12/48] printk: nbcon: Use driver synchronization while
+ registering
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patches-6.8.2-rt11.tar.xz
+
+Depending on if an nbcon console is registered, a driver may
+handle its internal locking differently. If a driver is holding
+its internal lock while the nbcon console is registered, there
+may be a risk that two different contexts access the hardware
+simultaneously without synchronization. (For example, if the
+printk subsystem invokes atomic printing while another driver
+context acquired the internal lock without considering the
+atomic console.)
+
+Use the driver synchronization while a registering nbcon console
+transitions to being registered. This guarantees that if the
+driver acquires its internal lock when the nbcon console was not
+registered, it will remain unregistered until that context
+releases the lock.
+
+Signed-off-by: John Ogness <john.ogness@linutronix.de>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/printk/printk.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -3453,6 +3453,7 @@ void register_console(struct console *ne
+ 	struct console *con;
+ 	bool bootcon_registered = false;
+ 	bool realcon_registered = false;
++	unsigned long flags;
+ 	int err;
+ 
+ 	console_list_lock();
+@@ -3545,6 +3546,19 @@ void register_console(struct console *ne
+ 	}
+ 
+ 	/*
++	 * If another context is actively using the hardware of this new
++	 * console, it will not be aware of the nbcon synchronization. This
++	 * is a risk that two contexts could access the hardware
++	 * simultaneously if this new console is used for atomic printing
++	 * and the other context is still using the hardware.
++	 *
++	 * Use the driver synchronization to ensure that the hardware is not
++	 * in use while this new console transitions to being registered.
++	 */
++	if ((newcon->flags & CON_NBCON) && newcon->write_atomic)
++		newcon->device_lock(newcon, &flags);
++
++	/*
+ 	 * Put this console in the list - keep the
+ 	 * preferred driver at the head of the list.
+ 	 */
+@@ -3568,6 +3582,10 @@ void register_console(struct console *ne
+ 	 * register_console() completes.
+ 	 */
+ 
++	/* This new console is now registered. */
++	if ((newcon->flags & CON_NBCON) && newcon->write_atomic)
++		newcon->device_unlock(newcon, flags);
++
+ 	console_sysfs_notify();
+ 
+ 	/*

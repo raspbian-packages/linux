@@ -1,0 +1,56 @@
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Fri, 1 Mar 2024 22:45:27 +0100
+Subject: [PATCH 14/18] serial: pch: Make push_rx() return void.
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.8/older/patches-6.8.2-rt11.tar.xz
+
+push_rx() returns always 0.
+
+Make push_rx() return void.
+
+Link: https://lore.kernel.org/r/20240301215246.891055-15-bigeasy@linutronix.de
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/serial/pch_uart.c |   12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -599,16 +599,14 @@ static void pch_uart_hal_set_break(struc
+ 	iowrite8(lcr, priv->membase + UART_LCR);
+ }
+ 
+-static int push_rx(struct eg20t_port *priv, const unsigned char *buf,
+-		   int size)
++static void push_rx(struct eg20t_port *priv, const unsigned char *buf,
++		    int size)
+ {
+ 	struct uart_port *port = &priv->port;
+ 	struct tty_port *tport = &port->state->port;
+ 
+ 	tty_insert_flip_string(tport, buf, size);
+ 	tty_flip_buffer_push(tport);
+-
+-	return 0;
+ }
+ 
+ static int dma_push_rx(struct eg20t_port *priv, int size)
+@@ -761,7 +759,7 @@ static int handle_rx_to(struct eg20t_por
+ {
+ 	struct pch_uart_buffer *buf;
+ 	int rx_size;
+-	int ret;
++
+ 	if (!priv->start_rx) {
+ 		pch_uart_hal_disable_interrupt(priv, PCH_UART_HAL_RX_INT |
+ 						     PCH_UART_HAL_RX_ERR_INT);
+@@ -770,9 +768,7 @@ static int handle_rx_to(struct eg20t_por
+ 	buf = &priv->rxbuf;
+ 	do {
+ 		rx_size = pch_uart_hal_read(priv, buf->buf, buf->size);
+-		ret = push_rx(priv, buf->buf, rx_size);
+-		if (ret)
+-			return 0;
++		push_rx(priv, buf->buf, rx_size);
+ 	} while (rx_size == buf->size);
+ 
+ 	return PCH_UART_HANDLED_RX_INT;
