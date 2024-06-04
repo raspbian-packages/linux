@@ -1,8 +1,8 @@
-From f7c4220e56be1d8fc2bc339984fb5919ee02cf4f Mon Sep 17 00:00:00 2001
+From e19f4592b7c7639a521effd6d271f9c710f0bcfd Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 16 Dec 2010 14:25:18 +0100
 Subject: [PATCH 244/323] x86: stackprotector: Avoid random pool on rt
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 CPU bringup calls into the random pool to initialize the stack
 canary. During boot that works nicely even on RT as the might sleep
@@ -19,10 +19,10 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/include/asm/stackprotector.h b/arch/x86/include/asm/stackprotector.h
-index 7fb482f0f25b..3df0a95c9e13 100644
+index b6ffe58c70fab..e79e75ede9516 100644
 --- a/arch/x86/include/asm/stackprotector.h
 +++ b/arch/x86/include/asm/stackprotector.h
-@@ -65,7 +65,7 @@
+@@ -50,7 +50,7 @@
   */
  static __always_inline void boot_init_stack_canary(void)
  {
@@ -31,7 +31,7 @@ index 7fb482f0f25b..3df0a95c9e13 100644
  	u64 tsc;
  
  #ifdef CONFIG_X86_64
-@@ -76,8 +76,14 @@ static __always_inline void boot_init_stack_canary(void)
+@@ -61,8 +61,14 @@ static __always_inline void boot_init_stack_canary(void)
  	 * of randomness. The TSC only matters for very early init,
  	 * there it already has some randomness on most systems. Later
  	 * on during the bootup the random pool has true entropy too.
@@ -47,5 +47,5 @@ index 7fb482f0f25b..3df0a95c9e13 100644
  	canary += tsc + (tsc << 32UL);
  	canary &= CANARY_MASK;
 -- 
-2.43.0
+2.44.0
 

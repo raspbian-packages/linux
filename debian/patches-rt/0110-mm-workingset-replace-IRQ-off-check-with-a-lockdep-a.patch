@@ -1,9 +1,9 @@
-From e215644e77fc149727b2ed1c3412c2e7668ff5aa Mon Sep 17 00:00:00 2001
+From 2ab4488b49858ac953b1e879c9a5b9f91dc816bc Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Mon, 11 Feb 2019 10:40:46 +0100
 Subject: [PATCH 110/323] mm: workingset: replace IRQ-off check with a lockdep
  assert.
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 Commit
 
@@ -22,7 +22,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/mm/workingset.c b/mm/workingset.c
-index 975a4d2dd02e..c3d098c01052 100644
+index 975a4d2dd02ee..c3d098c010529 100644
 --- a/mm/workingset.c
 +++ b/mm/workingset.c
 @@ -432,6 +432,8 @@ static struct list_lru shadow_nodes;
@@ -45,5 +45,5 @@ index 975a4d2dd02e..c3d098c01052 100644
  	if (node->count && node->count == node->nr_values) {
  		if (list_empty(&node->private_list)) {
 -- 
-2.43.0
+2.44.0
 

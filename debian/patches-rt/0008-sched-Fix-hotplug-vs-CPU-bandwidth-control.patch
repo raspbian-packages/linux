@@ -1,8 +1,8 @@
-From 36d2d778f786cb7fd55c549911a6055d6b6f40ef Mon Sep 17 00:00:00 2001
+From dadea36aec2c8d22d9a76383d64e71e9a9f0b33d Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:05 +0200
 Subject: [PATCH 008/323] sched: Fix hotplug vs CPU bandwidth control
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 Since we now migrate tasks away before DYING, we should also move
 bandwidth unthrottle, otherwise we can gain tasks from unthrottle
@@ -25,7 +25,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  3 files changed, 12 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index a26a82c3e939..c5d5576c67fb 100644
+index a26a82c3e939a..c5d5576c67fb6 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -6979,6 +6979,8 @@ int sched_cpu_activate(unsigned int cpu)
@@ -64,7 +64,7 @@ index a26a82c3e939..c5d5576c67fb 100644
  	rq_unlock_irqrestore(rq, &rf);
  
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index d91295d3059f..af8569dbdc9c 100644
+index d91295d3059f7..af8569dbdc9c1 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
 @@ -566,7 +566,7 @@ static int push_dl_task(struct rq *rq);
@@ -77,7 +77,7 @@ index d91295d3059f..af8569dbdc9c 100644
  
  static DEFINE_PER_CPU(struct callback_head, dl_push_head);
 diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index f690f901b6cc..fdcce04913db 100644
+index 1289991c970e1..32ef35af8f309 100644
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
 @@ -270,7 +270,7 @@ static void pull_rt_task(struct rq *this_rq);
@@ -90,5 +90,5 @@ index f690f901b6cc..fdcce04913db 100644
  
  static inline int rt_overloaded(struct rq *rq)
 -- 
-2.43.0
+2.44.0
 

@@ -1,8 +1,8 @@
-From 267b1086437ac0cca8ca59197e5cc8cbe8fc6a83 Mon Sep 17 00:00:00 2001
+From df38760868c0b1e084bde7aad999b7d0a6caf357 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 9 Mar 2021 09:42:15 +0100
 Subject: [PATCH 143/323] PCI: hv: Use tasklet_disable_in_atomic()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 The hv_compose_msi_msg() callback in irq_chip::irq_compose_msi_msg is
 invoked via irq_chip_compose_msi_msg(), which itself is always invoked from
@@ -29,7 +29,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/pci/controller/pci-hyperv.c b/drivers/pci/controller/pci-hyperv.c
-index 2d6c77dcc815..7daba964f54e 100644
+index 2d6c77dcc815c..7daba964f54ed 100644
 --- a/drivers/pci/controller/pci-hyperv.c
 +++ b/drivers/pci/controller/pci-hyperv.c
 @@ -1518,7 +1518,7 @@ static void hv_compose_msi_msg(struct irq_data *data, struct msi_msg *msg)
@@ -42,5 +42,5 @@ index 2d6c77dcc815..7daba964f54e 100644
  	/*
  	 * Since this function is called with IRQ locks held, can't
 -- 
-2.43.0
+2.44.0
 

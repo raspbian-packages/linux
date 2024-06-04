@@ -1,9 +1,9 @@
-From 54eb98b6f77e491259ac08a1172d36fd6ccf5284 Mon Sep 17 00:00:00 2001
+From 82849886322d7a35b19a0f9cbeaf6a3cc17efcdd Mon Sep 17 00:00:00 2001
 From: Anand Je Saipureddy <s.anandje1@gmail.com>
 Date: Sat, 23 Jul 2022 12:19:43 +0530
 Subject: [PATCH 315/323] ftrace: Fix improper usage of __trace_stack()
  function.
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 In kernel/trace/trace_events_trigger.c --> stacktrace_trigger() -->
 __trace_stack() is not defined as per the function definition.
@@ -26,10 +26,10 @@ Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
  1 file changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index 75fef9fcfd0f..3c6229f16e81 100644
+index 7f25cc48bc503..64abc66b82e5b 100644
 --- a/kernel/trace/trace_events_trigger.c
 +++ b/kernel/trace/trace_events_trigger.c
-@@ -1220,12 +1220,10 @@ stacktrace_trigger(struct event_trigger_data *data, void *rec,
+@@ -1222,12 +1222,10 @@ stacktrace_trigger(struct event_trigger_data *data, void *rec,
  		   struct ring_buffer_event *event)
  {
  	struct trace_event_file *file = data->private_data;
@@ -46,5 +46,5 @@ index 75fef9fcfd0f..3c6229f16e81 100644
  }
  
 -- 
-2.43.0
+2.44.0
 

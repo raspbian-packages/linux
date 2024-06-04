@@ -1,8 +1,8 @@
-From 818c332a89ac4310c59f7ad122bdb4a6e0aac518 Mon Sep 17 00:00:00 2001
+From cd9f2293478040e4ee9bb03a5f1bfbc60fe45fa5 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:43 +0100
 Subject: [PATCH 054/323] drm/ttm: Replace kmap_atomic() usage
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 There is no reason to disable pagefaults and preemption as a side effect of
 kmap_atomic_prot().
@@ -26,7 +26,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/gpu/drm/ttm/ttm_bo_util.c b/drivers/gpu/drm/ttm/ttm_bo_util.c
-index 1968df9743fc..79b9c883431a 100644
+index 1968df9743fcb..79b9c883431ad 100644
 --- a/drivers/gpu/drm/ttm/ttm_bo_util.c
 +++ b/drivers/gpu/drm/ttm/ttm_bo_util.c
 @@ -181,13 +181,15 @@ static int ttm_copy_io_ttm_page(struct ttm_tt *ttm, void *src,
@@ -70,5 +70,5 @@ index 1968df9743fc..79b9c883431a 100644
  	return 0;
  }
 -- 
-2.43.0
+2.44.0
 

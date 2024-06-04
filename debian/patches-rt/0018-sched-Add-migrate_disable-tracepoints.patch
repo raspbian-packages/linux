@@ -1,8 +1,8 @@
-From 8b4906578ce683b9bce7df984b4179519152345f Mon Sep 17 00:00:00 2001
+From 8a324e6097c095eff3039bfe9806cdc4c23d6002 Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:15 +0200
 Subject: [PATCH 018/323] sched: Add migrate_disable() tracepoints
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 XXX write a tracer:
 
@@ -23,7 +23,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  4 files changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
-index c96a4337afe6..e48f584abf5f 100644
+index c96a4337afe6c..e48f584abf5ff 100644
 --- a/include/trace/events/sched.h
 +++ b/include/trace/events/sched.h
 @@ -650,6 +650,18 @@ DECLARE_TRACE(sched_update_nr_running_tp,
@@ -46,7 +46,7 @@ index c96a4337afe6..e48f584abf5f 100644
  
  /* This part must be outside protection */
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 452fc1dfb143..b5f35b512577 100644
+index 452fc1dfb1434..b5f35b5125777 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -1742,6 +1742,8 @@ void migrate_disable(void)
@@ -68,7 +68,7 @@ index 452fc1dfb143..b5f35b512577 100644
  EXPORT_SYMBOL_GPL(migrate_enable);
  
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 7cf3248894a9..fcf546cd2eac 100644
+index 7cf3248894a98..fcf546cd2eac6 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
 @@ -2282,6 +2282,7 @@ static void pull_dl_task(struct rq *this_rq)
@@ -80,7 +80,7 @@ index 7cf3248894a9..fcf546cd2eac 100644
  			} else {
  				deactivate_task(src_rq, p, 0);
 diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index c25e35f41555..c5038d680c2c 100644
+index c916dbc2a0165..5dc1ee8dcec2d 100644
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
 @@ -1891,7 +1891,12 @@ static int push_rt_task(struct rq *rq, bool pull)
@@ -106,5 +106,5 @@ index c25e35f41555..c5038d680c2c 100644
  			} else {
  				deactivate_task(src_rq, p, 0);
 -- 
-2.43.0
+2.44.0
 

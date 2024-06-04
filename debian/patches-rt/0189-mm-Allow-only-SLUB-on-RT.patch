@@ -1,8 +1,8 @@
-From 1da220d86ade67051c7c89743d6d037902c3839d Mon Sep 17 00:00:00 2001
+From 70adf5ebf9706c12042d4e636ac6fada7bf1ab29 Mon Sep 17 00:00:00 2001
 From: Ingo Molnar <mingo@elte.hu>
 Date: Fri, 3 Jul 2009 08:44:03 -0500
 Subject: [PATCH 189/323] mm: Allow only SLUB on RT
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 Memory allocation disables interrupts as part of the allocation and freeing
 process. For -RT it is important that this section remain short and don't
@@ -23,7 +23,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 2 insertions(+)
 
 diff --git a/init/Kconfig b/init/Kconfig
-index 9807c66b24bb..df8d0d0f800f 100644
+index 9807c66b24bb6..df8d0d0f800f5 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -1922,6 +1922,7 @@ choice
@@ -43,5 +43,5 @@ index 9807c66b24bb..df8d0d0f800f 100644
  	   SLOB replaces the stock allocator with a drastically simpler
  	   allocator. SLOB is generally more space efficient but
 -- 
-2.43.0
+2.44.0
 

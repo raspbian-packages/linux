@@ -1,4 +1,4 @@
-From 0a5ad9dd4773a61fe0f0d6928ef603081390df21 Mon Sep 17 00:00:00 2001
+From 4c7d7e9c87e17c07e0f216c449fc5dfb5f46233c Mon Sep 17 00:00:00 2001
 From: "Yadi.hu" <yadi.hu@windriver.com>
 Date: Wed, 10 Dec 2014 10:32:09 +0800
 Subject: [PATCH 268/323] ARM: enable irq in translation/section permission
@@ -6,7 +6,7 @@ Subject: [PATCH 268/323] ARM: enable irq in translation/section permission
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.204-rt100.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
 
 Probably happens on all ARM, with
 CONFIG_PREEMPT_RT
@@ -67,7 +67,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 6 insertions(+)
 
 diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index af5177801fb1..1de016008e2e 100644
+index af5177801fb10..1de016008e2ee 100644
 --- a/arch/arm/mm/fault.c
 +++ b/arch/arm/mm/fault.c
 @@ -400,6 +400,9 @@ do_translation_fault(unsigned long addr, unsigned int fsr,
@@ -91,5 +91,5 @@ index af5177801fb1..1de016008e2e 100644
  	return 0;
  }
 -- 
-2.43.0
+2.44.0
 
