@@ -27,7 +27,7 @@ endif
 RTLA		:= $(OUTPUT)rtla
 RTLA_IN		:= $(RTLA)-in.o
 
-VERSION		:= $(shell sh -c "make -sC ../../.. kernelversion | grep -v make")
+VERSION		:= $(shell cat VERSION 2> /dev/null || sh -c "make -sC ../../.. kernelversion | grep -v make")
 DOCSRC		:= ../../../Documentation/tools/rtla/
 
 FEATURE_TESTS	:= libtraceevent
