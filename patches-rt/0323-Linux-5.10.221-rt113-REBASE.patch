@@ -1,0 +1,21 @@
+From 224826dfdf93556025dbb03da8eb893aaf3b5824 Mon Sep 17 00:00:00 2001
+From: "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Date: Thu, 11 Jul 2024 12:12:55 -0300
+Subject: [PATCH 323/323] Linux 5.10.221-rt113 REBASE
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+
+Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
+---
+ localversion-rt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/localversion-rt b/localversion-rt
+index 21988f9ad53f..fdcd9167ca0b 100644
+--- a/localversion-rt
++++ b/localversion-rt
+@@ -1 +1 @@
+--rt34
++-rt113
+-- 
+2.45.2
+
