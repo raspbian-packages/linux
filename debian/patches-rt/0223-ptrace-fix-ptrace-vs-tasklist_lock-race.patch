@@ -1,8 +1,8 @@
-From 27d5c6ef64ac2461259d6edd971b61408e4bfda4 Mon Sep 17 00:00:00 2001
+From 5027e29959be62ebb55443c38692fa113addfa16 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Thu, 29 Aug 2013 18:21:04 +0200
 Subject: [PATCH 223/323] ptrace: fix ptrace vs tasklist_lock race
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 As explained by Alexander Fyodorov <halcy@yandex.ru>:
 
@@ -31,10 +31,10 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  3 files changed, 68 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d259126f46cf4..bd0c9c633438a 100644
+index 63a62251155e..f743a4eac5e1 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -112,12 +112,8 @@ struct io_uring_task;
+@@ -111,12 +111,8 @@ struct io_uring_task;
  					 __TASK_TRACED | EXIT_DEAD | EXIT_ZOMBIE | \
  					 TASK_PARKED)
  
@@ -47,7 +47,7 @@ index d259126f46cf4..bd0c9c633438a 100644
  #ifdef CONFIG_DEBUG_ATOMIC_SLEEP
  
  /*
-@@ -1886,6 +1882,51 @@ static inline int test_tsk_need_resched(struct task_struct *tsk)
+@@ -1885,6 +1881,51 @@ static inline int test_tsk_need_resched(struct task_struct *tsk)
  	return unlikely(test_tsk_thread_flag(tsk,TIF_NEED_RESCHED));
  }
  
@@ -100,7 +100,7 @@ index d259126f46cf4..bd0c9c633438a 100644
   * cond_resched() and cond_resched_lock(): latency reduction via
   * explicit rescheduling in places that are safe. The return
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index aab480e24bd60..71acb6341e639 100644
+index aab480e24bd6..71acb6341e63 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
 @@ -196,7 +196,14 @@ static bool ptrace_freeze_traced(struct task_struct *task)
@@ -120,7 +120,7 @@ index aab480e24bd60..71acb6341e639 100644
  	}
  	spin_unlock_irq(&task->sighand->siglock);
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 2f689b4fa68b5..8ac1f0526476f 100644
+index 2f689b4fa68b..8ac1f0526476 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -2587,6 +2587,18 @@ int migrate_swap(struct task_struct *cur, struct task_struct *p,
@@ -162,5 +162,5 @@ index 2f689b4fa68b5..8ac1f0526476f 100644
  		task_rq_unlock(rq, p, &rf);
  
 -- 
-2.44.0
+2.45.2
 

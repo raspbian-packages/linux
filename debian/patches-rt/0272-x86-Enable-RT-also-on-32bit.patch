@@ -1,8 +1,8 @@
-From c1e264bdca999c7fc08f769dc80833767f1d2a89 Mon Sep 17 00:00:00 2001
+From d85c5255f9159e8ca7ecf818437775cc949cbaf7 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Thu, 7 Nov 2019 17:49:20 +0100
 Subject: [PATCH 272/323] x86: Enable RT also on 32bit
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index f461b699c25d0..5de3655b3e410 100644
+index 1af3f76862c7..32adbd47a4da 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
 @@ -27,7 +27,6 @@ config X86_64
@@ -21,7 +21,7 @@ index f461b699c25d0..5de3655b3e410 100644
  	select ARCH_USE_CMPXCHG_LOCKREF
  	select HAVE_ARCH_SOFT_DIRTY
  	select MODULES_USE_ELF_RELA
-@@ -96,6 +95,7 @@ config X86
+@@ -97,6 +96,7 @@ config X86
  	select ARCH_SUPPORTS_ACPI
  	select ARCH_SUPPORTS_ATOMIC_RMW
  	select ARCH_SUPPORTS_NUMA_BALANCING	if X86_64
@@ -30,5 +30,5 @@ index f461b699c25d0..5de3655b3e410 100644
  	select ARCH_USE_QUEUED_RWLOCKS
  	select ARCH_USE_QUEUED_SPINLOCKS
 -- 
-2.44.0
+2.45.2
 

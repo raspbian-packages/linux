@@ -1,9 +1,9 @@
-From 70e95b1d6352930a4b00e9cb58929c25bde4c219 Mon Sep 17 00:00:00 2001
+From 3116c2141ebeae72d8f9a62c9344d3c9ba6b463d Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 7 Jul 2020 12:25:11 +0200
 Subject: [PATCH 254/323] drm/i915/gt: Only disable interrupts for the timeline
  lock on !force-threaded
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 According to commit
     d67739268cf0e ("drm/i915/gt: Mark up the nested engine-pm timeline lock as irqsafe")
@@ -21,7 +21,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/gt/intel_engine_pm.c b/drivers/gpu/drm/i915/gt/intel_engine_pm.c
-index f9fdbd79c0f37..fe71184156818 100644
+index f9fdbd79c0f3..fe7118415681 100644
 --- a/drivers/gpu/drm/i915/gt/intel_engine_pm.c
 +++ b/drivers/gpu/drm/i915/gt/intel_engine_pm.c
 @@ -60,9 +60,10 @@ static int __engine_unpark(struct intel_wakeref *wf)
@@ -48,5 +48,5 @@ index f9fdbd79c0f37..fe71184156818 100644
  
  #else
 -- 
-2.44.0
+2.45.2
 

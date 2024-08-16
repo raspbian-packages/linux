@@ -1,8 +1,8 @@
-From 8518e39d983ac366a89d0844f908b50e80ef94b3 Mon Sep 17 00:00:00 2001
+From d41281f73e75867a6fac3c34a6c76b12cba2b7a4 Mon Sep 17 00:00:00 2001
 From: Clark Williams <williams@redhat.com>
 Date: Sat, 30 Jul 2011 21:55:53 -0500
 Subject: [PATCH 286/323] sysfs: Add /sys/kernel/realtime entry
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Add a /sys/kernel entry to indicate that the kernel is a
 realtime kernel.
@@ -20,7 +20,7 @@ Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
  1 file changed, 12 insertions(+)
 
 diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
-index e20c19e3ba49c..777168d58f02e 100644
+index e20c19e3ba49..777168d58f02 100644
 --- a/kernel/ksysfs.c
 +++ b/kernel/ksysfs.c
 @@ -143,6 +143,15 @@ KERNEL_ATTR_RO(vmcoreinfo);
@@ -50,5 +50,5 @@ index e20c19e3ba49c..777168d58f02e 100644
  	NULL
  };
 -- 
-2.44.0
+2.45.2
 

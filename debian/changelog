@@ -1,9 +1,1580 @@
-linux (5.10.218-1+rpi1) bullseye-staging; urgency=medium
+linux (5.10.223-1+rpi1) bullseye-staging; urgency=medium
 
   [changes brought forward from 4.14.13-1+rpi1 by Peter Michael Green <plugwash@raspbian.org> at Wed, 07 Feb 2018 23:32:32 +0000]
   * Disable kernel builds from this package, we build our kernels from other source packages.
 
- -- Raspbian forward porter <root@raspbian.org>  Tue, 04 Jun 2024 07:12:53 +0000
+ -- Raspbian forward porter <root@raspbian.org>  Fri, 16 Aug 2024 16:29:23 +0000
+
+linux (5.10.223-1) bullseye-security; urgency=high
+
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.10.222
+    - Compiler Attributes: Add __uninitialized macro
+    - [arm64,armhf] drm/lima: fix shared irq handling on driver remove
+    - media: dvb: as102-fe: Fix as10x_register_addr packing
+    - media: dvb-usb: dib0700_devices: Add missing release_firmware()
+    - IB/core: Implement a limit on UMAD receive List
+    - scsi: qedf: Make qedf_execute_tmf() non-preemptible
+    - crypto: aead,cipher - zeroize key buffer after use
+    - drm/amdgpu: Initialize timestamp for some legacy SOCs
+    - drm/amd/display: Check index msg_id before read or write
+    - drm/amd/display: Check pipe offset before setting vblank
+    - drm/amd/display: Skip finding free audio for unknown engine_id
+    - media: dw2102: Don't translate i2c read into write
+    - sctp: prefer struct_size over open coded arithmetic
+    - firmware: dmi: Stop decoding on broken entry
+    - Input: ff-core - prefer struct_size over open coded arithmetic
+    - [arm64,armhf] net: dsa: mv88e6xxx: Correct check for empty list
+    - media: dvb-frontends: tda18271c2dd: Remove casting during div
+    - media: s2255: Use refcount_t instead of atomic_t for num_channels
+    - media: dvb-frontends: tda10048: Fix integer overflow
+    - i2c: i801: Annotate apanel_addr as __ro_after_init
+    - [powerpc*] 64: Set _IO_BASE to POISON_POINTER_DELTA not 0 for CONFIG_PCI=n
+    - orangefs: fix out-of-bounds fsid access
+    - kunit: Fix timeout message
+    - [powerpc*] xmon: Check cpu id in commands "c#", "dp#" and "dx#"
+    - bpf: Avoid uninitialized value in BPF_CORE_READ_BITFIELD
+    - jffs2: Fix potential illegal address access in jffs2_free_inode
+    - [s390x] pkey: Wipe sensitive data on failure
+    - UPSTREAM: tcp: fix DSACK undo in fast recovery to call tcp_try_to_open()
+    - tcp_metrics: validate source addr length
+    - wifi: wilc1000: fix ies_len type in connect path
+    - bonding: Fix out-of-bounds read in bond_option_arp_ip_targets_set()
+      (CVE-2024-39487)
+    - inet_diag: Initialize pad field in struct inet_diag_req_v2
+    - nilfs2: fix inode number range checks
+    - nilfs2: add missing check for inode numbers on directory entries
+    - mm: optimize the redundant loop of mm_update_owner_next()
+    - mm: avoid overflows in dirty throttling logic
+    - Bluetooth: qca: Fix BT enable failure again for QCA6390 after warm reboot
+    - can: kvaser_usb: Explicitly initialize family in leafimx driver_info
+      struct
+    - fsnotify: Do not generate events for O_PATH file descriptors
+    - Revert "mm/writeback: fix possible divide-by-zero in wb_dirty_limits(),
+      again"
+    - drm/nouveau: fix null pointer dereference in nouveau_connector_get_modes
+    - drm/amdgpu/atomfirmware: silence UBSAN warning
+    - mtd: rawnand: Bypass a couple of sanity checks during NAND identification
+    - bnx2x: Fix multiple UBSAN array-index-out-of-bounds
+    - bpf, sockmap: Fix sk->sk_forward_alloc warn_on in sk_stream_kill_queues
+    - ima: Avoid blocking in RCU read-side critical section (CVE-2024-40947)
+    - media: dw2102: fix a potential buffer overflow
+    - i2c: pnx: Fix potential deadlock warning from del_timer_sync() call in isr
+    - ALSA: hda/realtek: Enable headset mic of JP-IK LEAP W502 with ALC897
+    - nvme-multipath: find NUMA path only for online numa-node
+    - nvme: adjust multiples of NVME_CTRL_PAGE_SIZE in offset
+    - [x86] platform/x86: touchscreen_dmi: Add info for GlobalSpace SolT IVW
+      11.6" tablet
+    - [x86] platform/x86: touchscreen_dmi: Add info for the EZpad 6s Pro
+    - nvmet: fix a possible leak when destroy a ctrl during qp establishment
+    - kbuild: fix short log for AS in link-vmlinux.sh
+    - nilfs2: fix incorrect inode allocation from reserved inodes
+    - mm: prevent derefencing NULL ptr in pfn_section_valid()
+    - filelock: fix potential use-after-free in posix_lock_inode
+    - fs/dcache: Re-use value stored to dentry->d_flags instead of re-reading
+    - vfs: don't mod negative dentry count when on shrinker list
+    - tcp: fix incorrect undo caused by DSACK of TLP retransmit
+    - net: lantiq_etop: add blank line after declaration
+    - net: ethernet: lantiq_etop: fix double free in detach
+    - ppp: reject claimed-as-LCP but actually malformed packets
+    - ethtool: netlink: do not return SQI value if link is down
+    - udp: Set SOCK_RCU_FREE earlier in udp_lib_get_port().
+    - net/sched: Fix UAF when resolving a clash
+    - [s390x] Mark psw in __load_psw_mask() as __unitialized
+    - tcp: use signed arithmetic in tcp_rtx_probe0_timed_out()
+    - tcp: avoid too many retransmit packets (CVE-2024-41007)
+    - net: ks8851: Fix potential TX stall after interface reopen
+    - USB: serial: option: add Telit generic core-dump composition
+    - USB: serial: option: add Telit FN912 rmnet compositions
+    - USB: serial: option: add Fibocom FM350-GL
+    - USB: serial: option: add support for Foxconn T99W651
+    - USB: serial: option: add Netprisma LCUK54 series modules
+    - USB: serial: option: add Rolling RW350-GL variants
+    - USB: serial: mos7840: fix crash on resume
+    - USB: Add USB_QUIRK_NO_SET_INTF quirk for START BP-850k
+    - usb: gadget: configfs: Prevent OOB read/write in usb_string_copy()
+    - USB: core: Fix duplicate endpoint bug by clearing reserved bits in the
+      descriptor
+    - hpet: Support 32-bit userspace
+    - nvmem: meson-efuse: Fix return value of nvmem callbacks
+    - ALSA: hda/realtek: Enable Mute LED on HP 250 G7
+    - ALSA: hda/realtek: Limit mic boost on VAIO PRO PX
+    - libceph: fix race between delayed_work() and ceph_monc_stop()
+    - wireguard: allowedips: avoid unaligned 64-bit memory accesses
+    - wireguard: queueing: annotate intentional data race in cpu round robin
+    - wireguard: send: annotate intentional data race in checking empty queue
+    - x86/retpoline: Move a NOENDBR annotation to the SRSO dummy return thunk
+    - ipv6: annotate data-races around cnf.disable_ipv6
+    - ipv6: prevent NULL dereference in ip6_output() (CVE-2024-36901)
+    - bpf: Allow reads from uninit stack
+    - nilfs2: fix kernel bug on rename operation of broken directory
+    - i2c: mark HostNotify target address as used
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.10.223
+    - gcc-plugins: Rename last_stmt() for GCC 14+
+    - filelock: Remove locks reliably when fcntl/close race is detected
+      (CVE-2024-41012)
+    - scsi: qedf: Set qed_slowpath_params to zero before use
+    - ACPI: EC: Abort address space access upon error
+    - ACPI: EC: Avoid returning AE_OK on errors in address space handler
+    - wifi: mac80211: mesh: init nonpeer_pm to active by default in mesh sdata
+    - wifi: mac80211: fix UBSAN noise in ieee80211_prep_hw_scan()
+    - Input: silead - Always support 10 fingers
+    - net: ipv6: rpl_iptunnel: block BH in rpl_output() and rpl_input()
+    - ila: block BH in ila_output()
+    - [arm64] armv8_deprecated: Fix warning in isndep cpuhp starting process
+    - null_blk: fix validation of block size
+    - kconfig: gconf: give a proper initial state to the Save button
+    - kconfig: remove wrong expr_trans_bool()
+    - fs/file: fix the check in find_next_fd()
+    - mei: demote client disconnect warning on suspend to debug
+    - wifi: cfg80211: wext: add extra SIOCSIWSCAN data check
+    - [powerpc*] KVM: PPC: Book3S HV: Prevent UAF in
+      kvm_spapr_tce_attach_iommu_group()
+    - ALSA: hda/realtek: Add more codec ID to no shutup pins list
+    - [mips*] fix compat_sys_lseek syscall
+    - Input: elantech - fix touchpad state on resume for Lenovo N24
+    - Input: i8042 - add Ayaneo Kun to i8042 quirk table
+    - [x86] bytcr_rt5640 : inverse jack detect for Archos 101 cesium
+    - [arm*] ALSA: dmaengine: Synchronize dma channel after drop()
+    - [armhf] ASoC: ti: davinci-mcasp: Set min period size using FIFO config
+    - can: kvaser_usb: fix return value for hif_usb_send_regout
+    - [s390x] sclp: Fix sclp_init() cleanup on failure
+    - btrfs: qgroup: fix quota root leak after quota disable failure
+    - ALSA: hda/relatek: Enable Mute LED on HP Laptop 15-gw0xxx
+    - ALSA: dmaengine_pcm: terminate dmaengine before synchronize
+    - net: usb: qmi_wwan: add Telit FN912 compositions
+    - net: mac802154: Fix racy device stats updates by DEV_STATS_INC() and
+      DEV_STATS_ADD()
+    - [powerpc*] pseries: Whitelist dtl slub object for copying to userspace
+    - [powerpc*] eeh: avoid possible crash when edev->pdev changes
+    - scsi: libsas: Fix exp-attached device scan after probe failure scanned in
+      again after probe failed
+    - Bluetooth: hci_core: cancel all works upon hci_unregister_dev()
+    - fs: better handle deep ancestor chains in is_subdir()
+    - spi: imx: Don't expect DMA for i.MX{25,35,50,51,53} cspi devices
+    - hfsplus: fix uninit-value in copy_name
+    - spi: mux: set ctlr->bits_per_word_mask
+    - [arm*] 9324/1: fix get_user() broken with veneer
+    - ACPI: processor_idle: Fix invalid comparison with insertion sort for
+      latency
+    - bpf: Fix overrunning reservations in ringbuf (CVE-2024-41009)
+    - bpf, skmsg: Fix NULL pointer dereference in sk_psock_skb_ingress_enqueue
+      (CVE-2024-36938)
+    - scsi: core: Fix a use-after-free (CVE-2022-48666)
+    - ext4: fix error code saved on super block during file system abort
+    - ext4: Send notifications on error
+    - drm/amdgpu: Fix signedness bug in sdma_v4_0_process_trap_irq()
+    - net: relax socket state check at accept time. (CVE-2024-36484)
+    - ocfs2: add bounds checking to ocfs2_check_dir_entry()
+    - jfs: don't walk off the end of ealist
+    - ALSA: hda/realtek: Enable headset mic on Positivo SU C1400
+    - ALSA: hda/realtek: Fix the speaker output on Samsung Galaxy Book Pro 360
+    - [arm64] dts: qcom: msm8996: Disable SS instance in Parkmode for USB
+    - [arm*] ALSA: pcm_dmaengine: Don't synchronize DMA channel when DMA is
+      paused
+    - filelock: Fix fcntl/close race recovery compat path
+    - tun: add missing verification for short frame (CVE-2024-41091)
+    - tap: add missing verification for short frame (CVE-2024-41090)
+
+  [ Salvatore Bonaccorso ]
+  * Bump ABI to 32
+  * fs/nfsd: Enable NFSD_V2 and NFSD_V2_ACL.
+    Re-enable lost NFSv2 kernel support due to upstream backporting of
+    2f3a4b2ac2f2 ("nfsd: allow disabling NFSv2 at compile time") in
+    5.10.220. (Closes: #1076864)
+  * netfilter: ipset: Add list flush to cancel_gc
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sat, 10 Aug 2024 08:09:03 +0200
+
+linux (5.10.221-1) bullseye-security; urgency=high
+
+  * New upstream stable update:
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.10.219
+    - [x86] tsc: Trust initial offset in architectural TSC-adjust MSRs
+    - tty: n_gsm: fix possible out-of-bounds in gsm0_receive() (CVE-2024-36016)
+    - speakup: Fix sizeof() vs ARRAY_SIZE() bug
+    - ring-buffer: Fix a race between readers and resize checks (CVE-2024-38601)
+    - nilfs2: fix unexpected freezing of nilfs_segctor_sync()
+    - nilfs2: fix potential hang in nilfs_detach_log_writer() (CVE-2024-38582)
+    - ALSA: core: Fix NULL module pointer assignment at card init
+      (CVE-2024-38605)
+    - wifi: cfg80211: fix the order of arguments for trace events of the
+      tx_rx_evt class
+    - net: usb: qmi_wwan: add Telit FN920C04 compositions
+    - drm/amd/display: Set color_mgmt_changed to true on unsuspend
+    - ASoC: rt5645: Fix the electric noise due to the CBJ contacts floating
+    - ASoC: dt-bindings: rt5645: add cbj sleeve gpio property
+    - ASoC: rt715: add vendor clear control register
+    - ASoC: da7219-aad: fix usage of device_get_named_child_node()
+    - nvme: find numa distance only if controller has valid numa id
+    - crypto: bcm - Fix pointer arithmetic (CVE-2024-38579)
+    - firmware: raspberrypi: Use correct device for DMA mappings
+    - ecryptfs: Fix buffer size for tag 66 packet (CVE-2024-38578)
+    - nilfs2: fix out-of-range warning
+    - [x86] crypto: ccp - drop platform ifdef checks
+    - [x86] crypto: x86/nh-avx2 - add missing vzeroupper
+    - [x86] crypto: x86/sha256-avx2 - add missing vzeroupper
+    - [s390x] cio: fix tracepoint subchannel type field
+    - jffs2: prevent xattr node from overflowing the eraseblock (CVE-2024-38599)
+    - null_blk: Fix missing mutex_destroy() at module removal
+    - md: fix resync softlockup when bitmap size is less than array size
+      (CVE-2024-38598)
+    - wifi: ath10k: poll service ready message before failing
+    - [x86] boot: Ignore relocations in .notes sections in walk_relocs() too
+    - qed: avoid truncating work queue length
+    - scsi: ufs: qcom: Perform read back after writing reset bit
+    - scsi: ufs-qcom: Fix ufs RST_n spec violation
+    - scsi: ufs: qcom: Perform read back after writing REG_UFS_SYS1CLK_1US
+    - scsi: ufs: ufs-qcom: Fix the Qcom register name for offset 0xD0
+    - scsi: ufs: ufs-qcom: Clear qunipro_g4_sel for HW version major 5
+    - scsi: ufs: qcom: Perform read back after writing unipro mode
+    - scsi: ufs: qcom: Perform read back after writing CGC enable
+    - scsi: ufs: cdns-pltfrm: Perform read back after writing HCLKDIV
+    - scsi: ufs: core: Perform read back after disabling interrupts
+    - scsi: ufs: core: Perform read back after disabling UIC_COMMAND_COMPL
+    - irqchip/alpine-msi: Fix off-by-one in allocation error path
+    - ACPI: disable -Wstringop-truncation
+    - gfs2: Fix "ignore unlock failures after withdraw"
+    - cpufreq: Reorganize checks in cpufreq_offline()
+    - cpufreq: Split cpufreq_offline()
+    - cpufreq: Rearrange locking in cpufreq_remove_dev()
+    - cpufreq: exit() callback is optional
+    - net: export inet_lookup_reuseport and inet6_lookup_reuseport
+    - net: remove duplicate reuseport_lookup functions
+    - udp: Avoid call to compute_score on multiple sites
+    - scsi: libsas: Fix the failure of adding phy with zero-address to port
+    - scsi: hpsa: Fix allocation size for Scsi_Host private data
+    - [x86] purgatory: Switch to the position-independent small code model
+    - wifi: ath10k: Fix an error code problem in
+      ath10k_dbg_sta_write_peer_debug_trigger()
+    - wifi: ath10k: populate board data for WCN3990
+    - tcp: avoid premature drops in tcp_add_backlog()
+    - net: give more chances to rcu in netdev_wait_allrefs_any()
+    - macintosh/via-macii: Fix "BUG: sleeping function called from invalid
+      context" (CVE-2024-38607)
+    - wifi: carl9170: add a proper sanity check for endpoints (CVE-2024-38567)
+    - wifi: ar5523: enable proper endpoint verification (CVE-2024-38565)
+    - Revert "sh: Handle calling csum_partial with misaligned data"
+    - [amd64] HID: intel-ish-hid: ipc: Add check for pci_alloc_irq_vectors
+    - scsi: bfa: Ensure the copied buf is NUL terminated (CVE-2024-38560)
+    - scsi: qedf: Ensure the copied buf is NUL terminated (CVE-2024-38559)
+    - wifi: mwl8k: initialize cmd->addr[] properly
+    - usb: aqc111: stop lying about skb->truesize
+    - net: usb: sr9700: stop lying about skb->truesize
+    - net: ipv6: fix wrong start position when receive hop-by-hop fragment
+    - eth: sungem: remove .ndo_poll_controller to avoid deadlocks
+      (CVE-2024-38597)
+    - net: ethernet: cortina: Locking fixes
+    - af_unix: Fix data races in unix_release_sock/unix_stream_sendmsg
+      (CVE-2024-38596)
+    - net: usb: smsc95xx: stop lying about skb->truesize
+    - net: openvswitch: fix overwriting ct original tuple for ICMPv6
+      (CVE-2024-38558)
+    - ipv6: sr: add missing seg6_local_exit
+    - ipv6: sr: fix incorrect unregister order
+    - ipv6: sr: fix invalid unregister error path (CVE-2024-38612)
+    - net/mlx5: Discard command completions in internal error (CVE-2024-38555)
+    - drm/amd/display: Fix potential index out of bounds in color transformation
+      function (CVE-2024-38552)
+    - ASoC: soc-acpi: add helper to identify parent driver.
+    - [x86] ASoC: Intel: Disable route checks for Skylake boards
+    - mtd: rawnand: hynix: fixed typo
+    - fbdev: shmobile: fix snprintf truncation
+    - [arm64] drm/meson: vclk: fix calculation of 59.94 fractional rates
+    - [powerpc*] fsl-soc: hide unused const variable
+    - fbdev: sisfb: hide unused variables
+    - media: ngene: Add dvb_ca_en50221_init return value check
+    - media: radio-shark2: Avoid led_names truncations
+    - drm: bridge: cdns-mhdp8546: Fix possible null pointer dereference
+      (CVE-2024-38548)
+    - fbdev: sh7760fb: allow modular build
+    - media: atomisp: ssh_css: Fix a null-pointer dereference in
+      load_video_binaries (CVE-2024-38547)
+    - [arm64] drm/arm/malidp: fix a possible null pointer dereference
+      (CVE-2024-36014)
+    - [arm*] drm: vc4: Fix possible null pointer dereference (CVE-2024-38546)
+    - ASoC: tracing: Export SND_SOC_DAPM_DIR_OUT to its value
+    - drm/bridge: lt9611: Don't log an error when DSI host can't be found
+    - drm/bridge: tc358775: Don't log an error when DSI host can't be found
+    - drm/panel: simple: Add missing Innolux G121X1-L03 format, flags, connector
+    - drm/mipi-dsi: use correct return type for the DSC functions
+    - [arm64] RDMA/hns: Refactor the hns_roce_buf allocation flow
+    - [arm64] RDMA/hns: Create QP with selected QPN for bank load balance
+    - [arm64] RDMA/hns: Fix incorrect symbol types
+    - [arm64] RDMA/hns: Fix return value in hns_roce_map_mr_sg
+    - [arm64] RDMA/hns: Use complete parentheses in macros
+    - [arm64] RDMA/hns: Modify the print level of CQE error (CVE-2024-38590)
+    - clk: qcom: mmcc-msm8998: fix venus clock issue
+    - [x86] insn: Fix PUSH instruction in x86 instruction decoder opcode map
+    - ext4: avoid excessive credit estimate in ext4_tmpfile()
+    - sunrpc: removed redundant procp check
+    - ext4: simplify calculation of blkoff in ext4_mb_new_blocks_simple
+    - ext4: fix unit mismatch in ext4_mb_new_blocks_simple
+    - ext4: try all groups in ext4_mb_new_blocks_simple
+    - ext4: remove unused parameter from ext4_mb_new_blocks_simple()
+    - ext4: fix potential unnitialized variable
+    - SUNRPC: Fix gss_free_in_token_pages()
+    - RDMA/IPoIB: Fix format truncation compilation errors
+    - net: qrtr: fix null-ptr-deref in qrtr_ns_remove
+    - net: qrtr: ns: Fix module refcnt
+    - netrom: fix possible dead-lock in nr_rt_ioctl() (CVE-2024-38589)
+    - af_packet: do not call packet_read_pending() from tpacket_destruct_skb()
+    - sched/fair: Allow disabling sched_balance_newidle with
+      sched_relax_domain_level
+    - greybus: lights: check return of get_channel_from_mode (CVE-2024-38637)
+    - f2fs: fix to wait on page writeback in __clone_blkaddrs()
+    - soundwire: cadence: fix invalid PDI offset (CVE-2024-38635)
+    - dmaengine: idma64: Add check for dma_set_max_seg_size
+    - firmware: dmi-id: add a release callback function
+    - serial: max3100: Lock port->lock when calling uart_handle_cts_change()
+      (CVE-2024-38634)
+    - serial: max3100: Update uart_driver_registered on driver removal
+      (CVE-2024-38633)
+    - serial: max3100: Fix bitwise types
+    - greybus: arche-ctrl: move device table to its right location
+    - serial: sc16is7xx: add proper sched.h include for sched_set_fifo()
+    - f2fs: compress: support chksum
+    - f2fs: add compress_mode mount option
+    - f2fs: compress: clean up parameter of __f2fs_cluster_blocks()
+    - f2fs: compress: remove unneeded preallocation
+    - f2fs: introduce FI_COMPRESS_RELEASED instead of using IMMUTABLE bit
+    - f2fs: compress: fix to relocate check condition in
+      f2fs_{release,reserve}_compress_blocks()
+    - f2fs: add cp_error check in f2fs_write_compressed_pages
+    - f2fs: fix to force keeping write barrier for strict fsync mode
+    - f2fs: do not allow partial truncation on pinned file
+    - f2fs: fix typos in comments
+    - f2fs: fix to relocate check condition in f2fs_fallocate()
+    - f2fs: fix to check pinfile flag in f2fs_move_file_range()
+    - iio: pressure: dps310: support negative temperature values
+    - fpga: region: change FPGA indirect article to an
+    - fpga: region: Rename dev to parent for parent device
+    - docs: driver-api: fpga: avoid using UTF-8 chars
+    - fpga: region: Use standard dev_release for class driver
+    - fpga: region: add owner module and take its refcount
+    - usb: gadget: u_audio: Clear uac pointer when freed.
+    - stm class: Fix a double free in stm_register_device() (CVE-2024-38627)
+    - ppdev: Remove usage of the deprecated ida_simple_xx() API
+    - ppdev: Add an error check in register_device (CVE-2024-36015)
+    - extcon: max8997: select IRQ_DOMAIN instead of depending on it
+    - PCI/EDR: Align EDR_PORT_DPC_ENABLE_DSM with PCI Firmware r3.3
+    - PCI/EDR: Align EDR_PORT_LOCATE_DSM with PCI Firmware r3.3
+    - f2fs: compress: fix to cover {reserve,release}_compress_blocks() w/
+      cp_rwsem lock
+    - f2fs: fix to release node block count in error path of
+      f2fs_new_node_page()
+    - f2fs: compress: don't allow unaligned truncation on released compress
+      inode
+    - serial: sh-sci: protect invalidating RXDMA on shutdown
+    - libsubcmd: Fix parse-options memory leak
+    - [s390x] ipl: Fix incorrect initialization of len fields in nvme reipl
+      block
+    - [s390x] ipl: Fix incorrect initialization of nvme dump block
+    - Input: ims-pcu - fix printf string overflow
+    - Input: ioc3kbd - convert to platform remove callback returning void
+    - Input: ioc3kbd - add device table
+    - Input: pm8xxx-vibrator - correct VIB_MAX_LEVELS calculation
+    - drm/msm/dpu: Always flush the slave INTF on the CTL
+    - drm/bridge: tc358775: fix support for jeida-18 and jeida-24
+    - media: stk1160: fix bounds checking in stk1160_copy_video()
+      (CVE-2024-38621)
+    - scsi: qla2xxx: Replace all non-returning strlcpy() with strscpy()
+    - media: flexcop-usb: clean up endpoint sanity checks
+    - media: flexcop-usb: fix sanity check of bNumEndpoints
+    - [powerpc*] pseries: Add failure related checks for h_get_mpp and h_get_ppp
+    - media: cec: cec-adap: always cancel work in cec_transmit_msg_fh
+    - media: cec: cec-api: add locking in cec_release()
+    - media: core headers: fix kernel-doc warnings
+    - media: cec: fix a deadlock situation
+    - media: cec: call enable_adap on s_log_addrs
+    - media: cec: abort if the current transmit was canceled
+    - media: cec: correctly pass on reply results
+    - media: cec: use call_op and check for !unregistered
+    - media: cec-adap.c: drop activate_cnt, use state info instead
+    - media: cec: core: avoid recursive cec_claim_log_addrs
+    - media: cec: core: avoid confusing "transmit timed out" message
+    - null_blk: Fix the WARNING: modpost: missing MODULE_DESCRIPTION()
+    - regulator: bd71828: Don't overwrite runtime voltages
+    - [x86] kconfig: Select ARCH_WANT_FRAME_POINTERS again when
+      UNWINDER_FRAME_POINTER=y
+    - nfc: nci: Fix uninit-value in nci_rx_work (CVE-2024-38381)
+    - ASoC: tas2552: Add TX path for capturing AUDIO-OUT data
+    - sunrpc: fix NFSACL RPC retry on soft mount
+    - rpcrdma: fix handling for RDMA_CM_EVENT_DEVICE_REMOVAL
+    - ipv6: sr: fix memleak in seg6_hmac_init_algo
+    - params: lift param_set_uint_minmax to common code
+    - tcp: Fix shift-out-of-bounds in dctcp_update_alpha(). (CVE-2024-37356)).
+    - openvswitch: Set the skbuff pkt_type for proper pmtud support.
+    - [arm64] asm-bug: Add .align 2 to the end of __BUG_ENTRY
+    - virtio: delete vq in vp_find_vqs_msix() when request_irq() fails
+    - net: fec: avoid lock evasion when reading pps_enable
+    - tls: fix missing memory barrier in tls_init (CVE-2024-36489)
+    - nfc: nci: Fix kcov check in nci_rx_work()
+    - nfc: nci: Fix handling of zero-length payload packets in nci_rx_work()
+    - netfilter: nfnetlink_queue: acquire rcu_read_lock() in
+      instance_destroy_rcu()
+    - netfilter: nft_payload: restore vlan q-in-q match support
+    - spi: Don't mark message DMA mapped when no transfer in it is
+    - nvmet: fix ns enable/disable possible hang
+    - net/mlx5e: Use rx_missed_errors instead of rx_dropped for reporting buffer
+      exhaustion
+    - dma-buf/sw-sync: don't enable IRQ from sync_print_obj() (CVE-2024-38780)
+    - bpf: Fix potential integer overflow in resolve_btfids
+    - enic: Validate length of nl attributes in enic_set_vf_port
+      (CVE-2024-38659)
+    - net: usb: smsc95xx: fix changing LED_SEL bit value updated from EEPROM
+    - bpf: Allow delete from sockmap/sockhash only if update is allowed
+      (CVE-2024-38662)
+    - net:fec: Add fec_enet_deinit()
+    - netfilter: tproxy: bail out if IP has been disabled on the device
+      (CVE-2024-36270)
+    - kconfig: fix comparison to constant symbols, 'm', 'n'
+    - spi: stm32: Don't warn about spurious interrupts
+    - ipvlan: Dont Use skb->sk in ipvlan_process_v{4,6}_outbound
+    - hwmon: (shtc1) Fix property misspelling
+    - ALSA: timer: Set lower bound of start tick time (CVE-2024-38618)
+    - genirq/cpuhotplug, x86/vector: Prevent vector leak during CPU offline
+      (CVE-2024-31076)
+    - media: cec: core: add adap_nb_transmit_canceled() callback
+    - SUNRPC: Fix loop termination condition in gss_free_in_token_pages()
+      (CVE-2024-36288)
+    - [arm*] binder: fix max_thread type inconsistency
+    - mmc: core: Do not force a retune before RPMB switch
+    - io_uring: fail NOP if non-zero op flags is passed in
+    - afs: Don't cross .backup mountpoint from backup volume
+    - nilfs2: fix use-after-free of timer for log writer thread (CVE-2024-38583)
+    - vxlan: Fix regression when dropping packets due to invalid src addresses
+    - [x86] mm: Remove broken vsyscall emulation code from the page fault code
+    - netfilter: nf_tables: restrict tunnel object to NFPROTO_NETDEV
+    - netfilter: nf_tables: Fix potential data-race in __nft_obj_type_get()
+      (CVE-2024-27019)
+    - f2fs: fix to do sanity check on i_xattr_nid in sanity_check_inode()
+    - media: lgdt3306a: Add a check against null-pointer-def
+    - drm/amdgpu: add error handle to avoid out-of-bounds
+    - ata: pata_legacy: make legacy_exit() work again
+    - ACPI: resource: Do IRQ override on TongFang GXxHRXx and GMxHGxx
+    - [arm64] tegra: Correct Tegra132 I2C alias
+    - [arm64] dts: qcom: qcs404: fix bluetooth device address
+    - md/raid5: fix deadlock that raid5d() wait for itself to clear
+      MD_SB_CHANGE_PENDING
+    - wifi: rtl8xxxu: Fix the TX power of RTL8192CU, RTL8723AU
+    - wifi: rtlwifi: rtl8192de: Fix low speed with WPA3-SAE
+    - wifi: rtlwifi: rtl8192de: Fix endianness issue in RX path
+    - [arm64] dts: hi3798cv200: fix the size of GICR
+    - media: mc: mark the media devnode as registered from the, start
+    - media: mxl5xx: Move xpt structures off stack
+    - media: v4l2-core: hold videodev_lock until dev reg, finishes
+    - mmc: core: Add mmc_gpiod_set_cd_config() function
+    - mmc: sdhci-acpi: Sort DMI quirks alphabetically
+    - mmc: sdhci-acpi: Fix Lenovo Yoga Tablet 2 Pro 1380 sdcard slot not working
+    - mmc: sdhci-acpi: Disable write protect detection on Toshiba WT10-A
+    - fbdev: savage: Handle err return when savagefb_check_var failed
+    - [arm64] KVM: arm64: Allow AArch32 PSTATE.M to be restored as System mode
+    - crypto: ecrdsa - Fix module auto-load on add_key
+    - [x86] crypto: qat - Fix ADF_DEV_RESET_SYNC memory leak
+    - net/ipv6: Fix route deleting failure when metric equals 0
+    - net/9p: fix uninit-value in p9_client_rpc()
+    - [x86] intel_th: pci: Add Meteor Lake-S CPU support
+    - watchdog: rti_wdt: Set min_hw_heartbeat_ms to accommodate a safety margin
+    - kdb: Fix buffer overflow during tab-complete
+    - kdb: Use format-strings rather than '\0' injection in kdb_read()
+    - kdb: Fix console handling when editing and tab-completing commands
+    - kdb: Merge identical case statements in kdb_read()
+    - kdb: Use format-specifiers rather than memset() for padding in kdb_read()
+    - net: fix __dst_negative_advice() race
+    - ext4: fix mb_cache_entry's e_refcnt leak in ext4_xattr_block_cache_find()
+    - [s390x] ap: Fix crash in AP internal function modify_bitmap()
+    - nfs: fix undefined behavior in nfs_block_bits()
+    - NFS: Fix READ_PLUS when server doesn't support OP_READ_PLUS
+    - scsi: ufs: ufs-qcom: Clear qunipro_g4_sel for HW major version > 5
+    - f2fs: compress: fix compression chksum
+    - [arm64] RDMA/hns: Use mutex instead of spinlock for ida allocation
+    - [arm64] RDMA/hns: Fix CQ and QP cache affinity
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.10.220
+    - SUNRPC: Rename svc_encode_read_payload()
+    - NFSD: Invoke svc_encode_result_payload() in "read" NFSD encoders
+    - NFSD: A semicolon is not needed after a switch statement.
+    - nfsd/nfs3: remove unused macro nfsd3_fhandleres
+    - NFSD: Clean up the show_nf_may macro
+    - NFSD: Remove extra "0x" in tracepoint format specifier
+    - NFSD: Add SPDX header for fs/nfsd/trace.c
+    - nfsd: Fix error return code in nfsd_file_cache_init()
+    - SUNRPC: Add xdr_set_scratch_page() and xdr_reset_scratch_buffer()
+    - SUNRPC: Prepare for xdr_stream-style decoding on the server-side
+    - NFSD: Add common helpers to decode void args and encode void results
+    - NFSD: Add tracepoints in nfsd_dispatch()
+    - NFSD: Add tracepoints in nfsd4_decode/encode_compound()
+    - NFSD: Replace the internals of the READ_BUF() macro
+    - NFSD: Replace READ* macros in nfsd4_decode_access()
+    - NFSD: Replace READ* macros in nfsd4_decode_close()
+    - NFSD: Replace READ* macros in nfsd4_decode_commit()
+    - NFSD: Change the way the expected length of a fattr4 is checked
+    - NFSD: Replace READ* macros that decode the fattr4 size attribute
+    - NFSD: Replace READ* macros that decode the fattr4 acl attribute
+    - NFSD: Replace READ* macros that decode the fattr4 mode attribute
+    - NFSD: Replace READ* macros that decode the fattr4 owner attribute
+    - NFSD: Replace READ* macros that decode the fattr4 owner_group attribute
+    - NFSD: Replace READ* macros that decode the fattr4 time_set attributes
+    - NFSD: Replace READ* macros that decode the fattr4 security label attribute
+    - NFSD: Replace READ* macros that decode the fattr4 umask attribute
+    - NFSD: Replace READ* macros in nfsd4_decode_fattr()
+    - NFSD: Replace READ* macros in nfsd4_decode_create()
+    - NFSD: Replace READ* macros in nfsd4_decode_delegreturn()
+    - NFSD: Replace READ* macros in nfsd4_decode_getattr()
+    - NFSD: Replace READ* macros in nfsd4_decode_link()
+    - NFSD: Relocate nfsd4_decode_opaque()
+    - NFSD: Add helpers to decode a clientid4 and an NFSv4 state owner
+    - NFSD: Add helper for decoding locker4
+    - NFSD: Replace READ* macros in nfsd4_decode_lock()
+    - NFSD: Replace READ* macros in nfsd4_decode_lockt()
+    - NFSD: Replace READ* macros in nfsd4_decode_locku()
+    - NFSD: Replace READ* macros in nfsd4_decode_lookup()
+    - NFSD: Add helper to decode NFSv4 verifiers
+    - NFSD: Add helper to decode OPEN's createhow4 argument
+    - NFSD: Add helper to decode OPEN's openflag4 argument
+    - NFSD: Replace READ* macros in nfsd4_decode_share_access()
+    - NFSD: Replace READ* macros in nfsd4_decode_share_deny()
+    - NFSD: Add helper to decode OPEN's open_claim4 argument
+    - NFSD: Replace READ* macros in nfsd4_decode_open()
+    - NFSD: Replace READ* macros in nfsd4_decode_open_confirm()
+    - NFSD: Replace READ* macros in nfsd4_decode_open_downgrade()
+    - NFSD: Replace READ* macros in nfsd4_decode_putfh()
+    - NFSD: Replace READ* macros in nfsd4_decode_read()
+    - NFSD: Replace READ* macros in nfsd4_decode_readdir()
+    - NFSD: Replace READ* macros in nfsd4_decode_remove()
+    - NFSD: Replace READ* macros in nfsd4_decode_rename()
+    - NFSD: Replace READ* macros in nfsd4_decode_renew()
+    - NFSD: Replace READ* macros in nfsd4_decode_secinfo()
+    - NFSD: Replace READ* macros in nfsd4_decode_setattr()
+    - NFSD: Replace READ* macros in nfsd4_decode_setclientid()
+    - NFSD: Replace READ* macros in nfsd4_decode_setclientid_confirm()
+    - NFSD: Replace READ* macros in nfsd4_decode_verify()
+    - NFSD: Replace READ* macros in nfsd4_decode_write()
+    - NFSD: Replace READ* macros in nfsd4_decode_release_lockowner()
+    - NFSD: Replace READ* macros in nfsd4_decode_cb_sec()
+    - NFSD: Replace READ* macros in nfsd4_decode_backchannel_ctl()
+    - NFSD: Replace READ* macros in nfsd4_decode_bind_conn_to_session()
+    - NFSD: Add a separate decoder to handle state_protect_ops
+    - NFSD: Add a separate decoder for ssv_sp_parms
+    - NFSD: Add a helper to decode state_protect4_a
+    - NFSD: Add a helper to decode nfs_impl_id4
+    - NFSD: Add a helper to decode channel_attrs4
+    - NFSD: Replace READ* macros in nfsd4_decode_create_session()
+    - NFSD: Replace READ* macros in nfsd4_decode_destroy_session()
+    - NFSD: Replace READ* macros in nfsd4_decode_free_stateid()
+    - NFSD: Replace READ* macros in nfsd4_decode_getdeviceinfo()
+    - NFSD: Replace READ* macros in nfsd4_decode_layoutcommit()
+    - NFSD: Replace READ* macros in nfsd4_decode_layoutget()
+    - NFSD: Replace READ* macros in nfsd4_decode_layoutreturn()
+    - NFSD: Replace READ* macros in nfsd4_decode_secinfo_no_name()
+    - NFSD: Replace READ* macros in nfsd4_decode_sequence()
+    - NFSD: Replace READ* macros in nfsd4_decode_test_stateid()
+    - NFSD: Replace READ* macros in nfsd4_decode_destroy_clientid()
+    - NFSD: Replace READ* macros in nfsd4_decode_reclaim_complete()
+    - NFSD: Replace READ* macros in nfsd4_decode_fallocate()
+    - NFSD: Replace READ* macros in nfsd4_decode_nl4_server()
+    - NFSD: Replace READ* macros in nfsd4_decode_copy()
+    - NFSD: Replace READ* macros in nfsd4_decode_copy_notify()
+    - NFSD: Replace READ* macros in nfsd4_decode_offload_status()
+    - NFSD: Replace READ* macros in nfsd4_decode_seek()
+    - NFSD: Replace READ* macros in nfsd4_decode_clone()
+    - NFSD: Replace READ* macros in nfsd4_decode_xattr_name()
+    - NFSD: Replace READ* macros in nfsd4_decode_setxattr()
+    - NFSD: Replace READ* macros in nfsd4_decode_listxattrs()
+    - NFSD: Make nfsd4_ops::opnum a u32
+    - NFSD: Replace READ* macros in nfsd4_decode_compound()
+    - NFSD: Remove macros that are no longer used
+    - nfsd: only call inode_query_iversion in the I_VERSION case
+    - nfsd: simplify nfsd4_change_info
+    - nfsd: minor nfsd4_change_attribute cleanup
+    - nfsd4: don't query change attribute in v2/v3 case
+    - Revert "nfsd4: support change_attr_type attribute"
+    - nfsd: add a new EXPORT_OP_NOWCC flag to struct export_operations
+    - nfsd: allow filesystems to opt out of subtree checking
+    - nfsd: close cached files prior to a REMOVE or RENAME that would replace
+      target
+    - exportfs: Add a function to return the raw output from fh_to_dentry()
+    - nfsd: Fix up nfsd to ensure that timeout errors don't result in ESTALE
+    - nfsd: Set PF_LOCAL_THROTTLE on local filesystems only
+    - nfsd: Record NFSv4 pre/post-op attributes as non-atomic
+    - exec: Don't open code get_close_on_exec
+    - exec: Move unshare_files to fix posix file locking during exec
+    - exec: Simplify unshare_files
+    - exec: Remove reset_files_struct
+    - kcmp: In kcmp_epoll_target use fget_task
+    - bpf: In bpf_task_fd_query use fget_task
+    - proc/fd: In proc_fd_link use fget_task
+    - Revert "fget: clarify and improve __fget_files() implementation"
+    - file: Rename __fcheck_files to files_lookup_fd_raw
+    - file: Factor files_lookup_fd_locked out of fcheck_files
+    - file: Replace fcheck_files with files_lookup_fd_rcu
+    - file: Rename fcheck lookup_fd_rcu
+    - file: Implement task_lookup_fd_rcu
+    - proc/fd: In tid_fd_mode use task_lookup_fd_rcu
+    - kcmp: In get_file_raw_ptr use task_lookup_fd_rcu
+    - file: Implement task_lookup_next_fd_rcu
+    - proc/fd: In proc_readfd_common use task_lookup_next_fd_rcu
+    - proc/fd: In fdinfo seq_show don't use get_files_struct
+    - file: Merge __fd_install into fd_install
+    - file: In f_dupfd read RLIMIT_NOFILE once.
+    - file: Merge __alloc_fd into alloc_fd
+    - file: Rename __close_fd to close_fd and remove the files parameter
+    - file: Replace ksys_close with close_fd
+    - inotify: Increase default inotify.max_user_watches limit to 1048576
+    - fs/lockd: convert comma to semicolon
+    - NFSD: Fix sparse warning in nfssvc.c
+    - NFSD: Restore NFSv4 decoding's SAVEMEM functionality
+    - SUNRPC: Make trace_svc_process() display the RPC procedure symbolically
+    - SUNRPC: Display RPC procedure names instead of proc numbers
+    - SUNRPC: Move definition of XDR_UNIT
+    - NFSD: Update GETATTR3args decoder to use struct xdr_stream
+    - NFSD: Update ACCESS3arg decoder to use struct xdr_stream
+    - NFSD: Update READ3arg decoder to use struct xdr_stream
+    - NFSD: Update WRITE3arg decoder to use struct xdr_stream
+    - NFSD: Update READLINK3arg decoder to use struct xdr_stream
+    - NFSD: Fix returned READDIR offset cookie
+    - NFSD: Add helper to set up the pages where the dirlist is encoded
+    - NFSD: Update READDIR3args decoders to use struct xdr_stream
+    - NFSD: Update COMMIT3arg decoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 DIROPargs decoder to use struct xdr_stream
+    - NFSD: Update the RENAME3args decoder to use struct xdr_stream
+    - NFSD: Update the LINK3args decoder to use struct xdr_stream
+    - NFSD: Update the SETATTR3args decoder to use struct xdr_stream
+    - NFSD: Update the CREATE3args decoder to use struct xdr_stream
+    - NFSD: Update the MKDIR3args decoder to use struct xdr_stream
+    - NFSD: Update the SYMLINK3args decoder to use struct xdr_stream
+    - NFSD: Update the MKNOD3args decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 GETATTR argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 READ argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 WRITE argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 READLINK argument decoder to use struct xdr_stream
+    - NFSD: Add helper to set up the pages where the dirlist is encoded
+    - NFSD: Update the NFSv2 READDIR argument decoder to use struct xdr_stream
+    - NFSD: Update NFSv2 diropargs decoding to use struct xdr_stream
+    - NFSD: Update the NFSv2 RENAME argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 LINK argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 SETATTR argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 CREATE argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 SYMLINK argument decoder to use struct xdr_stream
+    - NFSD: Remove argument length checking in nfsd_dispatch()
+    - NFSD: Update the NFSv2 GETACL argument decoder to use struct xdr_stream
+    - NFSD: Add an xdr_stream-based decoder for NFSv2/3 ACLs
+    - NFSD: Update the NFSv2 SETACL argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 ACL GETATTR argument decoder to use struct
+      xdr_stream
+    - NFSD: Update the NFSv2 ACL ACCESS argument decoder to use struct
+      xdr_stream
+    - NFSD: Clean up after updating NFSv2 ACL decoders
+    - NFSD: Update the NFSv3 GETACL argument decoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 SETACL argument decoder to use struct xdr_stream
+    - NFSD: Clean up after updating NFSv3 ACL decoders
+    - nfsd: remove unused stats counters
+    - nfsd: protect concurrent access to nfsd stats counters
+    - nfsd: report per-export stats
+    - nfsd4: simplify process_lookup1
+    - nfsd: simplify process_lock
+    - nfsd: simplify nfsd_renew
+    - nfsd: rename lookup_clientid->set_client
+    - nfsd: refactor set_client
+    - nfsd: find_cpntf_state cleanup
+    - nfsd: remove unused set_client argument
+    - nfsd: simplify nfsd4_check_open_reclaim
+    - nfsd: cstate->session->se_client -> cstate->clp
+    - NFSv4_2: SSC helper should use its own config.
+    - nfs: use change attribute for NFS re-exports
+    - nfsd: skip some unnecessary stats in the v4 case
+    - inotify, memcg: account inotify instances to kmemcg
+    - module: unexport find_module and module_mutex
+    - module: use RCU to synchronize find_module
+    - kallsyms: refactor {,module_}kallsyms_on_each_symbol
+    - kallsyms: only build {,module_}kallsyms_on_each_symbol when required
+    - fs: add file and path permissions helpers
+    - namei: introduce struct renamedata
+    - NFSD: Extract the svcxdr_init_encode() helper
+    - NFSD: Update the GETATTR3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 ACCESS3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 LOOKUP3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 wccstat result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 READLINK3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 READ3res encode to use struct xdr_stream
+    - NFSD: Update the NFSv3 WRITE3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 CREATE family of encoders to use struct xdr_stream
+    - NFSD: Update the NFSv3 RENAMEv3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 LINK3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 FSSTAT3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 FSINFO3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 PATHCONF3res encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 COMMIT3res encoder to use struct xdr_stream
+    - NFSD: Add a helper that encodes NFSv3 directory offset cookies
+    - NFSD: Count bytes instead of pages in the NFSv3 READDIR encoder
+    - NFSD: Update the NFSv3 READDIR3res encoder to use struct xdr_stream
+    - NFSD: Update NFSv3 READDIR entry encoders to use struct xdr_stream
+    - NFSD: Remove unused NFSv3 directory entry encoders
+    - NFSD: Reduce svc_rqst::rq_pages churn during READDIR operations
+    - NFSD: Update the NFSv2 stat encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 attrstat encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 diropres encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 READLINK result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 READ result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 STATFS result encoder to use struct xdr_stream
+    - NFSD: Add a helper that encodes NFSv3 directory offset cookies
+    - NFSD: Count bytes instead of pages in the NFSv2 READDIR encoder
+    - NFSD: Update the NFSv2 READDIR result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 READDIR entry encoder to use struct xdr_stream
+    - NFSD: Remove unused NFSv2 directory entry encoders
+    - NFSD: Add an xdr_stream-based encoder for NFSv2/3 ACLs
+    - NFSD: Update the NFSv2 GETACL result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 SETACL result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 ACL GETATTR result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv2 ACL ACCESS result encoder to use struct xdr_stream
+    - NFSD: Clean up after updating NFSv2 ACL encoders
+    - NFSD: Update the NFSv3 GETACL result encoder to use struct xdr_stream
+    - NFSD: Update the NFSv3 SETACL result encoder to use struct xdr_stream
+    - NFSD: Clean up after updating NFSv3 ACL encoders
+    - NFSD: Add a tracepoint to record directory entry encoding
+    - NFSD: Clean up NFSDDBG_FACILITY macro
+    - nfsd: helper for laundromat expiry calculations
+    - nfsd: Log client tracking type log message as info instead of warning
+    - nfsd: Fix typo "accesible"
+    - nfsd: COPY with length 0 should copy to end of file
+    - nfsd: don't ignore high bits of copy count
+    - nfsd: report client confirmation status in "info" file
+    - SUNRPC: Export svc_xprt_received()
+    - UAPI: nfsfh.h: Replace one-element array with flexible-array member
+    - NFSD: Use DEFINE_SPINLOCK() for spinlock
+    - fsnotify: allow fsnotify_{peek,remove}_first_event with empty queue
+    - Revert "fanotify: limit number of event merge attempts"
+    - fanotify: reduce event objectid to 29-bit hash
+    - fanotify: mix event info and pid into merge key hash
+    - fsnotify: use hash table for faster events merge
+    - fanotify: limit number of event merge attempts
+    - fanotify: configurable limits via sysfs
+    - fanotify: support limited functionality for unprivileged users
+    - fanotify_user: use upper_32_bits() to verify mask
+    - nfsd: remove unused function
+    - nfsd: removed unused argument in nfsd_startup_generic()
+    - nfsd: hash nfs4_files by inode number
+    - nfsd: track filehandle aliasing in nfs4_files
+    - nfsd: reshuffle some code
+    - nfsd: grant read delegations to clients holding writes
+    - nfsd: Fix fall-through warnings for Clang
+    - NFSv4.2: Remove ifdef CONFIG_NFSD from NFSv4.2 client SSC code.
+    - NFS: fix nfs_fetch_iversion()
+    - fanotify: fix permission model of unprivileged group
+    - NFSD: Add an RPC authflavor tracepoint display helper
+    - NFSD: Add nfsd_clid_cred_mismatch tracepoint
+    - NFSD: Add nfsd_clid_verf_mismatch tracepoint
+    - NFSD: Remove trace_nfsd_clid_inuse_err
+    - NFSD: Add nfsd_clid_confirmed tracepoint
+    - NFSD: Add nfsd_clid_reclaim_complete tracepoint
+    - NFSD: Add nfsd_clid_destroyed tracepoint
+    - NFSD: Add a couple more nfsd_clid_expired call sites
+    - NFSD: Add tracepoints for SETCLIENTID edge cases
+    - NFSD: Add tracepoints for EXCHANGEID edge cases
+    - NFSD: Constify @fh argument of knfsd_fh_hash()
+    - NFSD: Capture every CB state transition
+    - NFSD: Drop TRACE_DEFINE_ENUM for NFSD4_CB_<state> macros
+    - NFSD: Add cb_lost tracepoint
+    - NFSD: Adjust cb_shutdown tracepoint
+    - NFSD: Enhance the nfsd_cb_setup tracepoint
+    - NFSD: Add an nfsd_cb_lm_notify tracepoint
+    - NFSD: Add an nfsd_cb_offload tracepoint
+    - NFSD: Replace the nfsd_deleg_break tracepoint
+    - NFSD: Add an nfsd_cb_probe tracepoint
+    - NFSD: Remove the nfsd_cb_work and nfsd_cb_done tracepoints
+    - NFSD: Update nfsd_cb_args tracepoint
+    - nfsd: Prevent truncation of an unlinked inode from blocking access to its
+      directory
+    - nfsd: move some commit_metadata()s outside the inode lock
+    - NFSD add vfs_fsync after async copy is done
+    - NFSD: delay unmount source's export after inter-server copy completed.
+    - nfsd: move fsnotify on client creation outside spinlock
+    - nfsd4: Expose the callback address and state of each NFS4 client
+    - nfsd: fix kernel test robot warning in SSC code
+    - NFSD: Fix error return code in nfsd4_interssc_connect()
+    - nfsd: rpc_peeraddr2str needs rcu lock
+    - lockd: Remove stale comments
+    - lockd: Create a simplified .vs_dispatch method for NLM requests
+    - lockd: Common NLM XDR helpers
+    - lockd: Update the NLMv1 void argument decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 TEST arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 LOCK arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 CANCEL arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 UNLOCK arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 nlm_res arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 SM_NOTIFY arguments decoder to use struct
+      xdr_stream
+    - lockd: Update the NLMv1 SHARE arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv1 FREE_ALL arguments decoder to use struct
+      xdr_stream
+    - lockd: Update the NLMv1 void results encoder to use struct xdr_stream
+    - lockd: Update the NLMv1 TEST results encoder to use struct xdr_stream
+    - lockd: Update the NLMv1 nlm_res results encoder to use struct xdr_stream
+    - lockd: Update the NLMv1 SHARE results encoder to use struct xdr_stream
+    - lockd: Update the NLMv4 void arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 TEST arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 LOCK arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 CANCEL arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 UNLOCK arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 nlm_res arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 SM_NOTIFY arguments decoder to use struct
+      xdr_stream
+    - lockd: Update the NLMv4 SHARE arguments decoder to use struct xdr_stream
+    - lockd: Update the NLMv4 FREE_ALL arguments decoder to use struct
+      xdr_stream
+    - lockd: Update the NLMv4 void results encoder to use struct xdr_stream
+    - lockd: Update the NLMv4 TEST results encoder to use struct xdr_stream
+    - lockd: Update the NLMv4 nlm_res results encoder to use struct xdr_stream
+    - lockd: Update the NLMv4 SHARE results encoder to use struct xdr_stream
+    - nfsd: remove redundant assignment to pointer 'this'
+    - NFSD: Prevent a possible oops in the nfs_dirent() tracepoint
+    - nfsd: fix NULL dereference in nfs3svc_encode_getaclres
+    - kernel/pid.c: remove static qualifier from pidfd_create()
+    - kernel/pid.c: implement additional checks upon pidfd_create() parameters
+    - fanotify: minor cosmetic adjustments to fid labels
+    - fanotify: introduce a generic info record copying helper
+    - fanotify: add pidfd support to the fanotify API
+    - fsnotify: replace igrab() with ihold() on attach connector
+    - fsnotify: count s_fsnotify_inode_refs for attached connectors
+    - fsnotify: count all objects with attached connectors
+    - fsnotify: optimize the case of no marks of any type
+    - NFSD: Clean up splice actor
+    - SUNRPC: Add svc_rqst_replace_page() API
+    - NFSD: Batch release pages during splice read
+    - NFSD: remove vanity comments
+    - sysctl: introduce new proc handler proc_dobool
+    - lockd: change the proc_handler for nsm_use_hostnames
+    - nlm: minor nlm_lookup_file argument change
+    - nlm: minor refactoring
+    - lockd: update nlm_lookup_file reexport comment
+    - Keep read and write fds with each nlm_file
+    - nfs: don't atempt blocking locks on nfs reexports
+    - lockd: don't attempt blocking locks on nfs reexports
+    - nfs: don't allow reexport reclaims
+    - SUNRPC: Add svc_rqst::rq_auth_stat
+    - SUNRPC: Set rq_auth_stat in the pg_authenticate() callout
+    - SUNRPC: Eliminate the RQ_AUTHERR flag
+    - NFS: Add a private local dispatcher for NFSv4 callback operations
+    - NFS: Remove unused callback void decoder
+    - fsnotify: fix sb_connectors leak
+    - NLM: Fix svcxdr_encode_owner()
+    - nfsd: Fix a warning for nfsd_file_close_inode
+    - fsnotify: pass data_type to fsnotify_name()
+    - fsnotify: pass dentry instead of inode data
+    - fsnotify: clarify contract for create event hooks
+    - fsnotify: Don't insert unmergeable events in hashtable
+    - fanotify: Fold event size calculation to its own function
+    - fanotify: Split fsid check from other fid mode checks
+    - inotify: Don't force FS_IN_IGNORED
+    - fsnotify: Add helper to detect overflow_event
+    - fsnotify: Add wrapper around fsnotify_add_event
+    - fsnotify: Retrieve super block from the data field
+    - fsnotify: Protect fsnotify_handle_inode_event from no-inode events
+    - fsnotify: Pass group argument to free_event
+    - fanotify: Support null inode event in fanotify_dfid_inode
+    - fanotify: Allow file handle encoding for unhashed events
+    - fanotify: Encode empty file handle when no inode is provided
+    - fanotify: Require fid_mode for any non-fd event
+    - fsnotify: Support FS_ERROR event type
+    - fanotify: Reserve UAPI bits for FAN_FS_ERROR
+    - fanotify: Pre-allocate pool of error events
+    - fanotify: Support enqueueing of error events
+    - fanotify: Support merging of error events
+    - fanotify: Wrap object_fh inline space in a creator macro
+    - fanotify: Add helpers to decide whether to report FID/DFID
+    - fanotify: WARN_ON against too large file handles
+    - fanotify: Report fid info for file related file system errors
+    - fanotify: Emit generic error info for error event
+    - fanotify: Allow users to request FAN_FS_ERROR events
+    - SUNRPC: Trace calls to .rpc_call_done
+    - NFSD: Optimize DRC bucket pruning
+    - NFSD: move filehandle format declarations out of "uapi".
+    - NFSD: drop support for ancient filehandles
+    - NFSD: simplify struct nfsfh
+    - NFSD: Initialize pointer ni with NULL and not plain integer 0
+    - NFSD: Have legacy NFSD WRITE decoders use xdr_stream_subsegment()
+    - SUNRPC: Replace the "__be32 *p" parameter to .pc_decode
+    - SUNRPC: Change return value type of .pc_decode
+    - NFSD: Save location of NFSv4 COMPOUND status
+    - SUNRPC: Replace the "__be32 *p" parameter to .pc_encode
+    - SUNRPC: Change return value type of .pc_encode
+    - nfsd: update create verifier comment
+    - NFSD:fix boolreturn.cocci warning
+    - nfsd4: remove obselete comment
+    - NFSD: Fix exposure in nfsd4_decode_bitmap()
+    - NFSD: Fix READDIR buffer overflow
+    - fsnotify: clarify object type argument
+    - fsnotify: separate mark iterator type from object type enum
+    - fanotify: introduce group flag FAN_REPORT_TARGET_FID
+    - fsnotify: generate FS_RENAME event with rich information
+    - fanotify: use macros to get the offset to fanotify_info buffer
+    - fanotify: use helpers to parcel fanotify_info buffer
+    - fanotify: support secondary dir fh and name in fanotify_info
+    - fanotify: record old and new parent and name in FAN_RENAME event
+    - fanotify: record either old name new name or both for FAN_RENAME
+    - fanotify: report old and/or new parent+name in FAN_RENAME event
+    - fanotify: wire up FAN_RENAME event
+    - exit: Implement kthread_exit
+    - exit: Rename module_put_and_exit to module_put_and_kthread_exit
+    - NFSD: Fix sparse warning
+    - NFSD: handle errors better in write_ports_addfd()
+    - SUNRPC: change svc_get() to return the svc.
+    - SUNRPC/NFSD: clean up get/put functions.
+    - SUNRPC: stop using ->sv_nrthreads as a refcount
+    - nfsd: make nfsd_stats.th_cnt atomic_t
+    - SUNRPC: use sv_lock to protect updates to sv_nrthreads.
+    - NFSD: narrow nfsd_mutex protection in nfsd thread
+    - NFSD: Make it possible to use svc_set_num_threads_sync
+    - SUNRPC: discard svo_setup and rename svc_set_num_threads_sync()
+    - NFSD: simplify locking for network notifier.
+    - lockd: introduce nlmsvc_serv
+    - lockd: simplify management of network status notifiers
+    - lockd: move lockd_start_svc() call into lockd_create_svc()
+    - lockd: move svc_exit_thread() into the thread
+    - lockd: introduce lockd_put()
+    - lockd: rename lockd_create_svc() to lockd_get()
+    - SUNRPC: move the pool_map definitions (back) into svc.c
+    - SUNRPC: always treat sv_nrpools==1 as "not pooled"
+    - lockd: use svc_set_num_threads() for thread start and stop
+    - NFS: switch the callback service back to non-pooled.
+    - NFSD: Remove be32_to_cpu() from DRC hash function
+    - NFSD: Fix inconsistent indenting
+    - NFSD: simplify per-net file cache management
+    - NFSD: Combine XDR error tracepoints
+    - nfsd: improve stateid access bitmask documentation
+    - NFSD: De-duplicate nfsd4_decode_bitmap4()
+    - nfs: block notification on fs with its own ->lock
+    - nfsd4: add refcount for nfsd4_blocked_lock
+    - NFSD: Fix zero-length NFSv3 WRITEs
+    - nfsd: map EBADF
+    - nfsd: Add errno mapping for EREMOTEIO
+    - nfsd: Retry once in nfsd_open on an -EOPENSTALE return
+    - NFSD: Clean up nfsd_vfs_write()
+    - NFSD: De-duplicate net_generic(SVC_NET(rqstp), nfsd_net_id)
+    - NFSD: De-duplicate net_generic(nf->nf_net, nfsd_net_id)
+    - nfsd: Add a tracepoint for errors in nfsd4_clone_file_range()
+    - NFSD: Write verifier might go backwards
+    - NFSD: Clean up the nfsd_net::nfssvc_boot field
+    - NFSD: Rename boot verifier functions
+    - NFSD: Trace boot verifier resets
+    - Revert "nfsd: skip some unnecessary stats in the v4 case"
+    - NFSD: Move fill_pre_wcc() and fill_post_wcc()
+    - nfsd: fix crash on COPY_NOTIFY with special stateid
+    - fanotify: remove variable set but not used
+    - lockd: fix server crash on reboot of client holding lock
+    - lockd: fix failure to cleanup client locks
+    - NFSD: Fix the behavior of READ near OFFSET_MAX
+    - NFSD: Fix ia_size underflow
+    - NFSD: Fix NFSv3 SETATTR/CREATE's handling of large file sizes
+    - NFSD: COMMIT operations must not return NFS?ERR_INVAL
+    - NFSD: Deprecate NFS_OFFSET_MAX
+    - nfsd: Add support for the birth time attribute
+    - NFSD: De-duplicate hash bucket indexing
+    - NFSD: Skip extra computation for RC_NOCACHE case
+    - NFSD: Streamline the rare "found" case
+    - SUNRPC: Remove the .svo_enqueue_xprt method
+    - SUNRPC: Merge svc_do_enqueue_xprt() into svc_enqueue_xprt()
+    - SUNRPC: Remove svo_shutdown method
+    - SUNRPC: Rename svc_create_xprt()
+    - SUNRPC: Rename svc_close_xprt()
+    - SUNRPC: Remove svc_shutdown_net()
+    - NFSD: Remove svc_serv_ops::svo_module
+    - NFSD: Move svc_serv_ops::svo_function into struct svc_serv
+    - NFSD: Remove CONFIG_NFSD_V3
+    - NFSD: Clean up _lm_ operation names
+    - nfsd: fix using the correct variable for sizeof()
+    - fsnotify: fix merge with parent's ignored mask
+    - fsnotify: optimize FS_MODIFY events with no ignored masks
+    - fsnotify: remove redundant parameter judgment
+    - SUNRPC: Return true/false (not 1/0) from bool functions
+    - nfsd: Fix a write performance regression
+    - nfsd: Clean up nfsd_file_put()
+    - fanotify: do not allow setting dirent events in mask of non-dir
+    - fs/lock: documentation cleanup. Replace inode->i_lock with flc_lock.
+    - inotify: move control flags from mask to mark flags
+    - fsnotify: pass flags argument to fsnotify_alloc_group()
+    - fsnotify: make allow_dups a property of the group
+    - fsnotify: create helpers for group mark_mutex lock
+    - inotify: use fsnotify group lock helpers
+    - nfsd: use fsnotify group lock helpers
+    - dnotify: use fsnotify group lock helpers
+    - fsnotify: allow adding an inode mark without pinning inode
+    - fanotify: create helper fanotify_mark_user_flags()
+    - fanotify: factor out helper fanotify_mark_update_flags()
+    - fanotify: implement "evictable" inode marks
+    - fanotify: use fsnotify group lock helpers
+    - fanotify: enable "evictable" inode marks
+    - fsnotify: introduce mark type iterator
+    - fsnotify: consistent behavior for parent not watching children
+    - fanotify: fix incorrect fmode_t casts
+    - NFSD: Clean up nfsd_splice_actor()
+    - NFSD: add courteous server support for thread with only delegation
+    - NFSD: add support for share reservation conflict to courteous server
+    - NFSD: move create/destroy of laundry_wq to init_nfsd and exit_nfsd
+    - fs/lock: add helper locks_owner_has_blockers to check for blockers
+    - fs/lock: add 2 callbacks to lock_manager_operations to resolve conflict
+    - NFSD: add support for lock conflict to courteous server
+    - NFSD: Show state of courtesy client in client info
+    - NFSD: Clean up nfsd3_proc_create()
+    - NFSD: Avoid calling fh_drop_write() twice in do_nfsd_create()
+    - NFSD: Refactor nfsd_create_setattr()
+    - NFSD: Refactor NFSv3 CREATE
+    - NFSD: Refactor NFSv4 OPEN(CREATE)
+    - NFSD: Remove do_nfsd_create()
+    - NFSD: Clean up nfsd_open_verified()
+    - NFSD: Instantiate a struct file when creating a regular NFSv4 file
+    - NFSD: Remove dprintk call sites from tail of nfsd4_open()
+    - NFSD: Fix whitespace
+    - NFSD: Move documenting comment for nfsd4_process_open2()
+    - NFSD: Trace filecache opens
+    - NFSD: Clean up the show_nf_flags() macro
+    - SUNRPC: Use RMW bitops in single-threaded hot paths
+    - nfsd: Unregister the cld notifier when laundry_wq create failed
+    - nfsd: Fix null-ptr-deref in nfsd_fill_super()
+    - nfsd: destroy percpu stats counters after reply cache shutdown
+    - NFSD: Modernize nfsd4_release_lockowner()
+    - NFSD: Add documenting comment for nfsd4_release_lockowner()
+    - NFSD: nfsd_file_put() can sleep
+    - NFSD: Fix potential use-after-free in nfsd_file_put()
+    - SUNRPC: Optimize xdr_reserve_space()
+    - fanotify: refine the validation checks on non-dir inode mask
+    - NFS: restore module put when manager exits.
+    - NFSD: Decode NFSv4 birth time attribute
+    - lockd: set fl_owner when unlocking files
+    - lockd: fix nlm_close_files
+    - fs: inotify: Fix typo in inotify comment
+    - fanotify: prepare for setting event flags in ignore mask
+    - fanotify: cleanups for fanotify_mark() input validations
+    - fanotify: introduce FAN_MARK_IGNORE
+    - fsnotify: Fix comment typo
+    - nfsd: eliminate the NFSD_FILE_BREAK_* flags
+    - SUNRPC: Fix xdr_encode_bool()
+    - NLM: Defend against file_lock changes after vfs_test_lock()
+    - NFSD: Fix space and spelling mistake
+    - nfsd: remove redundant assignment to variable len
+    - NFSD: Demote a WARN to a pr_warn()
+    - NFSD: Report filecache LRU size
+    - NFSD: Report count of calls to nfsd_file_acquire()
+    - NFSD: Report count of freed filecache items
+    - NFSD: Report average age of filecache items
+    - NFSD: Add nfsd_file_lru_dispose_list() helper
+    - NFSD: Refactor nfsd_file_gc()
+    - NFSD: Refactor nfsd_file_lru_scan()
+    - NFSD: Report the number of items evicted by the LRU walk
+    - NFSD: Record number of flush calls
+    - NFSD: Zero counters when the filecache is re-initialized
+    - NFSD: Hook up the filecache stat file
+    - NFSD: WARN when freeing an item still linked via nf_lru
+    - NFSD: Trace filecache LRU activity
+    - NFSD: Leave open files out of the filecache LRU
+    - NFSD: Fix the filecache LRU shrinker
+    - NFSD: Never call nfsd_file_gc() in foreground paths
+    - NFSD: No longer record nf_hashval in the trace log
+    - NFSD: Remove lockdep assertion from unhash_and_release_locked()
+    - NFSD: nfsd_file_unhash can compute hashval from nf->nf_inode
+    - NFSD: Refactor __nfsd_file_close_inode()
+    - NFSD: nfsd_file_hash_remove can compute hashval
+    - NFSD: Remove nfsd_file::nf_hashval
+    - NFSD: Replace the "init once" mechanism
+    - NFSD: Set up an rhashtable for the filecache
+    - NFSD: Convert the filecache to use rhashtable
+    - NFSD: Clean up unused code after rhashtable conversion
+    - NFSD: Separate tracepoints for acquire and create
+    - NFSD: Move nfsd_file_trace_alloc() tracepoint
+    - NFSD: NFSv4 CLOSE should release an nfsd_file immediately
+    - NFSD: Ensure nf_inode is never dereferenced
+    - NFSD: refactoring v4 specific code to a helper in nfs4state.c
+    - NFSD: keep track of the number of v4 clients in the system
+    - NFSD: limit the number of v4 clients to 1024 per 1GB of system memory
+    - nfsd: silence extraneous printk on nfsd.ko insertion
+    - NFSD: Optimize nfsd4_encode_operation()
+    - NFSD: Optimize nfsd4_encode_fattr()
+    - NFSD: Clean up SPLICE_OK in nfsd4_encode_read()
+    - NFSD: Add an nfsd4_read::rd_eof field
+    - NFSD: Optimize nfsd4_encode_readv()
+    - NFSD: Simplify starting_len
+    - NFSD: Use xdr_pad_size()
+    - NFSD: Clean up nfsd4_encode_readlink()
+    - NFSD: Fix strncpy() fortify warning
+    - NFSD: nfserrno(-ENOMEM) is nfserr_jukebox
+    - NFSD: Shrink size of struct nfsd4_copy_notify
+    - NFSD: Shrink size of struct nfsd4_copy
+    - NFSD: Reorder the fields in struct nfsd4_op
+    - NFSD: Make nfs4_put_copy() static
+    - NFSD: Replace boolean fields in struct nfsd4_copy
+    - NFSD: Refactor nfsd4_cleanup_inter_ssc() (1/2)
+    - NFSD: Refactor nfsd4_cleanup_inter_ssc() (2/2)
+    - NFSD: Refactor nfsd4_do_copy()
+    - NFSD: Remove kmalloc from nfsd4_do_async_copy()
+    - NFSD: Add nfsd4_send_cb_offload()
+    - NFSD: Move copy offload callback arguments into a separate structure
+    - NFSD: drop fh argument from alloc_init_deleg
+    - NFSD: verify the opened dentry after setting a delegation
+    - NFSD: introduce struct nfsd_attrs
+    - NFSD: set attributes when creating symlinks
+    - NFSD: add security label to struct nfsd_attrs
+    - NFSD: add posix ACLs to struct nfsd_attrs
+    - NFSD: change nfsd_create()/nfsd_symlink() to unlock directory before
+      returning.
+    - NFSD: always drop directory lock in nfsd_unlink()
+    - NFSD: only call fh_unlock() once in nfsd_link()
+    - NFSD: reduce locking in nfsd_lookup()
+    - NFSD: use explicit lock/unlock for directory ops
+    - NFSD: use (un)lock_inode instead of fh_(un)lock for file operations
+    - NFSD: discard fh_locked flag and fh_lock/fh_unlock
+    - lockd: detect and reject lock arguments that overflow
+    - NFSD: fix regression with setting ACLs.
+    - nfsd_splice_actor(): handle compound pages
+    - NFSD: move from strlcpy with unused retval to strscpy
+    - lockd: move from strlcpy with unused retval to strscpy
+    - NFSD enforce filehandle check for source file in COPY
+    - NFSD: remove redundant variable status
+    - nfsd: Avoid some useless tests
+    - nfsd: Propagate some error code returned by memdup_user()
+    - NFSD: Increase NFSD_MAX_OPS_PER_COMPOUND
+    - NFSD: Protect against send buffer overflow in NFSv2 READDIR
+      (CVE-2022-43945)
+    - NFSD: Protect against send buffer overflow in NFSv3 READDIR
+      (CVE-2022-43945)
+    - NFSD: Protect against send buffer overflow in NFSv2 READ (CVE-2022-43945)
+    - NFSD: Protect against send buffer overflow in NFSv3 READ (CVE-2022-43945)
+    - NFSD: drop fname and flen args from nfsd_create_locked()
+    - NFSD: Fix handling of oversized NFSv4 COMPOUND requests
+    - nfsd: clean up mounted_on_fileid handling
+    - nfsd: remove nfsd4_prepare_cb_recall() declaration
+    - NFSD: Add tracepoints to report NFSv4 callback completions
+    - NFSD: Add a mechanism to wait for a DELEGRETURN
+    - NFSD: Refactor nfsd_setattr()
+    - NFSD: Make nfsd4_setattr() wait before returning NFS4ERR_DELAY
+    - NFSD: Make nfsd4_rename() wait before returning NFS4ERR_DELAY
+    - NFSD: Make nfsd4_remove() wait before returning NFS4ERR_DELAY
+    - NFSD: keep track of the number of courtesy clients in the system
+    - NFSD: add shrinker to reap courtesy clients on low memory condition
+    - SUNRPC: Parametrize how much of argsize should be zeroed
+    - NFSD: Reduce amount of struct nfsd4_compoundargs that needs clearing
+    - NFSD: Refactor common code out of dirlist helpers
+    - NFSD: Use xdr_inline_decode() to decode NFSv3 symlinks
+    - NFSD: Clean up WRITE arg decoders
+    - NFSD: Clean up nfs4svc_encode_compoundres()
+    - NFSD: Remove "inline" directives on op_rsize_bop helpers
+    - NFSD: Remove unused nfsd4_compoundargs::cachetype field
+    - NFSD: Pack struct nfsd4_compoundres
+    - nfsd: use DEFINE_PROC_SHOW_ATTRIBUTE to define nfsd_proc_ops
+    - nfsd: use DEFINE_SHOW_ATTRIBUTE to define export_features_fops and
+      supported_enctypes_fops
+    - nfsd: use DEFINE_SHOW_ATTRIBUTE to define client_info_fops
+    - nfsd: use DEFINE_SHOW_ATTRIBUTE to define nfsd_reply_cache_stats_fops
+    - nfsd: use DEFINE_SHOW_ATTRIBUTE to define nfsd_file_cache_stats_fops
+    - NFSD: Rename the fields in copy_stateid_t
+    - NFSD: Cap rsize_bop result based on send buffer size
+    - nfsd: only fill out return pointer on success in nfsd4_lookup_stateid
+    - nfsd: fix comments about spinlock handling with delegations
+    - nfsd: make nfsd4_run_cb a bool return function
+    - nfsd: extra checks when freeing delegation stateids
+    - fs/notify: constify path
+    - fsnotify: remove unused declaration
+    - fanotify: Remove obsoleted fanotify_event_has_path()
+    - nfsd: fix nfsd_file_unhash_and_dispose
+    - nfsd: rework hashtable handling in nfsd_do_file_acquire
+    - NFSD: unregister shrinker when nfsd_init_net() fails
+    - nfsd: fix net-namespace logic in __nfsd_file_cache_purge
+    - nfsd: fix use-after-free in nfsd_file_do_acquire tracepoint
+    - nfsd: put the export reference in nfsd4_verify_deleg_dentry
+    - NFSD: Fix reads with a non-zero offset that don't end on a page boundary
+    - filelock: add a new locks_inode_context accessor function
+    - lockd: use locks_inode_context helper
+    - nfsd: use locks_inode_context helper
+    - NFSD: Simplify READ_PLUS
+    - NFSD: Remove redundant assignment to variable host_err
+    - NFSD: Finish converting the NFSv2 GETACL result encoder
+    - NFSD: Finish converting the NFSv3 GETACL result encoder
+    - nfsd: ignore requests to disable unsupported versions
+    - nfsd: move nfserrno() to vfs.c
+    - nfsd: allow disabling NFSv2 at compile time
+    - exportfs: use pr_debug for unreachable debug statements
+    - NFSD: Pass the target nfsd_file to nfsd_commit()
+    - NFSD: Revert "NFSD: NFSv4 CLOSE should release an nfsd_file immediately"
+    - NFSD: Add an NFSD_FILE_GC flag to enable nfsd_file garbage collection
+    - NFSD: Flesh out a documenting comment for filecache.c
+    - NFSD: Clean up nfs4_preprocess_stateid_op() call sites
+    - NFSD: Trace stateids returned via DELEGRETURN
+    - NFSD: Trace delegation revocations
+    - NFSD: Use const pointers as parameters to fh_ helpers
+    - NFSD: Update file_hashtbl() helpers
+    - NFSD: Clean up nfsd4_init_file()
+    - NFSD: Add a nfsd4_file_hash_remove() helper
+    - NFSD: Clean up find_or_add_file()
+    - NFSD: Refactor find_file()
+    - NFSD: Use rhashtable for managing nfs4_file objects
+    - NFSD: Fix licensing header in filecache.c
+    - nfsd: remove the pages_flushed statistic from filecache
+    - nfsd: reorganize filecache.c
+    - nfsd: fix up the filecache laundrette scheduling
+    - NFSD: Add an nfsd_file_fsync tracepoint
+    - lockd: set other missing fields when unlocking files
+    - nfsd: return error if nfs4_setacl fails
+    - NFSD: Use struct_size() helper in alloc_session()
+    - lockd: set missing fl_flags field when retrieving args
+    - lockd: ensure we use the correct file descriptor when unlocking
+    - lockd: fix file selection in nlmsvc_cancel_blocked
+    - NFSD: pass range end to vfs_fsync_range() instead of count
+    - NFSD: refactoring courtesy_client_reaper to a generic low memory shrinker
+    - NFSD: add support for sending CB_RECALL_ANY
+    - NFSD: add delegation reaper to react to low memory condition
+    - NFSD: Use only RQ_DROPME to signal the need to drop a reply
+    - NFSD: Avoid clashing function prototypes
+    - nfsd: rework refcounting in filecache
+    - nfsd: fix handling of cached open files in nfsd4_open codepath
+    - Revert "SUNRPC: Use RMW bitops in single-threaded hot paths"
+    - NFSD: Use set_bit(RQ_DROPME)
+    - NFSD: fix use-after-free in nfsd4_ssc_setup_dul()
+    - NFSD: register/unregister of nfsd-client shrinker at nfsd startup/shutdown
+      time
+    - NFSD: replace delayed_work with work_struct for nfsd_client_shrinker
+    - nfsd: don't free files unconditionally in __nfsd_file_cache_purge
+    - nfsd: don't destroy global nfs4_file table in per-net shutdown
+    - NFSD: enhance inter-server copy cleanup
+    - nfsd: allow nfsd_file_get to sanely handle a NULL pointer
+    - nfsd: clean up potential nfsd_file refcount leaks in COPY codepath
+    - NFSD: fix leaked reference count of nfsd4_ssc_umount_item
+    - nfsd: don't hand out delegation on setuid files being opened for write
+    - NFSD: fix problems with cleanup on errors in nfsd4_copy
+    - nfsd: fix courtesy client with deny mode handling in nfs4_upgrade_open
+    - nfsd: don't fsync nfsd_files on last close
+    - NFSD: copy the whole verifier in nfsd_copy_write_verifier
+    - NFSD: Protect against filesystem freezing
+    - lockd: set file_lock start and end when decoding nlm4 testargs
+    - nfsd: don't replace page in rq_pages if it's a continuation of last page
+    - NFSD: Avoid calling OPDESC() with ops->opnum == OP_ILLEGAL
+    - nfsd: call op_release, even when op_func returns an error
+    - nfsd: don't open-code clear_and_wake_up_bit
+    - nfsd: NFSD_FILE_KEY_INODE only needs to find GC'ed entries
+    - nfsd: simplify test_bit return in NFSD_FILE_KEY_FULL comparator
+    - nfsd: don't kill nfsd_files because of lease break error
+    - nfsd: add some comments to nfsd_file_do_acquire
+    - nfsd: don't take/put an extra reference when putting a file
+    - nfsd: update comment over __nfsd_file_cache_purge
+    - nfsd: allow reaping files still under writeback
+    - NFSD: Convert filecache to rhltable
+    - nfsd: simplify the delayed disposal list code
+    - NFSD: Fix problem of COMMIT and NFS4ERR_DELAY in infinite loop
+    - nfsd: make a copy of struct iattr before calling notify_change
+    - nfsd: fix double fget() bug in __write_ports_addfd()
+    - lockd: drop inappropriate svc_get() from locked_get()
+    - NFSD: Add an nfsd4_encode_nfstime4() helper
+    - nfsd: Fix creation time serialization order
+    - nfsd: don't allow nfsd threads to be signalled.
+    - nfsd: Simplify code around svc_exit_thread() call in nfsd()
+    - nfsd: separate nfsd_last_thread() from nfsd_put()
+    - Documentation: Add missing documentation for EXPORT_OP flags
+    - NFSD: fix possible oops when nfsd/pool_stats is closed.
+    - nfsd: call nfsd_last_thread() before final nfsd_put()
+    - nfsd: drop the nfsd_put helper
+    - nfsd: fix RELEASE_LOCKOWNER (CVE-2024-26629)
+    - nfsd: don't take fi_lock in nfsd_break_deleg_cb()
+    - nfsd: don't call locks_release_private() twice concurrently
+    - nfsd: Fix a regression in nfsd_setattr()
+    https://www.kernel.org/pub/linux/kernel/v5.x/ChangeLog-5.10.221
+    - null_blk: Print correct max open zones limit in null_init_zoned_dev()
+    - wifi: mac80211: mesh: Fix leak of mesh_preq_queue objects
+    - wifi: mac80211: Fix deadlock in ieee80211_sta_ps_deliver_wakeup()
+    - wifi: cfg80211: pmsr: use correct nla_get_uX functions
+    - wifi: iwlwifi: mvm: revert gen2 TX A-MPDU size to 64
+    - wifi: iwlwifi: dbg_ini: move iwl_dbg_tlv_free outside of debugfs ifdef
+    - wifi: iwlwifi: mvm: check n_ssids before accessing the ssids
+    - wifi: iwlwifi: mvm: don't read past the mfuart notifcation
+    - wifi: mac80211: correctly parse Spatial Reuse Parameter Set element
+    - [armhf] net/ncsi: add NCSI Intel OEM command to keep PHY up
+    - [armhf] net/ncsi: Simplify Kconfig/dts control flow
+    - [armhf] net/ncsi: Fix the multi thread manner of NCSI driver
+    - ipv6: sr: block BH in seg6_output_core() and seg6_input_core()
+    - net: sched: sch_multiq: fix possible OOB write in multiq_tune()
+      (CVE-2024-36978)
+    - vxlan: Fix regression when dropping packets due to invalid src addresses
+    - tcp: count CLOSE-WAIT sockets for TCP_MIB_CURRESTAB
+    - net/sched: taprio: always validate TCA_TAPRIO_ATTR_PRIOMAP
+      (CVE-2024-36974)
+    - ptp: Fix error message on failed pin verification
+    - af_unix: Annotate data-race of sk->sk_state in unix_inq_len().
+    - af_unix: Annotate data-races around sk->sk_state in unix_write_space() and
+      poll().
+    - af_unix: Annotate data-races around sk->sk_state in sendmsg() and
+      recvmsg().
+    - af_unix: Annotate data-races around sk->sk_state in UNIX_DIAG.
+    - af_unix: Annotate data-race of net->unx.sysctl_max_dgram_qlen.
+    - af_unix: Use unix_recvq_full_lockless() in unix_stream_connect().
+    - af_unix: Use skb_queue_len_lockless() in sk_diag_show_rqlen().
+    - af_unix: Annotate data-race of sk->sk_shutdown in sk_diag_fill().
+    - ipv6: fix possible race in __fib6_drop_pcpu_from()
+    - usb: gadget: f_fs: Fix race between aio_cancel() and AIO request complete
+    - drm/amd/display: Handle Y carry-over in VCP X.Y calculation
+    - serial: sc16is7xx: replace hardcoded divisor value with BIT() macro
+    - serial: sc16is7xx: fix bug in sc16is7xx_set_baud() when using prescaler
+    - btrfs: fix leak of qgroup extent records after transaction abort
+    - nilfs2: Remove check for PageError
+    - nilfs2: return the mapped address from nilfs_get_page()
+    - nilfs2: fix nilfs_empty_dir() misjudgment and long loop on I/O errors
+    - USB: class: cdc-wdm: Fix CPU lockup caused by excessive log messages
+    - mei: me: release irq in mei_me_pci_resume error path
+    - jfs: xattr: fix buffer overflow for invalid xattr
+    - xhci: Set correct transferred length for cancelled bulk transfers
+    - xhci: Apply reset resume quirk to Etron EJ188 xHCI host
+    - xhci: Apply broken streams quirk to Etron EJ188 xHCI host
+    - scsi: mpt3sas: Avoid test/set_bit() operating in non-allocated memory
+    - [powerpc*] uaccess: Fix build errors seen with GCC 13/14
+    - Input: try trimming too long modalias strings
+    - SUNRPC: return proper error from gss_wrap_req_priv
+    - gpio: tqmx86: fix typo in Kconfig label
+    - HID: core: remove unnecessary WARN_ON() in implement()
+    - gpio: tqmx86: store IRQ trigger type and unmask status separately
+    - [amd64] iommu/amd: Introduce pci segment structure
+    - [amd64] iommu/amd: Fix sysfs leak in iommu init
+    - iommu: Return right value in iommu_sva_bind_device()
+    - HID: logitech-dj: Fix memory leak in logi_dj_recv_switch_to_dj_mode()
+    - drm/vmwgfx: 3D disabled should not effect STDU memory limits
+    - net: sfp: Always call `sfp_sm_mod_remove()` on remove
+    - [arm64] net: hns3: add cond_resched() to hns3 ring buffer init process
+    - liquidio: Adjust a NULL pointer handling path in lio_vf_rep_copy_packet
+    - drm/komeda: check for error-valued pointer
+    - drm/bridge/panel: Fix runtime warning on panel bridge release
+    - tcp: fix race in tcp_v6_syn_recv_sock()
+    - net/mlx5e: Fix features validation check for tunneled UDP (non-VXLAN)
+      packets
+    - Bluetooth: L2CAP: Fix rejecting L2CAP_CONN_PARAM_UPDATE_REQ
+    - netfilter: ipset: Fix race between namespace cleanup and gc in the
+      list:set type
+    - net: stmmac: replace priv->speed with the portTransmitRate from the tc-cbs
+      parameters
+    - net/ipv6: Fix the RT cache flush via sysctl using a previous delay
+    - ionic: fix use after netif_napi_del()
+    - iio: adc: ad9467: fix scan type sign
+    - iio: dac: ad5592r: fix temperature channel scaling value
+    - iio: imu: inv_icm42600: delete unneeded update watermark call
+    - drivers: core: synchronize really_probe() and dev_uevent()
+    - [armhf] drm/exynos/vidi: fix memory leak in .get_modes()
+    - [armhf] drm/exynos: hdmi: report safe 640x480 mode as a fallback when no
+      EDID found
+    - [x86] vmci: prevent speculation leaks by sanitizing event in
+      event_deliver()
+    - fs/proc: fix softlockup in __read_vmcore
+    - ocfs2: use coarse time for new created files
+    - ocfs2: fix races between hole punching and AIO+DIO
+    - PCI: rockchip-ep: Remove wrong mask on subsys_vendor_id
+    - dmaengine: axi-dmac: fix possible race in remove()
+    - remoteproc: k3-r5: Do not allow core1 to power up before core0 via sysfs
+    - [x86] intel_th: pci: Add Granite Rapids support
+    - [x86] intel_th: pci: Add Granite Rapids SOC support
+    - [x86] intel_th: pci: Add Sapphire Rapids SOC support
+    - [x86] intel_th: pci: Add Meteor Lake-S support
+    - [x86] intel_th: pci: Add Lunar Lake support
+    - nilfs2: fix potential kernel bug due to lack of writeback flag waiting
+      (CVE-2024-37078)
+    - tick/nohz_full: Don't abuse smp_call_function_single() in
+      tick_setup_device()
+    - serial: 8250_pxa: Configure tx_loadsz to match FIFO IRQ level
+    - hugetlb_encode.h: fix undefined behaviour (34 << 26)
+    - mptcp: ensure snd_una is properly initialized on connect
+    - mptcp: pm: inc RmAddr MIB counter once per RM_ADDR ID
+    - mptcp: pm: update add_addr counters after connect
+    - remoteproc: k3-r5: Jump to error handling labels in start/stop errors
+    - greybus: Fix use-after-free bug in gb_interface_release due to race
+      condition.
+    - usb-storage: alauda: Check whether the media is initialized
+      (CVE-2024-38619)
+    - i2c: at91: Fix the functionality flags of the slave-only interface
+    - i2c: designware: Fix the functionality flags of the slave-only interface
+    - zap_pid_ns_processes: clear TIF_NOTIFY_SIGNAL along with TIF_SIGPENDING
+    - padata: Disable BH when taking works lock on MT path
+    - rcutorture: Fix rcu_torture_one_read() pipe_count overflow comment
+    - rcutorture: Fix invalid context warning when enable srcu barrier testing
+    - block/ioctl: prefer different overflow check
+    - batman-adv: bypass empty buckets in batadv_purge_orig_ref()
+    - wifi: ath9k: work around memset overflow warning
+    - af_packet: avoid a false positive warning in packet_setsockopt()
+    - drop_monitor: replace spin_lock by raw_spin_lock
+    - scsi: qedi: Fix crash while reading debugfs attribute
+    - netpoll: Fix race condition in netpoll_owner_active
+    - HID: Add quirk for Logitech Casa touchpad
+    - ACPI: video: Add backlight=native quirk for Lenovo Slim 7 16ARH7
+    - Bluetooth: ath3k: Fix multiple issues reported by checkpatch.pl
+    - drm/amd/display: Exit idle optimizations before HDCP execution
+    - [x86] ASoC: Intel: sof_sdw: add JD2 quirk for HP Omen 14
+    - [arm64,armhf] drm/lima: add mask irq callback to gp and pp
+    - [arm64,armhf] drm/lima: mask irqs in timeout path before hard reset
+    - [powerpc*] pseries: Enforce hcall result buffer validity and size
+    - [powerpc*] io: Avoid clang null pointer arithmetic warnings
+    - power: supply: cros_usbpd: provide ID table for avoiding fallback match
+    - f2fs: remove clear SB_INLINECRYPT flag in default_options
+    - usb: misc: uss720: check for incompatible versions of the Belkin F5U002
+    - udf: udftime: prevent overflow in udf_disk_stamp_to_time()
+    - PCI/PM: Avoid D3cold for HP Pavilion 17 PC/1972 PCIe Ports
+    - [mips*] Octeon: Add PCIe link status check
+    - serial: exar: adding missing CTI and Exar PCI ids
+    - [mips*] Routerboard 532: Fix vendor retry check code
+    - [mips*] bmips: BCM6358: make sure CBR is correctly set
+    - tracing: Build event generation tests only as modules
+    - cipso: fix total option length computation
+    - netrom: Fix a memory leak in nr_heartbeat_expiry()
+    - ipv6: prevent possible NULL deref in fib6_nh_init()
+    - ipv6: prevent possible NULL dereference in rt6_probe()
+    - xfrm6: check ip6_dst_idev() return value in xfrm6_get_saddr()
+    - netns: Make get_net_ns() handle zero refcount net
+    - qca_spi: Make interrupt remembering atomic
+    - net/sched: act_api: rely on rcu in tcf_idr_check_alloc
+    - net/sched: act_api: fix possible infinite loop in tcf_idr_check_alloc()
+    - tipc: force a dst refcount before doing decryption
+    - net/sched: act_ct: set 'net' pointer when creating new nf_flow_table
+    - sched: act_ct: add netns into the key of tcf_ct_flow_table
+    - net: stmmac: No need to calculate speed divider when offload is disabled
+    - virtio_net: checksum offloading handling fix
+    - netfilter: ipset: Fix suspicious rcu_dereference_protected()
+    - net: usb: rtl8150 fix unintiatilzed variables in
+      rtl8150_get_link_ksettings
+    - regulator: core: Fix modpost error "regulator_get_regmap" undefined
+    - dmaengine: ioat: switch from 'pci_' to 'dma_' API
+    - dmaengine: ioat: Drop redundant pci_enable_pcie_error_reporting()
+    - dmaengine: ioatdma: Fix leaking on version mismatch
+    - dmaengine: ioat: use PCI core macros for PCIe Capability
+    - dmaengine: ioatdma: Fix error path in ioat3_dma_probe()
+    - dmaengine: ioatdma: Fix kmemleak in ioat_pci_probe()
+    - dmaengine: ioatdma: Fix missing kmem_cache_destroy()
+    - ACPICA: Revert "ACPICA: avoid Info: mapping multiple BARs. Your kernel is
+      fine."
+    - RDMA/mlx5: Add check for srq max_sge attribute
+    - ALSA: hda/realtek: Limit mic boost on N14AP7
+    - drm/radeon: fix UBSAN warning in kv_dpm.c
+    - gcov: add support for GCC 14
+    - kcov: don't lose track of remote references during softirqs
+    - i2c: ocores: set IACK bit after core is enabled
+    - dt-bindings: i2c: google,cros-ec-i2c-tunnel: correct path to
+      i2c-controller schema
+    - drm/amd/display: revert Exit idle optimizations before HDCP execution
+    - [armhf] dts: samsung: smdkv310: fix keypad no-autorepeat
+    - [armhf] dts: samsung: exynos4412-origen: fix keypad no-autorepeat
+    - [armhf] dts: samsung: smdk4412: fix keypad no-autorepeat
+    - rtlwifi: rtl8192de: Style clean-ups
+    - wifi: rtlwifi: rtl8192de: Fix 5 GHz TX power
+    - pmdomain: ti-sci: Fix duplicate PD referrals
+    - knfsd: LOOKUP can return an illegal error value
+    - spmi: hisi-spmi-controller: Do not override device identifier
+    - bcache: fix variable length array abuse in btree_iter (CVE-2024-39482)
+    - tracing: Add MODULE_DESCRIPTION() to preemptirq_delay_test
+    - [x86] cpu/vfm: Add new macros to work with (vendor/family/model) values
+    - [x86] cpu: Fix x86_match_cpu() to match just X86_VENDOR_INTEL
+    - r8169: remove unneeded memory barrier in rtl_tx
+    - r8169: improve rtl_tx
+    - r8169: improve rtl8169_start_xmit
+    - r8169: remove nr_frags argument from rtl_tx_slots_avail
+    - r8169: remove not needed check in rtl8169_start_xmit
+    - r8169: Fix possible ring buffer corruption on fragmented Tx packets.
+      (CVE-2024-38586)
+    - Revert "kheaders: substituting --sort in archive creation"
+    - kheaders: explicitly define file modes for archived headers
+    - perf/core: Fix missing wakeup when waiting for context reference
+    - PCI: Add PCI_ERROR_RESPONSE and related definitions
+    - [x86] amd_nb: Check for invalid SMN reads
+    - cifs: missed ref-counting smb session in find
+    - smb: client: fix deadlock in smb2_find_smb_tcon() (CVE-2024-39468)
+    - ACPI: Add quirks for AMD Renoir/Lucienne CPUs to force the D3 hint
+    - [x86] ACPI: x86: Add a quirk for Dell Inspiron 14 2-in-1 for
+      StorageD3Enable
+    - [x86] ACPI: x86: Add another system to quirk list for forcing
+      StorageD3Enable
+    - [x86] ACPI: x86: utils: Add Cezanne to the list for forcing
+      StorageD3Enable
+    - [x86] ACPI: x86: utils: Add Picasso to the list for forcing
+      StorageD3Enable
+    - [x86] ACPI: x86: Force StorageD3Enable on more products
+    - Input: ili210x - fix ili251x_read_touch_data() return value
+    - pinctrl: fix deadlock in create_pinctrl() when handling -EPROBE_DEFER
+    - [arm64,armhf] pinctrl: rockchip: fix pinmux bits for RK3328 GPIO2-B pins
+    - [arm64,armhf] pinctrl: rockchip: fix pinmux bits for RK3328 GPIO3-B pins
+    - [arm64,armhf] pinctrl/rockchip: separate struct rockchip_pin_bank to a
+      head file
+    - [arm64,armhf] pinctrl: rockchip: use dedicated pinctrl type for RK3328
+    - [arm64,armhf] pinctrl: rockchip: fix pinmux reset in rockchip_pmx_set
+    - drm/amdgpu: fix UBSAN warning in kv_dpm.c
+    - netfilter: nf_tables: validate family when identifying table via handle
+    - SUNRPC: Fix null pointer dereference in svc_rqst_free()
+    - SUNRPC: Fix a NULL pointer deref in trace_svc_stats_latency()
+    - SUNRPC: Fix svcxdr_init_decode's end-of-buffer calculation
+    - SUNRPC: Fix svcxdr_init_encode's buflen calculation
+    - nfsd: hold a lighter-weight client reference over CB_RECALL_ANY
+    - net: dsa: microchip: fix initial port flush problem
+    - net: phy: micrel: add Microchip KSZ 9477 to the device table
+    - xdp: Move the rxq_info.mem clearing to unreg_mem_model()
+    - xdp: Allow registering memory model without rxq reference
+    - xdp: Remove WARN() from __xdp_reg_mem_model()
+    - netfilter: nf_tables: fully validate NFT_DATA_VALUE on store to data
+      registers
+    - drm/panel: ilitek-ili9881c: Fix warning with GPIO controllers that sleep
+    - mtd: partitions: redboot: Added conversion of operands to a larger type
+    - bpf: Add a check for struct bpf_fib_lookup size
+    - net/iucv: Avoid explicit cpumask var allocation on stack
+    - net/dpaa2: Avoid explicit cpumask var allocation on stack
+    - ALSA: emux: improve patch ioctl data validation
+    - media: dvbdev: Initialize sbuf
+    - soc: ti: wkup_m3_ipc: Send NULL dummy message instead of pointer message
+    - drm/radeon/radeon_display: Decrease the size of allocated memory
+    - nvme: fixup comment for nvme RDMA Provider Type
+    - drm/panel: simple: Add missing display timing flags for KOE TX26D202VM0BWA
+    - gpio: davinci: Validate the obtained number of IRQs
+    - gpiolib: cdev: Disallow reconfiguration without direction (uAPI v1)
+    - [x86] stop playing stack games in profile_pc()
+    - ocfs2: fix DIO failure due to insufficient transaction credits
+    - mmc: sdhci-pci: Convert PCIBIOS_* return codes to errnos
+    - mmc: sdhci: Do not invert write-protect twice
+    - mmc: sdhci: Do not lock spinlock around mmc_gpio_get_ro()
+    - counter: ti-eqep: enable clock at probe
+    - iio: adc: ad7266: Fix variable checking bug
+    - net: usb: ax88179_178a: improve link status logs
+    - usb: gadget: printer: SS+ support
+    - usb: gadget: printer: fix races against disable (CVE-2024-25741)
+    - usb: musb: da8xx: fix a resource leak in probe()
+    - usb: atm: cxacru: fix endpoint checking in cxacru_bind()
+    - serial: 8250_omap: Implementation of Errata i2310
+    - tty: mcf: MCF54418 has 10 UARTS
+    - net: can: j1939: Initialize unused data in j1939_send_one()
+    - net: can: j1939: recover socket queue on CAN bus error during BAM
+      transmission
+    - net: can: j1939: enhanced error handling for tightly received RTS messages
+      in xtp_rx_rts_session_new
+    - kbuild: Install dtb files as 0644 in Makefile.dtbinst
+    - csky, hexagon: fix broken sys_sync_file_range
+    - drm/nouveau/dispnv04: fix null pointer dereference in nv17_tv_get_ld_modes
+    - [x86] drm/i915/gt: Fix potential UAF by revoke of fence registers
+    - drm/nouveau/dispnv04: fix null pointer dereference in nv17_tv_get_hd_modes
+    - batman-adv: Don't accept TT entries for out-of-spec VIDs
+    - ata: ahci: Clean up sysfs file on error
+    - ata: libata-core: Fix double free on error
+    - ftruncate: pass a signed offset
+    - syscalls: fix compat_sys_io_pgetevents_time64 usage
+    - mtd: spinand: macronix: Add support for serial NAND flash
+    - pwm: stm32: Refuse too small period requests
+    - nfs: Leave pages in the pagecache if readpage failed
+    - ipv6: annotate some data-races around sk->sk_prot
+    - ipv6: Fix data races around sk->sk_prot.
+    - tcp: Fix data races around icsk->icsk_af_ops.
+    - drivers: fix typo in firmware/efi/memmap.c
+    - efi: Correct comment on efi_memmap_alloc
+    - efi: memmap: Move manipulation routines into x86 arch tree
+    - efi: xen: Set EFI_PARAVIRT for Xen dom0 boot on all architectures
+    - [x86] efi/x86: Free EFI memory map only when installing a new one.
+    - [arm64] KVM: arm64: vgic-v4: Make the doorbell request robust w.r.t
+      preemption
+    - [arm64] dts: rockchip: Add sound-dai-cells for RK3368
+    - xdp: xdp_mem_allocator can be NULL in trace_mem_connect().
+    - serial: 8250_omap: Fix Errata i2310 with RX FIFO level check
+    - tracing/net_sched: NULL pointer dereference in perf_trace_qdisc_reset()
+
+  [ Salvatore Bonaccorso ]
+  * Bump ABI to 31
+  * Refresh "fanotify: Taint on use of FANOTIFY_ACCESS_PERMISSIONS"
+  * [rt] Refresh "sunrpc: Make svc_xprt_do_enqueue() use"
+  * Refresh "firmware: Remove redundant log messages from drivers"
+  * [rt] Update to 5.10.221-rt113
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sun, 14 Jul 2024 10:11:44 +0200
 
 linux (5.10.218-1) bullseye-security; urgency=high
 

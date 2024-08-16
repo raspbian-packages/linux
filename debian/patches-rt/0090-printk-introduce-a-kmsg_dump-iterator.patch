@@ -1,8 +1,8 @@
-From d148bafcbfa46ba248997c4683a222c586c21892 Mon Sep 17 00:00:00 2001
+From 6a8853eab1f60c1e89c3618be044a4ea415c3ce4 Mon Sep 17 00:00:00 2001
 From: John Ogness <john.ogness@linutronix.de>
 Date: Fri, 18 Dec 2020 11:40:08 +0000
 Subject: [PATCH 090/323] printk: introduce a kmsg_dump iterator
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Rather than store the iterator information into the registered
 kmsg_dump structure, create a separate iterator structure. The
@@ -27,7 +27,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  10 files changed, 84 insertions(+), 75 deletions(-)
 
 diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
-index 532f226377831..1ef55f4b389a2 100644
+index 532f22637783..1ef55f4b389a 100644
 --- a/arch/powerpc/kernel/nvram_64.c
 +++ b/arch/powerpc/kernel/nvram_64.c
 @@ -73,7 +73,8 @@ static const char *nvram_os_partitions[] = {
@@ -68,7 +68,7 @@ index 532f226377831..1ef55f4b389a2 100644
  		err_type = ERR_TYPE_KERNEL_PANIC;
  		oops_hdr->version = cpu_to_be16(OOPS_HDR_VERSION);
 diff --git a/arch/powerpc/platforms/powernv/opal-kmsg.c b/arch/powerpc/platforms/powernv/opal-kmsg.c
-index 6c3bc4b4da983..ec862846bc82c 100644
+index 6c3bc4b4da98..ec862846bc82 100644
 --- a/arch/powerpc/platforms/powernv/opal-kmsg.c
 +++ b/arch/powerpc/platforms/powernv/opal-kmsg.c
 @@ -20,7 +20,8 @@
@@ -82,7 +82,7 @@ index 6c3bc4b4da983..ec862846bc82c 100644
  	/*
  	 * Outside of a panic context the pollers will continue to run,
 diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
-index 3de2adc0a8074..9f62cca6c5948 100644
+index 3de2adc0a807..9f62cca6c594 100644
 --- a/arch/powerpc/xmon/xmon.c
 +++ b/arch/powerpc/xmon/xmon.c
 @@ -3003,7 +3003,7 @@ print_address(unsigned long addr)
@@ -107,7 +107,7 @@ index 3de2adc0a8074..9f62cca6c5948 100644
  		printf("%s", buf);
  	}
 diff --git a/arch/um/kernel/kmsg_dump.c b/arch/um/kernel/kmsg_dump.c
-index e4abac6c9727c..f38349ad00ead 100644
+index e4abac6c9727..f38349ad00ea 100644
 --- a/arch/um/kernel/kmsg_dump.c
 +++ b/arch/um/kernel/kmsg_dump.c
 @@ -6,7 +6,8 @@
@@ -130,7 +130,7 @@ index e4abac6c9727c..f38349ad00ead 100644
  		printf("%s", line);
  	}
 diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index e99400f3ae1d1..db39c96bbf430 100644
+index e99400f3ae1d..db39c96bbf43 100644
 --- a/drivers/hv/vmbus_drv.c
 +++ b/drivers/hv/vmbus_drv.c
 @@ -1359,7 +1359,8 @@ static void vmbus_isr(void)
@@ -153,7 +153,7 @@ index e99400f3ae1d1..db39c96bbf430 100644
  	if (bytes_written)
  		hyperv_report_panic_msg(panic_pa, bytes_written);
 diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c
-index 774970bfcf859..6bc2c728adb73 100644
+index 774970bfcf85..6bc2c728adb7 100644
 --- a/drivers/mtd/mtdoops.c
 +++ b/drivers/mtd/mtdoops.c
 @@ -267,7 +267,8 @@ static void find_next_position(struct mtdoops_context *cxt)
@@ -176,7 +176,7 @@ index 774970bfcf859..6bc2c728adb73 100644
  
  	if (reason != KMSG_DUMP_OOPS) {
 diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index d59f13b1fb96b..64f3f85d2a5d4 100644
+index d59f13b1fb96..64f3f85d2a5d 100644
 --- a/fs/pstore/platform.c
 +++ b/fs/pstore/platform.c
 @@ -384,7 +384,8 @@ void pstore_record_init(struct pstore_record *record,
@@ -199,7 +199,7 @@ index d59f13b1fb96b..64f3f85d2a5d4 100644
  			break;
  
 diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
-index 4095a34db0fa3..2fdb10ab17994 100644
+index 4095a34db0fa..2fdb10ab1799 100644
 --- a/include/linux/kmsg_dump.h
 +++ b/include/linux/kmsg_dump.h
 @@ -29,6 +29,18 @@ enum kmsg_dump_reason {
@@ -303,7 +303,7 @@ index 4095a34db0fa3..2fdb10ab17994 100644
  }
  
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index c27b3dfa19210..aa424a1d65d01 100644
+index c27b3dfa1921..aa424a1d65d0 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
 @@ -2155,7 +2155,7 @@ static int kdb_dmesg(int argc, const char **argv)
@@ -338,7 +338,7 @@ index c27b3dfa19210..aa424a1d65d01 100644
  			skip--;
  			continue;
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index fb33db0b143b9..cc5f7e0fb1573 100644
+index fb33db0b143b..cc5f7e0fb157 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -3423,6 +3423,7 @@ EXPORT_SYMBOL_GPL(kmsg_dump_reason_str);
@@ -557,5 +557,5 @@ index fb33db0b143b9..cc5f7e0fb1573 100644
  }
  EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
 -- 
-2.44.0
+2.45.2
 

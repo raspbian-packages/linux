@@ -1,9 +1,9 @@
-From abac8a6ec90894bf97f3d395bc2329c03c6b9f75 Mon Sep 17 00:00:00 2001
+From f818657063f19e9c87622d5761b3e8844163fbde Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Fri, 29 Oct 2021 10:07:11 +0200
 Subject: [PATCH 302/323] mm: Disable NUMA_BALANCING_DEFAULT_ENABLED and
  TRANSPARENT_HUGEPAGE on PREEMPT_RT
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 TRANSPARENT_HUGEPAGE:
 There are potential non-deterministic delays to an RT thread if a critical
@@ -34,7 +34,7 @@ Signed-off-by: Steven Rostedt (VMware) <rostedt@goodmis.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/init/Kconfig b/init/Kconfig
-index c5f276d782def..a62d2961064b2 100644
+index c5f276d782de..a62d2961064b 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -878,7 +878,7 @@ config NUMA_BALANCING
@@ -47,5 +47,5 @@ index c5f276d782def..a62d2961064b2 100644
  	  This option adds support for automatic NUMA aware memory/task placement.
  	  The mechanism is quite primitive and is based on migrating memory when
 -- 
-2.44.0
+2.45.2
 

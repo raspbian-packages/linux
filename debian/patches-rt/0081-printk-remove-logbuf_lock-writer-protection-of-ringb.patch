@@ -1,9 +1,9 @@
-From 44d0ef377836a4bcab77b9ac890447665f723c7d Mon Sep 17 00:00:00 2001
+From 08cd7cd456a5ab558367388b087ccbc2b99ca59c Mon Sep 17 00:00:00 2001
 From: John Ogness <john.ogness@linutronix.de>
 Date: Wed, 9 Dec 2020 01:50:53 +0106
 Subject: [PATCH 081/323] printk: remove logbuf_lock writer-protection of
  ringbuffer
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Since the ringbuffer is lockless, there is no need for it to be
 protected by @logbuf_lock. Remove @logbuf_lock writer-protection of
@@ -34,7 +34,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 98 insertions(+), 40 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 5af0b0e0259c4..14b4c3ea1a6b6 100644
+index 5af0b0e0259c..14b4c3ea1a6b 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -1129,7 +1129,7 @@ void __init setup_log_buf(int early)
@@ -247,5 +247,5 @@ index 5af0b0e0259c4..14b4c3ea1a6b6 100644
  	/* If called from the scheduler, we can not call up(). */
  	if (!in_sched) {
 -- 
-2.44.0
+2.45.2
 

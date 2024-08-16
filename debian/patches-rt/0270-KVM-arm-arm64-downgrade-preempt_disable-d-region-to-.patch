@@ -1,9 +1,9 @@
-From dcfc08f2fd2de1d5511f3d81b854f34fc8f95319 Mon Sep 17 00:00:00 2001
+From 8d8d0a3f3487daec7c58423f06da9c2d27d4a00b Mon Sep 17 00:00:00 2001
 From: Josh Cartwright <joshc@ni.com>
 Date: Thu, 11 Feb 2016 11:54:01 -0600
 Subject: [PATCH 270/323] KVM: arm/arm64: downgrade preempt_disable()d region
  to migrate_disable()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 kvm_arch_vcpu_ioctl_run() disables the use of preemption when updating
 the vgic and timer states to prevent the calling task from migrating to
@@ -24,10 +24,10 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/kvm/arm.c b/arch/arm64/kvm/arm.c
-index 4d63fcd7574b2..06fced951e754 100644
+index afe8be2fef88..46e82c623787 100644
 --- a/arch/arm64/kvm/arm.c
 +++ b/arch/arm64/kvm/arm.c
-@@ -708,7 +708,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
+@@ -710,7 +710,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
  		 * involves poking the GIC, which must be done in a
  		 * non-preemptible context.
  		 */
@@ -36,7 +36,7 @@ index 4d63fcd7574b2..06fced951e754 100644
  
  		kvm_pmu_flush_hwstate(vcpu);
  
-@@ -757,7 +757,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
+@@ -759,7 +759,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
  				kvm_timer_sync_user(vcpu);
  			kvm_vgic_sync_hwstate(vcpu);
  			local_irq_enable();
@@ -45,7 +45,7 @@ index 4d63fcd7574b2..06fced951e754 100644
  			continue;
  		}
  
-@@ -829,7 +829,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
+@@ -831,7 +831,7 @@ int kvm_arch_vcpu_ioctl_run(struct kvm_vcpu *vcpu)
  		/* Exit types that need handling before we can be preempted */
  		handle_exit_early(vcpu, ret);
  
@@ -55,5 +55,5 @@ index 4d63fcd7574b2..06fced951e754 100644
  		/*
  		 * The ARMv8 architecture doesn't give the hypervisor
 -- 
-2.44.0
+2.45.2
 

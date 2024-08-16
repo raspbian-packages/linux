@@ -1,9 +1,9 @@
-From a5589dbb6f277c06f72d80168d2de6dec092b35c Mon Sep 17 00:00:00 2001
+From 8bd02c6cdb39da18cdc3729133a75a4183592792 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Sat, 25 Jun 2011 09:21:04 +0200
 Subject: [PATCH 169/323] sched: Add saved_state for tasks blocked on sleeping
  locks
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Spinlocks are state preserving in !RT. RT changes the state when a
 task gets blocked on a lock. So we need to remember the state before
@@ -19,10 +19,10 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  3 files changed, 36 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d31da4867bb28..73defe42fd23d 100644
+index b827f5345db2..874a68e8fb54 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -659,6 +659,8 @@ struct task_struct {
+@@ -658,6 +658,8 @@ struct task_struct {
  #endif
  	/* -1 unrunnable, 0 runnable, >0 stopped: */
  	volatile long			state;
@@ -31,7 +31,7 @@ index d31da4867bb28..73defe42fd23d 100644
  
  	/*
  	 * This begins the randomizable portion of task_struct. Only
-@@ -1782,6 +1784,7 @@ extern struct task_struct *find_get_task_by_vpid(pid_t nr);
+@@ -1781,6 +1783,7 @@ extern struct task_struct *find_get_task_by_vpid(pid_t nr);
  
  extern int wake_up_state(struct task_struct *tsk, unsigned int state);
  extern int wake_up_process(struct task_struct *tsk);
@@ -40,7 +40,7 @@ index d31da4867bb28..73defe42fd23d 100644
  
  #ifdef CONFIG_SMP
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 390b51366f5ef..f6d40256c0d4c 100644
+index 390b51366f5e..f6d40256c0d4 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -3305,7 +3305,7 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags)
@@ -100,7 +100,7 @@ index 390b51366f5ef..f6d40256c0d4c 100644
  {
  	return try_to_wake_up(p, state, 0);
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c26b1c7009f45..d4bfc51358d37 100644
+index c26b1c7009f4..d4bfc51358d3 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
 @@ -1753,6 +1753,7 @@ static inline int task_on_rq_migrating(struct task_struct *p)
@@ -112,5 +112,5 @@ index c26b1c7009f45..d4bfc51358d37 100644
  /*
   * To aid in avoiding the subversion of "niceness" due to uneven distribution
 -- 
-2.44.0
+2.45.2
 

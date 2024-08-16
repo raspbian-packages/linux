@@ -1,8 +1,8 @@
-From 14e8e26cecda340029684a9e960739fd4291678d Mon Sep 17 00:00:00 2001
+From ae70d57ad85b41d3e747ebb33197591bcc062df6 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Thu, 26 Jul 2018 15:06:10 +0200
 Subject: [PATCH 193/323] efi: Allow efi=runtime
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 In case the command line option "efi=noruntime" is default at built-time, the user
 could overwrite its state by `efi=runtime' and allow it again.
@@ -14,7 +14,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 3 insertions(+)
 
 diff --git a/drivers/firmware/efi/efi.c b/drivers/firmware/efi/efi.c
-index 8d390091203fc..8589df0e8c1fc 100644
+index 8d390091203f..8589df0e8c1f 100644
 --- a/drivers/firmware/efi/efi.c
 +++ b/drivers/firmware/efi/efi.c
 @@ -97,6 +97,9 @@ static int __init parse_efi_cmdline(char *str)
@@ -28,5 +28,5 @@ index 8d390091203fc..8589df0e8c1fc 100644
  		set_bit(EFI_MEM_NO_SOFT_RESERVE, &efi.flags);
  
 -- 
-2.44.0
+2.45.2
 

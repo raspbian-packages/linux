@@ -1,9 +1,9 @@
-From 6e0c55ee6312997c4a21e3605b678aba3ab705bb Mon Sep 17 00:00:00 2001
+From 15482a4dc2d45554ec398c28f4aadeccfada93f8 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Mon, 9 Nov 2020 21:30:41 +0100
 Subject: [PATCH 068/323] kthread: Move prio/affinite change into the newly
  created thread
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 With enabled threaded interrupts the nouveau driver reported the
 following:
@@ -34,10 +34,10 @@ Link: https://lkml.kernel.org/r/a23a826af7c108ea5651e73b8fbae5e653f16e86.camel@g
  1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 508fe52782857..3ce6a31db7b4b 100644
+index 9d6cc9c15a55..fc6a04482590 100644
 --- a/kernel/kthread.c
 +++ b/kernel/kthread.c
-@@ -264,6 +264,7 @@ EXPORT_SYMBOL_GPL(kthread_parkme);
+@@ -279,6 +279,7 @@ void __noreturn kthread_exit(long result)
  
  static int kthread(void *_create)
  {
@@ -45,7 +45,7 @@ index 508fe52782857..3ce6a31db7b4b 100644
  	/* Copy data: it's on kthread's stack */
  	struct kthread_create_info *create = _create;
  	int (*threadfn)(void *data) = create->threadfn;
-@@ -294,6 +295,13 @@ static int kthread(void *_create)
+@@ -309,6 +310,13 @@ static int kthread(void *_create)
  	init_completion(&self->parked);
  	current->vfork_done = &self->exited;
  
@@ -59,7 +59,7 @@ index 508fe52782857..3ce6a31db7b4b 100644
  	/* OK, tell user we're spawned, wait for stop or wakeup */
  	__set_current_state(TASK_UNINTERRUPTIBLE);
  	create->result = current;
-@@ -391,7 +399,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
+@@ -406,7 +414,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
  	}
  	task = create->result;
  	if (!IS_ERR(task)) {
@@ -67,7 +67,7 @@ index 508fe52782857..3ce6a31db7b4b 100644
  		char name[TASK_COMM_LEN];
  
  		/*
-@@ -400,13 +407,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
+@@ -415,13 +422,6 @@ struct task_struct *__kthread_create_on_node(int (*threadfn)(void *data),
  		 */
  		vsnprintf(name, sizeof(name), namefmt, args);
  		set_task_comm(task, name);
@@ -82,5 +82,5 @@ index 508fe52782857..3ce6a31db7b4b 100644
  	kfree(create);
  	return task;
 -- 
-2.44.0
+2.45.2
 

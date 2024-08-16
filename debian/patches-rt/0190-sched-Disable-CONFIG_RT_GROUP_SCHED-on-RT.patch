@@ -1,8 +1,8 @@
-From 58a0e3606002b1e2e04a15a54888057ea26c9aec Mon Sep 17 00:00:00 2001
+From f0f70222b7e73a8ec1ee0fdf6d46f8a9c80db1b8 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Mon, 18 Jul 2011 17:03:52 +0200
 Subject: [PATCH 190/323] sched: Disable CONFIG_RT_GROUP_SCHED on RT
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Carsten reported problems when running:
 
@@ -19,7 +19,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  1 file changed, 1 insertion(+)
 
 diff --git a/init/Kconfig b/init/Kconfig
-index df8d0d0f800f5..7e9578a0176f4 100644
+index df8d0d0f800f..7e9578a0176f 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -985,6 +985,7 @@ config CFS_BANDWIDTH
@@ -31,5 +31,5 @@ index df8d0d0f800f5..7e9578a0176f4 100644
  	help
  	  This feature lets you explicitly allocate real CPU bandwidth
 -- 
-2.44.0
+2.45.2
 

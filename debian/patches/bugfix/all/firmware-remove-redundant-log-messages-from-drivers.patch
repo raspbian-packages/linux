@@ -11,7 +11,7 @@ upstream submission.
 
 --- a/arch/x86/kernel/cpu/microcode/amd.c
 +++ b/arch/x86/kernel/cpu/microcode/amd.c
-@@ -901,10 +901,8 @@ static enum ucode_state request_microcod
+@@ -913,10 +913,8 @@ static enum ucode_state request_microcod
  	if (c->x86 >= 0x15)
  		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
  
@@ -54,7 +54,7 @@ upstream submission.
      fw_size = firmware->size / sizeof(u32);
 --- a/drivers/bluetooth/ath3k.c
 +++ b/drivers/bluetooth/ath3k.c
-@@ -382,10 +382,8 @@ static int ath3k_load_patch(struct usb_d
+@@ -380,10 +380,8 @@ static int ath3k_load_patch(struct usb_d
  		 le32_to_cpu(fw_version.rom_version));
  
  	ret = request_firmware(&firmware, filename, &udev->dev);
@@ -66,8 +66,8 @@ upstream submission.
  
  	pt_rom_version = get_unaligned_le32(firmware->data +
  					    firmware->size - 8);
-@@ -445,10 +443,8 @@ static int ath3k_load_syscfg(struct usb_
- 		le32_to_cpu(fw_version.rom_version), clk_value, ".dfu");
+@@ -442,10 +440,8 @@ static int ath3k_load_syscfg(struct usb_
+ 		 le32_to_cpu(fw_version.rom_version), clk_value, ".dfu");
  
  	ret = request_firmware(&firmware, filename, &udev->dev);
 -	if (ret < 0) {
@@ -98,7 +98,7 @@ upstream submission.
  		return -EIO;
 --- a/drivers/bluetooth/bfusb.c
 +++ b/drivers/bluetooth/bfusb.c
-@@ -636,10 +636,8 @@ static int bfusb_probe(struct usb_interf
+@@ -639,10 +639,8 @@ static int bfusb_probe(struct usb_interf
  	skb_queue_head_init(&data->pending_q);
  	skb_queue_head_init(&data->completed_q);
  
@@ -161,7 +161,7 @@ upstream submission.
  		       fw->size, fw_name);
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -1733,11 +1733,8 @@ static void sdma_load_firmware(const str
+@@ -1724,11 +1724,8 @@ static void sdma_load_firmware(const str
  	const struct sdma_script_start_addrs *addr;
  	unsigned short *ram_code;
  
@@ -300,7 +300,7 @@ upstream submission.
  			  card->name, firmware->size);
 --- a/drivers/media/common/siano/smscoreapi.c
 +++ b/drivers/media/common/siano/smscoreapi.c
-@@ -1156,10 +1156,8 @@ static int smscore_load_firmware_from_fi
+@@ -1152,10 +1152,8 @@ static int smscore_load_firmware_from_fi
  		return -EINVAL;
  
  	rc = request_firmware(&fw, fw_filename, coredev->device);
@@ -1196,7 +1196,7 @@ upstream submission.
  	if (bp->mips_firmware->size < sizeof(*mips_fw) ||
 --- a/drivers/net/ethernet/broadcom/tg3.c
 +++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -11413,11 +11413,8 @@ static int tg3_request_firmware(struct t
+@@ -11432,11 +11432,8 @@ static int tg3_request_firmware(struct t
  {
  	const struct tg3_firmware_hdr *fw_hdr;
  
@@ -1372,7 +1372,7 @@ upstream submission.
  	} else
 --- a/drivers/net/wireless/ath/ath9k/hif_usb.c
 +++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -1216,9 +1216,6 @@ static void ath9k_hif_usb_firmware_cb(co
+@@ -1252,9 +1252,6 @@ static void ath9k_hif_usb_firmware_cb(co
  		if (!ret)
  			return;
  
@@ -1529,7 +1529,7 @@ upstream submission.
  			else
 --- a/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
 +++ b/drivers/net/wireless/intel/iwlwifi/iwl-drv.c
-@@ -235,8 +235,6 @@ static int iwl_request_firmware(struct i
+@@ -238,8 +238,6 @@ static int iwl_request_firmware(struct i
  	}
  
  	if (drv->fw_index < cfg->ucode_api_min) {
@@ -1635,7 +1635,7 @@ upstream submission.
  
 --- a/drivers/net/wireless/marvell/libertas_tf/if_usb.c
 +++ b/drivers/net/wireless/marvell/libertas_tf/if_usb.c
-@@ -818,8 +818,6 @@ static int if_usb_prog_firmware(struct l
+@@ -820,8 +820,6 @@ static int if_usb_prog_firmware(struct l
  	kernel_param_lock(THIS_MODULE);
  	ret = request_firmware(&cardp->fw, lbtf_fw_name, &cardp->udev->dev);
  	if (ret < 0) {
@@ -1646,7 +1646,7 @@ upstream submission.
  	}
 --- a/drivers/net/wireless/marvell/mwifiex/main.c
 +++ b/drivers/net/wireless/marvell/mwifiex/main.c
-@@ -527,11 +527,8 @@ static int _mwifiex_fw_dpc(const struct
+@@ -525,11 +525,8 @@ static int _mwifiex_fw_dpc(const struct
  	struct wireless_dev *wdev;
  	struct completion *fw_done = adapter->fw_done;
  
@@ -1661,7 +1661,7 @@ upstream submission.
  	adapter->firmware = firmware;
 --- a/drivers/net/wireless/marvell/mwl8k.c
 +++ b/drivers/net/wireless/marvell/mwl8k.c
-@@ -5727,16 +5727,12 @@ static int mwl8k_firmware_load_success(s
+@@ -5728,16 +5728,12 @@ static int mwl8k_firmware_load_success(s
  static void mwl8k_fw_state_machine(const struct firmware *fw, void *context)
  {
  	struct mwl8k_priv *priv = context;
@@ -1679,7 +1679,7 @@ upstream submission.
  		priv->fw_helper = fw;
  		rc = mwl8k_request_fw(priv, priv->fw_pref, &priv->fw_ucode,
  				      true);
-@@ -5771,11 +5767,8 @@ static void mwl8k_fw_state_machine(const
+@@ -5772,11 +5768,8 @@ static void mwl8k_fw_state_machine(const
  		break;
  
  	case FW_STATE_LOADING_ALT:
@@ -1692,7 +1692,7 @@ upstream submission.
  		priv->fw_ucode = fw;
  		rc = mwl8k_firmware_load_success(priv);
  		if (rc)
-@@ -5813,10 +5806,8 @@ retry:
+@@ -5814,10 +5807,8 @@ retry:
  
  	/* Ask userland hotplug daemon for the device firmware */
  	rc = mwl8k_request_firmware(priv, fw_image, nowait);
@@ -1855,7 +1855,7 @@ upstream submission.
  	}
 --- a/drivers/scsi/aic94xx/aic94xx_init.c
 +++ b/drivers/scsi/aic94xx/aic94xx_init.c
-@@ -369,8 +369,6 @@ static ssize_t asd_store_update_bios(str
+@@ -370,8 +370,6 @@ static ssize_t asd_store_update_bios(str
  				   filename_ptr,
  				   &asd_ha->pcidev->dev);
  	if (err) {
@@ -1891,7 +1891,7 @@ upstream submission.
  	}
 --- a/drivers/scsi/ipr.c
 +++ b/drivers/scsi/ipr.c
-@@ -4102,10 +4102,8 @@ static ssize_t ipr_store_update_fw(struc
+@@ -4103,10 +4103,8 @@ static ssize_t ipr_store_update_fw(struc
  	if (endline)
  		*endline = '\0';
  
@@ -1928,7 +1928,7 @@ upstream submission.
  	}
 --- a/drivers/scsi/qla2xxx/qla_init.c
 +++ b/drivers/scsi/qla2xxx/qla_init.c
-@@ -7935,10 +7935,6 @@ qla2x00_load_risc(scsi_qla_host_t *vha,
+@@ -8052,10 +8052,6 @@ qla2x00_load_risc(scsi_qla_host_t *vha,
  	/* Load firmware blob. */
  	blob = qla2x00_request_firmware(vha);
  	if (!blob) {
@@ -1939,7 +1939,7 @@ upstream submission.
  		return QLA_FUNCTION_FAILED;
  	}
  
-@@ -8041,9 +8037,6 @@ qla24xx_load_risc_blob(scsi_qla_host_t *
+@@ -8158,9 +8154,6 @@ qla24xx_load_risc_blob(scsi_qla_host_t *
  
  	blob = qla2x00_request_firmware(vha);
  	if (!blob) {
@@ -1951,7 +1951,7 @@ upstream submission.
  
 --- a/drivers/scsi/qla2xxx/qla_nx.c
 +++ b/drivers/scsi/qla2xxx/qla_nx.c
-@@ -2431,11 +2431,8 @@ try_blob_fw:
+@@ -2432,11 +2432,8 @@ try_blob_fw:
  
  	/* Load firmware blob. */
  	blob = ha->hablob = qla2x00_request_firmware(vha);
@@ -1966,7 +1966,7 @@ upstream submission.
  	if (qla82xx_validate_firmware_blob(vha,
 --- a/drivers/scsi/qla2xxx/qla_os.c
 +++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -7346,8 +7346,6 @@ qla2x00_request_firmware(scsi_qla_host_t
+@@ -7344,8 +7344,6 @@ qla2x00_request_firmware(scsi_qla_host_t
  		goto out;
  
  	if (request_firmware(&blob->fw, blob->name, &ha->pdev->dev)) {
@@ -2006,7 +2006,7 @@ upstream submission.
  				RT_TRACE(COMP_ERR, "img file size exceed the container buffer fail!\n");
 --- a/drivers/staging/rtl8712/hal_init.c
 +++ b/drivers/staging/rtl8712/hal_init.c
-@@ -60,8 +60,6 @@ int rtl871x_load_fw(struct _adapter *pad
+@@ -73,8 +73,6 @@ int rtl871x_load_fw(struct _adapter *pad
  	dev_info(dev, "r8712u: Loading firmware from \"%s\"\n", firmware_file);
  	rc = request_firmware_nowait(THIS_MODULE, 1, firmware_file, dev,
  				     GFP_KERNEL, padapter, rtl871x_load_fw_cb);
@@ -2089,7 +2089,7 @@ upstream submission.
  	}
 --- a/drivers/tty/serial/ucc_uart.c
 +++ b/drivers/tty/serial/ucc_uart.c
-@@ -1161,10 +1161,8 @@ static void uart_firmware_cont(const str
+@@ -1163,10 +1163,8 @@ static void uart_firmware_cont(const str
  	struct device *dev = context;
  	int ret;
  
@@ -2258,7 +2258,7 @@ upstream submission.
  	BootMajorVersion = rec->data[0];
 --- a/drivers/usb/serial/io_ti.c
 +++ b/drivers/usb/serial/io_ti.c
-@@ -1010,8 +1010,6 @@ static int download_fw(struct edgeport_s
+@@ -1012,8 +1012,6 @@ static int download_fw(struct edgeport_s
  
  	status = request_firmware(&fw, fw_name, dev);
  	if (status) {
@@ -2269,7 +2269,7 @@ upstream submission.
  
 --- a/drivers/usb/serial/ti_usb_3410_5052.c
 +++ b/drivers/usb/serial/ti_usb_3410_5052.c
-@@ -1663,10 +1663,8 @@ static int ti_download_firmware(struct t
+@@ -1671,10 +1671,8 @@ static int ti_download_firmware(struct t
  	}
  
  check_firmware:
@@ -2372,7 +2372,7 @@ upstream submission.
  		snd_printk(KERN_INFO "sscape: MIDI firmware loaded %zu KBs\n",
 --- a/sound/isa/wavefront/wavefront_synth.c
 +++ b/sound/isa/wavefront/wavefront_synth.c
-@@ -1959,10 +1959,8 @@ wavefront_download_firmware (snd_wavefro
+@@ -1960,10 +1960,8 @@ wavefront_download_firmware (snd_wavefro
  	const struct firmware *firmware;
  
  	err = request_firmware(&firmware, path, dev->card->dev);
@@ -2441,7 +2441,7 @@ upstream submission.
  	snd_emu1010_fpga_read(emu, EMU_HANA_ID, &reg);
 --- a/sound/pci/hda/hda_intel.c
 +++ b/sound/pci/hda/hda_intel.c
-@@ -2057,8 +2057,6 @@ static void azx_firmware_cb(const struct
+@@ -2089,8 +2089,6 @@ static void azx_firmware_cb(const struct
  
  	if (fw)
  		chip->fw = fw;

@@ -1,8 +1,8 @@
-From 86ce77309a47255d844f6973c90de72cfaa7bec1 Mon Sep 17 00:00:00 2001
+From 4ef07d91e8f517af007c81f5cf7b06ac382e5235 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Fri, 3 Jul 2009 08:44:56 -0500
 Subject: [PATCH 283/323] signals: Allow rt tasks to cache one sigqueue struct
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 To avoid allocation allow rt tasks to cache one sigqueue struct in
 task struct.
@@ -17,10 +17,10 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  5 files changed, 69 insertions(+), 5 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 665a17e4f69be..a73528e8235d4 100644
+index 831ea3595eaa..4203ed10ef87 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -992,6 +992,7 @@ struct task_struct {
+@@ -991,6 +991,7 @@ struct task_struct {
  	/* Signal handlers: */
  	struct signal_struct		*signal;
  	struct sighand_struct __rcu		*sighand;
@@ -29,7 +29,7 @@ index 665a17e4f69be..a73528e8235d4 100644
  	sigset_t			real_blocked;
  	/* Restored if set_restore_sigmask() was used: */
 diff --git a/include/linux/signal.h b/include/linux/signal.h
-index b256f9c65661c..ebf6c515a7b20 100644
+index b256f9c65661..ebf6c515a7b2 100644
 --- a/include/linux/signal.h
 +++ b/include/linux/signal.h
 @@ -265,6 +265,7 @@ static inline void init_sigpending(struct sigpending *sig)
@@ -41,7 +41,7 @@ index b256f9c65661c..ebf6c515a7b20 100644
  /* Test if 'sig' is valid signal. Use this instead of testing _NSIG directly */
  static inline int valid_signal(unsigned long sig)
 diff --git a/kernel/exit.c b/kernel/exit.c
-index bacdaf980933b..b86f388d3e642 100644
+index bacdaf980933..b86f388d3e64 100644
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
 @@ -199,7 +199,7 @@ static void __exit_signal(struct task_struct *tsk)
@@ -54,7 +54,7 @@ index bacdaf980933b..b86f388d3e642 100644
  	spin_unlock(&sighand->siglock);
  
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 2a11bf5f9e301..dfefb6e7e082b 100644
+index fbe8ae617780..152b81f24099 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -2046,6 +2046,7 @@ static __latent_entropy struct task_struct *copy_process(
@@ -66,7 +66,7 @@ index 2a11bf5f9e301..dfefb6e7e082b 100644
  	p->utime = p->stime = p->gtime = 0;
  #ifdef CONFIG_ARCH_HAS_SCALED_CPUTIME
 diff --git a/kernel/signal.c b/kernel/signal.c
-index e8819aabe3cd5..e1f263cbcf09a 100644
+index e8819aabe3cd..e1f263cbcf09 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
 @@ -20,6 +20,7 @@
@@ -208,5 +208,5 @@ index e8819aabe3cd5..e1f263cbcf09a 100644
  	if (q)
  		q->flags |= SIGQUEUE_PREALLOC;
 -- 
-2.44.0
+2.45.2
 

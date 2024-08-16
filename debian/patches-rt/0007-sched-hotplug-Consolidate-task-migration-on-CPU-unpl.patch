@@ -1,9 +1,9 @@
-From 9ee7caf54f5b5b01b798b7fbd08dc2f25c662438 Mon Sep 17 00:00:00 2001
+From e08b52032441e777d7945edd0e2017528051d0df Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Fri, 23 Oct 2020 12:12:04 +0200
 Subject: [PATCH 007/323] sched/hotplug: Consolidate task migration on CPU
  unplug
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 With the new mechanism which kicks tasks off the outgoing CPU at the end of
 schedule() the situation on an outgoing CPU right before the stopper thread
@@ -39,7 +39,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  4 files changed, 46 insertions(+), 120 deletions(-)
 
 diff --git a/include/linux/cpuhotplug.h b/include/linux/cpuhotplug.h
-index f5a5df3a8cfd1..daf39c04a552a 100644
+index f5a5df3a8cfd..daf39c04a552 100644
 --- a/include/linux/cpuhotplug.h
 +++ b/include/linux/cpuhotplug.h
 @@ -155,6 +155,7 @@ enum cpuhp_state {
@@ -51,7 +51,7 @@ index f5a5df3a8cfd1..daf39c04a552a 100644
  	CPUHP_AP_X86_VDSO_VMA_ONLINE,
  	CPUHP_AP_IRQ_AFFINITY_ONLINE,
 diff --git a/include/linux/sched/hotplug.h b/include/linux/sched/hotplug.h
-index 9a62ffdd296f0..412cdaba33eb4 100644
+index 9a62ffdd296f..412cdaba33eb 100644
 --- a/include/linux/sched/hotplug.h
 +++ b/include/linux/sched/hotplug.h
 @@ -11,8 +11,10 @@ extern int sched_cpu_activate(unsigned int cpu);
@@ -66,7 +66,7 @@ index 9a62ffdd296f0..412cdaba33eb4 100644
  #endif
  
 diff --git a/kernel/cpu.c b/kernel/cpu.c
-index abf717c4f57c2..f8280edb679f4 100644
+index d84ba5a13d17..913078a29a4b 100644
 --- a/kernel/cpu.c
 +++ b/kernel/cpu.c
 @@ -1674,7 +1674,7 @@ static struct cpuhp_step cpuhp_hp_states[] = {
@@ -93,7 +93,7 @@ index abf717c4f57c2..f8280edb679f4 100644
  	[CPUHP_AP_SMPBOOT_THREADS] = {
  		.name			= "smpboot/threads:online",
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b902755615d71..a26a82c3e939a 100644
+index b902755615d7..a26a82c3e939 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -6741,120 +6741,6 @@ void idle_task_exit(void)
@@ -279,5 +279,5 @@ index b902755615d71..a26a82c3e939a 100644
  	rq_unlock_irqrestore(rq, &rf);
  
 -- 
-2.44.0
+2.45.2
 

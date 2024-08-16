@@ -1,8 +1,8 @@
-From 033069960d20f722a58c508473d67ec67dd661cc Mon Sep 17 00:00:00 2001
+From efdd5a463c2117f43283c55f5d4e948e12aadff1 Mon Sep 17 00:00:00 2001
 From: Wang Yong <wang.yong12@zte.com.cn>
 Date: Tue, 12 Sep 2023 15:14:28 +0800
 Subject: [PATCH 321/323] arm64: signal: Use ARCH_RT_DELAYS_SIGNAL_SEND
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 The ltp test prompts the following bug information under the 5.10 kernel:
 BUG: sleeping function called from invalid context at kernel/locking/rtmutex.c:969
@@ -48,7 +48,7 @@ Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
 
 diff --git a/arch/arm64/include/asm/signal.h b/arch/arm64/include/asm/signal.h
 new file mode 100644
-index 0000000000000..0fb418cf4c17a
+index 000000000000..0fb418cf4c17
 --- /dev/null
 +++ b/arch/arm64/include/asm/signal.h
 @@ -0,0 +1,12 @@
@@ -65,7 +65,7 @@ index 0000000000000..0fb418cf4c17a
 +
 +#endif
 diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-index 94eed0dc3afcd..5b08f55ec85d9 100644
+index 94eed0dc3afc..5b08f55ec85d 100644
 --- a/arch/arm64/kernel/signal.c
 +++ b/arch/arm64/kernel/signal.c
 @@ -929,6 +929,15 @@ asmlinkage void do_notify_resume(struct pt_regs *regs,
@@ -85,5 +85,5 @@ index 94eed0dc3afcd..5b08f55ec85d9 100644
  				uprobe_notify_resume(regs);
  
 -- 
-2.44.0
+2.45.2
 

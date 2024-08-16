@@ -1,8 +1,8 @@
-From e1ebcfc55175c2efa073ac38379ddd363e827f68 Mon Sep 17 00:00:00 2001
+From d0389163126442bb836eee909bc07eb79a88acf2 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Sun, 17 Jul 2011 21:56:42 +0200
 Subject: [PATCH 226/323] trace: Add migrate-disabled counter to tracing output
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  4 files changed, 27 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/trace_events.h b/include/linux/trace_events.h
-index 2fea9fcd4d4e9..2151524a10f04 100644
+index bac1a2f3cd4f..57e1798b953c 100644
 --- a/include/linux/trace_events.h
 +++ b/include/linux/trace_events.h
 @@ -69,6 +69,7 @@ struct trace_entry {
@@ -33,7 +33,7 @@ index 2fea9fcd4d4e9..2151524a10f04 100644
  	entry->type			= type;
  	entry->flags =			trace_ctx >> 16;
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index aa1da411d181b..78a7c776fd9b7 100644
+index aa1da411d181..78a7c776fd9b 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
 @@ -2603,6 +2603,15 @@ enum print_line_t trace_handle_return(struct trace_seq *s)
@@ -91,7 +91,7 @@ index aa1da411d181b..78a7c776fd9b7 100644
  
  void
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index df64b92c5edc3..636fb7df3714a 100644
+index df64b92c5edc..636fb7df3714 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
 @@ -184,6 +184,7 @@ static int trace_define_common_fields(void)
@@ -103,7 +103,7 @@ index df64b92c5edc3..636fb7df3714a 100644
  	return ret;
  }
 diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 753b84c50848a..8bd207443f4f4 100644
+index 753b84c50848..8bd207443f4f 100644
 --- a/kernel/trace/trace_output.c
 +++ b/kernel/trace/trace_output.c
 @@ -497,6 +497,11 @@ int trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
@@ -119,5 +119,5 @@ index 753b84c50848a..8bd207443f4f4 100644
  }
  
 -- 
-2.44.0
+2.45.2
 

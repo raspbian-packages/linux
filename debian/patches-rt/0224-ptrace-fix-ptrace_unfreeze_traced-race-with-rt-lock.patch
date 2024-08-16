@@ -1,9 +1,9 @@
-From 22e9788899df87296f03af052e125f3aacd518ae Mon Sep 17 00:00:00 2001
+From 6283d9f3343697e2cffb9f9bc28d1428ed54935e Mon Sep 17 00:00:00 2001
 From: Oleg Nesterov <oleg@redhat.com>
 Date: Tue, 3 Nov 2020 12:39:01 +0100
 Subject: [PATCH 224/323] ptrace: fix ptrace_unfreeze_traced() race with
  rt-lock
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 The patch "ptrace: fix ptrace vs tasklist_lock race" changed
 ptrace_freeze_traced() to take task->saved_state into account, but
@@ -20,7 +20,7 @@ Cc: stable-rt@vger.kernel.org
  1 file changed, 15 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index 71acb6341e639..fb5d1a19507da 100644
+index 71acb6341e63..fb5d1a19507d 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
 @@ -213,8 +213,8 @@ static bool ptrace_freeze_traced(struct task_struct *task)
@@ -61,5 +61,5 @@ index 71acb6341e639..fb5d1a19507da 100644
  }
  
 -- 
-2.44.0
+2.45.2
 

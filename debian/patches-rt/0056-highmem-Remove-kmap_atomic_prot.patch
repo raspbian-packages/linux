@@ -1,8 +1,8 @@
-From e6d38c3b5927e3f9fc1eed3a8f9aa9bbe7f31d81 Mon Sep 17 00:00:00 2001
+From 305e50b1af8fae346f1991e28ace1c7287423c1e Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:45 +0100
 Subject: [PATCH 056/323] highmem: Remove kmap_atomic_prot()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 No more users.
 
@@ -13,7 +13,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 2 insertions(+), 12 deletions(-)
 
 diff --git a/include/linux/highmem-internal.h b/include/linux/highmem-internal.h
-index 3590af5aad96c..bd15bf9164c23 100644
+index 3590af5aad96..bd15bf9164c2 100644
 --- a/include/linux/highmem-internal.h
 +++ b/include/linux/highmem-internal.h
 @@ -88,16 +88,11 @@ static inline void __kunmap_local(void *vaddr)
@@ -48,5 +48,5 @@ index 3590af5aad96c..bd15bf9164c23 100644
  {
  #ifdef ARCH_HAS_FLUSH_ON_KUNMAP
 -- 
-2.44.0
+2.45.2
 

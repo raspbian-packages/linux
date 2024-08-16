@@ -1,8 +1,8 @@
-From efcd04f10313ca9fe0d0e4556faaaf0fcf88ce1c Mon Sep 17 00:00:00 2001
+From 76b88aa7070f82a7984e1ae48b5411630257c386 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Fri, 13 Nov 2020 15:02:14 +0100
 Subject: [PATCH 120/323] asm-generic/irqstat: Add optional __nmi_count member
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 Add an optional __nmi_count member to irq_cpustat_t so more architectures
 can use the generic version.
@@ -16,7 +16,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 3 insertions(+)
 
 diff --git a/include/asm-generic/hardirq.h b/include/asm-generic/hardirq.h
-index d14214dfc10b3..f5dd99781e3c6 100644
+index d14214dfc10b..f5dd99781e3c 100644
 --- a/include/asm-generic/hardirq.h
 +++ b/include/asm-generic/hardirq.h
 @@ -7,6 +7,9 @@
@@ -30,5 +30,5 @@ index d14214dfc10b3..f5dd99781e3c6 100644
  
  #include <linux/irq_cpustat.h>	/* Standard mappings for irq_cpustat_t above */
 -- 
-2.44.0
+2.45.2
 

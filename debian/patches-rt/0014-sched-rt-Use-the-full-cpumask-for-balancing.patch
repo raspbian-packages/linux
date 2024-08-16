@@ -1,8 +1,8 @@
-From 4c5447499a3b2c8a792a6dcd84c66eecad4b2906 Mon Sep 17 00:00:00 2001
+From 7d9d802c7678e913646dabd34990afa5fdb97442 Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:11 +0200
 Subject: [PATCH 014/323] sched,rt: Use the full cpumask for balancing
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 We want migrate_disable() tasks to get PULLs in order for them to PUSH
 away the higher priority task.
@@ -17,7 +17,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  4 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index 8cb06c8c7eb11..ceb03d76c0ccd 100644
+index 8cb06c8c7eb1..ceb03d76c0cc 100644
 --- a/kernel/sched/cpudeadline.c
 +++ b/kernel/sched/cpudeadline.c
 @@ -120,7 +120,7 @@ int cpudl_find(struct cpudl *cp, struct task_struct *p,
@@ -39,7 +39,7 @@ index 8cb06c8c7eb11..ceb03d76c0ccd 100644
  			if (later_mask)
  				cpumask_set_cpu(best_cpu, later_mask);
 diff --git a/kernel/sched/cpupri.c b/kernel/sched/cpupri.c
-index 0033731a07976..11c4df2010de5 100644
+index 0033731a0797..11c4df2010de 100644
 --- a/kernel/sched/cpupri.c
 +++ b/kernel/sched/cpupri.c
 @@ -73,11 +73,11 @@ static inline int __cpupri_find(struct cpupri *cp, struct task_struct *p,
@@ -57,7 +57,7 @@ index 0033731a07976..11c4df2010de5 100644
  		/*
  		 * We have to ensure that we have at least one bit
 diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index e64d378e4e875..94977a6ced8b8 100644
+index e64d378e4e87..94977a6ced8b 100644
 --- a/kernel/sched/deadline.c
 +++ b/kernel/sched/deadline.c
 @@ -1922,7 +1922,7 @@ static void task_fork_dl(struct task_struct *p)
@@ -79,7 +79,7 @@ index e64d378e4e875..94977a6ced8b8 100644
  				     !dl_task(task) ||
  				     !task_on_rq_queued(task))) {
 diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 1c3b9cf014a82..95c07ef87ce17 100644
+index 1c3b9cf014a8..95c07ef87ce1 100644
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
 @@ -1672,7 +1672,7 @@ static void put_prev_task_rt(struct rq *rq, struct task_struct *p)
@@ -101,5 +101,5 @@ index 1c3b9cf014a82..95c07ef87ce17 100644
  				     !rt_task(task) ||
  				     !task_on_rq_queued(task))) {
 -- 
-2.44.0
+2.45.2
 

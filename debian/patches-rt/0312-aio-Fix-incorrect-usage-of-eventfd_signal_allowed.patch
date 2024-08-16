@@ -1,8 +1,8 @@
-From 771eede6339e4ab3444babfcc66d93f4c38a78c3 Mon Sep 17 00:00:00 2001
+From 74b60b02a86f3dec6f2d3153b3cd2dcf2883516f Mon Sep 17 00:00:00 2001
 From: Xie Yongji <xieyongji@bytedance.com>
 Date: Mon, 13 Sep 2021 19:19:28 +0800
 Subject: [PATCH 312/323] aio: Fix incorrect usage of eventfd_signal_allowed()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 commit 4b3749865374899e115aa8c48681709b086fe6d3 upstream.
 
@@ -21,7 +21,7 @@ Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 7030157e99338..0f02ea16305cf 100644
+index 7030157e9933..0f02ea16305c 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
 @@ -1776,7 +1776,7 @@ static int aio_poll_wake(struct wait_queue_entry *wait, unsigned mode, int sync,
@@ -34,5 +34,5 @@ index 7030157e99338..0f02ea16305cf 100644
  			INIT_WORK(&req->work, aio_poll_put_work);
  			schedule_work(&req->work);
 -- 
-2.44.0
+2.45.2
 

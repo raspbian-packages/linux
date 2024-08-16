@@ -1,8 +1,8 @@
-From 7c35d5807ad1cb9afbbd73a093ed3b4ed447cd9c Mon Sep 17 00:00:00 2001
+From 9e596ca7d35893c3b69ef27861a3d2c3144e8882 Mon Sep 17 00:00:00 2001
 From: John Ogness <john.ogness@linutronix.de>
 Date: Mon, 21 Dec 2020 10:27:58 +0106
 Subject: [PATCH 093/323] printk: kmsg_dump: remove _nolock() variants
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.215-rt107.tar.xz
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
 
 kmsg_dump_rewind() and kmsg_dump_get_line() are lockless, so there is
 no need for _nolock() variants. Remove these functions and switch all
@@ -20,7 +20,7 @@ Signed-off-by: John Ogness <john.ogness@linutronix.de>
  4 files changed, 15 insertions(+), 75 deletions(-)
 
 diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
-index 9f62cca6c5948..2eef587bf51d5 100644
+index 9f62cca6c594..2eef587bf51d 100644
 --- a/arch/powerpc/xmon/xmon.c
 +++ b/arch/powerpc/xmon/xmon.c
 @@ -3015,9 +3015,9 @@ dump_log_buf(void)
@@ -36,7 +36,7 @@ index 9f62cca6c5948..2eef587bf51d5 100644
  		printf("%s", buf);
  	}
 diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
-index 2fdb10ab17994..86673930c8ea2 100644
+index 2fdb10ab1799..86673930c8ea 100644
 --- a/include/linux/kmsg_dump.h
 +++ b/include/linux/kmsg_dump.h
 @@ -60,18 +60,13 @@ struct kmsg_dumper {
@@ -85,7 +85,7 @@ index 2fdb10ab17994..86673930c8ea2 100644
  {
  }
 diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index aa424a1d65d01..b97d05072ca4b 100644
+index aa424a1d65d0..b97d05072ca4 100644
 --- a/kernel/debug/kdb/kdb_main.c
 +++ b/kernel/debug/kdb/kdb_main.c
 @@ -2180,8 +2180,8 @@ static int kdb_dmesg(int argc, const char **argv)
@@ -111,7 +111,7 @@ index aa424a1d65d01..b97d05072ca4b 100644
  			skip--;
  			continue;
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 9fde03f1e29bf..e18f1f09ab727 100644
+index 9fde03f1e29b..e18f1f09ab72 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -3416,7 +3416,7 @@ void kmsg_dump(enum kmsg_dump_reason reason)
@@ -222,5 +222,5 @@ index 9fde03f1e29bf..e18f1f09ab727 100644
  }
  EXPORT_SYMBOL_GPL(kmsg_dump_rewind);
 -- 
-2.44.0
+2.45.2
 
