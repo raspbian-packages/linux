@@ -1,7 +1,7 @@
-From 5e6b27eabf53e70c084cf61e3d3860cd6ed1c321 Mon Sep 17 00:00:00 2001
+From 075652fe283ce309ab79b2d563f4c5e30193a841 Mon Sep 17 00:00:00 2001
 From: Long Li <longli@microsoft.com>
 Date: Thu, 3 Nov 2022 12:16:26 -0700
-Subject: [PATCH 10/23] net: mana: Define max values for SGL entries
+Subject: [PATCH 10/34] net: mana: Define max values for SGL entries
 
 The number of maximum SGl entries should be computed from the maximum
 WQE size for the intended queue type and the corresponding OOB data
@@ -22,10 +22,10 @@ Signed-off-by: Bastian Blank <waldi@debian.org>
  3 files changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index c0421c4a80d4..958e55c936b5 100644
+index f2cbc5f8e52f..0e08b62760a5 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -189,7 +189,7 @@ int mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
+@@ -190,7 +190,7 @@ int mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
  	pkg.wqe_req.client_data_unit = 0;
  
  	pkg.wqe_req.num_sge = 1 + skb_shinfo(skb)->nr_frags;
@@ -75,5 +75,5 @@ index 6e9e86fb4c02..713a8f8cca9a 100644
  	/* Required to store the result of mana_gd_post_work_request.
  	 * gdma_posted_wqe_info.wqe_size_in_bu is required for progressing the
 -- 
-2.40.1
+2.45.2
 

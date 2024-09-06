@@ -1,7 +1,7 @@
-From 4a202b0bfd1b2f3509361e5d3f6040f7af90c2ec Mon Sep 17 00:00:00 2001
+From 613e34765bf1dde2647f902c1b7b63cf28419832 Mon Sep 17 00:00:00 2001
 From: Julia Lawall <Julia.Lawall@inria.fr>
 Date: Tue, 27 Jun 2023 16:43:37 +0200
-Subject: [PATCH 25/30] net: mana: use vmalloc_array and vcalloc
+Subject: [PATCH 25/34] net: mana: use vmalloc_array and vcalloc
 
 Use vmalloc_array and vcalloc to protect against
 multiplication overflows.
@@ -71,5 +71,5 @@ index 9d1507eba5b9..2bd1d74021f7 100644
  		return -ENOMEM;
  
 -- 
-2.40.1
+2.45.2
 

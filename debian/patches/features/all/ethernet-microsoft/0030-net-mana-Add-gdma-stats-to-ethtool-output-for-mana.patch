@@ -1,7 +1,7 @@
-From b7a5d522d26c84055bcc410b51b8cefc64fcdbca Mon Sep 17 00:00:00 2001
+From edc0e5011b69f240e96898ab9e306aae24bdabd9 Mon Sep 17 00:00:00 2001
 From: Shradha Gupta <shradhagupta@linux.microsoft.com>
 Date: Wed, 9 Aug 2023 21:15:22 -0700
-Subject: [PATCH 30/30] net: mana: Add gdma stats to ethtool output for mana
+Subject: [PATCH 30/34] net: mana: Add gdma stats to ethtool output for mana
 
 Extended performance counter stats in 'ethtool -S <interface>'
 for MANA VF to include GDMA tx LSO packets and bytes count.
@@ -25,10 +25,10 @@ Signed-off-by: Bastian Blank <waldi@debian.org>
  3 files changed, 142 insertions(+)
 
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index 6aa273b68327..a006bd69b26e 100644
+index 46decaaa60c0..829b8fb18d8a 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -2234,6 +2234,46 @@ int mana_config_rss(struct mana_port_context *apc, enum TRI_STATE rx,
+@@ -2239,6 +2239,46 @@ int mana_config_rss(struct mana_port_context *apc, enum TRI_STATE rx,
  	return 0;
  }
  
@@ -228,5 +228,5 @@ index 46b5769a5b6a..cc4502db2ced 100644
  
  #define MANA_SHORT_VPORT_OFFSET_MAX ((1U << 8) - 1)
 -- 
-2.40.1
+2.45.2
 

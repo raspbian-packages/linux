@@ -1,7 +1,7 @@
-From 35238c1a74198a73e35ed386a7a3992522de804d Mon Sep 17 00:00:00 2001
+From 71f3c1525083a746901de4bf6d65ea0366c812a5 Mon Sep 17 00:00:00 2001
 From: Long Li <longli@microsoft.com>
 Date: Thu, 3 Nov 2022 12:16:21 -0700
-Subject: [PATCH 05/23] net: mana: Handle vport sharing between devices
+Subject: [PATCH 05/34] net: mana: Handle vport sharing between devices
 
 For outgoing packets, the PF requires the VF to configure the vport with
 corresponding protection domain and doorbell ID for the kernel or user
@@ -46,10 +46,10 @@ index d58be64374c8..2883a08dbfb5 100644
 +void mana_uncfg_vport(struct mana_port_context *apc);
  #endif /* _MANA_H */
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index b9e2723ce167..c5ab5cb63cb7 100644
+index df4458f44eef..89aad7de1dca 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -646,13 +646,48 @@ static int mana_query_vport_cfg(struct mana_port_context *apc, u32 vport_index,
+@@ -647,13 +647,48 @@ static int mana_query_vport_cfg(struct mana_port_context *apc, u32 vport_index,
  	return 0;
  }
  
@@ -100,7 +100,7 @@ index b9e2723ce167..c5ab5cb63cb7 100644
  	mana_gd_init_req_hdr(&req.hdr, MANA_CONFIG_VPORT_TX,
  			     sizeof(req), sizeof(resp));
  	req.vport = apc->port_handle;
-@@ -679,9 +714,16 @@ static int mana_cfg_vport(struct mana_port_context *apc, u32 protection_dom_id,
+@@ -680,9 +715,16 @@ static int mana_cfg_vport(struct mana_port_context *apc, u32 protection_dom_id,
  
  	apc->tx_shortform_allowed = resp.short_form_allowed;
  	apc->tx_vp_offset = resp.tx_vport_offset;
@@ -117,7 +117,7 @@ index b9e2723ce167..c5ab5cb63cb7 100644
  
  static int mana_cfg_vport_steering(struct mana_port_context *apc,
  				   enum TRI_STATE rx,
-@@ -742,6 +784,9 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
+@@ -743,6 +785,9 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
  			   resp.hdr.status);
  		err = -EPROTO;
  	}
@@ -127,7 +127,7 @@ index b9e2723ce167..c5ab5cb63cb7 100644
  out:
  	kfree(req);
  	return err;
-@@ -1810,6 +1855,7 @@ static void mana_destroy_vport(struct mana_port_context *apc)
+@@ -1815,6 +1860,7 @@ static void mana_destroy_vport(struct mana_port_context *apc)
  	}
  
  	mana_destroy_txq(apc);
@@ -135,7 +135,7 @@ index b9e2723ce167..c5ab5cb63cb7 100644
  
  	if (gd->gdma_context->is_pf)
  		mana_pf_deregister_hw_vport(apc);
-@@ -2082,6 +2128,9 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
+@@ -2115,6 +2161,9 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
  	apc->pf_filter_handle = INVALID_MANA_HANDLE;
  	apc->port_idx = port_idx;
  
@@ -146,5 +146,5 @@ index b9e2723ce167..c5ab5cb63cb7 100644
  	ndev->ethtool_ops = &mana_ethtool_ops;
  	ndev->mtu = ETH_DATA_LEN;
 -- 
-2.40.1
+2.45.2
 

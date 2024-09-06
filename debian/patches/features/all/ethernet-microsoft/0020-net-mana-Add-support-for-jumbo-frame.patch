@@ -1,7 +1,7 @@
-From 2552a80c48dd33368d0e7a2b94e1eb72e3053b99 Mon Sep 17 00:00:00 2001
+From 0a58640f5352f759b527cb53f6eb1b9defc0dfc1 Mon Sep 17 00:00:00 2001
 From: Haiyang Zhang <haiyangz@microsoft.com>
 Date: Wed, 12 Apr 2023 14:16:03 -0700
-Subject: [PATCH 20/23] net: mana: Add support for jumbo frame
+Subject: [PATCH 20/34] net: mana: Add support for jumbo frame
 
 During probe, get the hardware-allowed max MTU by querying the device
 configuration. Users can select MTU up to the device limit.
@@ -78,10 +78,10 @@ index 3caea631229c..23b1521c0df9 100644
  }
  
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index afbbe447de1d..34fa5c758b28 100644
+index 427c498d10a4..f71a6252f199 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -427,6 +427,192 @@ static u16 mana_select_queue(struct net_device *ndev, struct sk_buff *skb,
+@@ -428,6 +428,192 @@ static u16 mana_select_queue(struct net_device *ndev, struct sk_buff *skb,
  	return txq;
  }
  
@@ -274,7 +274,7 @@ index afbbe447de1d..34fa5c758b28 100644
  static const struct net_device_ops mana_devops = {
  	.ndo_open		= mana_open,
  	.ndo_stop		= mana_close,
-@@ -436,6 +622,7 @@ static const struct net_device_ops mana_devops = {
+@@ -437,6 +623,7 @@ static const struct net_device_ops mana_devops = {
  	.ndo_get_stats64	= mana_get_stats64,
  	.ndo_bpf		= mana_bpf,
  	.ndo_xdp_xmit		= mana_xdp_xmit,
@@ -282,7 +282,7 @@ index afbbe447de1d..34fa5c758b28 100644
  };
  
  static void mana_cleanup_port_context(struct mana_port_context *apc)
-@@ -625,6 +812,9 @@ static int mana_query_device_cfg(struct mana_context *ac, u32 proto_major_ver,
+@@ -626,6 +813,9 @@ static int mana_query_device_cfg(struct mana_context *ac, u32 proto_major_ver,
  
  	mana_gd_init_req_hdr(&req.hdr, MANA_QUERY_DEV_CONFIG,
  			     sizeof(req), sizeof(resp));
@@ -292,7 +292,7 @@ index afbbe447de1d..34fa5c758b28 100644
  	req.proto_major_ver = proto_major_ver;
  	req.proto_minor_ver = proto_minor_ver;
  	req.proto_micro_ver = proto_micro_ver;
-@@ -647,6 +837,11 @@ static int mana_query_device_cfg(struct mana_context *ac, u32 proto_major_ver,
+@@ -648,6 +838,11 @@ static int mana_query_device_cfg(struct mana_context *ac, u32 proto_major_ver,
  
  	*max_num_vports = resp.max_num_vports;
  
@@ -304,7 +304,7 @@ index afbbe447de1d..34fa5c758b28 100644
  	return 0;
  }
  
-@@ -1712,10 +1907,14 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
+@@ -1717,10 +1912,14 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
  static int mana_fill_rx_oob(struct mana_recv_buf_oob *rx_oob, u32 mem_key,
  			    struct mana_rxq *rxq, struct device *dev)
  {
@@ -320,7 +320,7 @@ index afbbe447de1d..34fa5c758b28 100644
  
  	if (!va)
  		return -ENOMEM;
-@@ -1797,7 +1996,6 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
+@@ -1802,7 +2001,6 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
  	struct gdma_dev *gd = apc->ac->gdma_dev;
  	struct mana_obj_spec wq_spec;
  	struct mana_obj_spec cq_spec;
@@ -328,7 +328,7 @@ index afbbe447de1d..34fa5c758b28 100644
  	struct gdma_queue_spec spec;
  	struct mana_cq *cq = NULL;
  	struct gdma_context *gc;
-@@ -1817,15 +2015,8 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
+@@ -1822,15 +2020,8 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
  	rxq->rxq_idx = rxq_idx;
  	rxq->rxobj = INVALID_MANA_HANDLE;
  
@@ -346,7 +346,7 @@ index afbbe447de1d..34fa5c758b28 100644
  
  	err = mana_alloc_rx_wqe(apc, rxq, &rq_size, &cq_size);
  	if (err)
-@@ -2238,8 +2429,8 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
+@@ -2271,8 +2462,8 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
  	ndev->netdev_ops = &mana_devops;
  	ndev->ethtool_ops = &mana_ethtool_ops;
  	ndev->mtu = ETH_DATA_LEN;
@@ -419,5 +419,5 @@ index 42795849d68c..4f19d73b66ae 100644
  
  /* Query vPort Configuration */
 -- 
-2.40.1
+2.45.2
 

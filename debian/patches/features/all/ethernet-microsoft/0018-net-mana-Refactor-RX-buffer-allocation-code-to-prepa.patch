@@ -1,7 +1,7 @@
-From cf9f102448044cea851cb97666bf6e853c8963e3 Mon Sep 17 00:00:00 2001
+From b1f3f07d6a176090f574d758d7f51965008b0d8f Mon Sep 17 00:00:00 2001
 From: Haiyang Zhang <haiyangz@microsoft.com>
 Date: Wed, 12 Apr 2023 14:16:01 -0700
-Subject: [PATCH 18/23] net: mana: Refactor RX buffer allocation code to
+Subject: [PATCH 18/34] net: mana: Refactor RX buffer allocation code to
  prepare for various MTU
 
 Move out common buffer allocation code from mana_process_rx_cqe() and
@@ -20,10 +20,10 @@ Signed-off-by: Bastian Blank <waldi@debian.org>
  2 files changed, 91 insertions(+), 69 deletions(-)
 
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index a1b7905ed2f7..af0c0ee95d87 100644
+index 32765937ddb3..7717baaff74f 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -1282,14 +1282,64 @@ static void mana_rx_skb(void *buf_va, struct mana_rxcomp_oob *cqe,
+@@ -1287,14 +1287,64 @@ static void mana_rx_skb(void *buf_va, struct mana_rxcomp_oob *cqe,
  	u64_stats_update_end(&rx_stats->syncp);
  
  drop:
@@ -90,7 +90,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
  				struct gdma_comp *cqe)
  {
-@@ -1299,10 +1349,8 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
+@@ -1304,10 +1354,8 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
  	struct mana_recv_buf_oob *rxbuf_oob;
  	struct mana_port_context *apc;
  	struct device *dev = gc->dev;
@@ -102,7 +102,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  
  	apc = netdev_priv(ndev);
  
-@@ -1345,40 +1393,11 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
+@@ -1350,40 +1398,11 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
  	rxbuf_oob = &rxq->rx_oobs[curr];
  	WARN_ON_ONCE(rxbuf_oob->wqe_inf.wqe_size_in_bu != 1);
  
@@ -147,7 +147,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  	mana_rx_skb(old_buf, oob, rxq);
  
  drop:
-@@ -1659,8 +1678,8 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
+@@ -1664,8 +1683,8 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
  
  	mana_deinit_cq(apc, &rxq->rx_cq);
  
@@ -158,7 +158,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  
  	for (i = 0; i < rxq->num_rx_buf; i++) {
  		rx_oob = &rxq->rx_oobs[i];
-@@ -1668,10 +1687,10 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
+@@ -1673,10 +1692,10 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
  		if (!rx_oob->buf_va)
  			continue;
  
@@ -172,7 +172,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  		rx_oob->buf_va = NULL;
  	}
  
-@@ -1681,6 +1700,26 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
+@@ -1686,6 +1705,26 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
  	kfree(rxq);
  }
  
@@ -199,7 +199,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  #define MANA_WQE_HEADER_SIZE 16
  #define MANA_WQE_SGE_SIZE 16
  
-@@ -1690,9 +1729,8 @@ static int mana_alloc_rx_wqe(struct mana_port_context *apc,
+@@ -1695,9 +1734,8 @@ static int mana_alloc_rx_wqe(struct mana_port_context *apc,
  	struct gdma_context *gc = apc->ac->gdma_dev->gdma_context;
  	struct mana_recv_buf_oob *rx_oob;
  	struct device *dev = gc->dev;
@@ -210,7 +210,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  
  	WARN_ON(rxq->datasize == 0 || rxq->datasize > PAGE_SIZE);
  
-@@ -1703,25 +1741,12 @@ static int mana_alloc_rx_wqe(struct mana_port_context *apc,
+@@ -1708,25 +1746,12 @@ static int mana_alloc_rx_wqe(struct mana_port_context *apc,
  		rx_oob = &rxq->rx_oobs[buf_idx];
  		memset(rx_oob, 0, sizeof(*rx_oob));
  
@@ -241,7 +241,7 @@ index a1b7905ed2f7..af0c0ee95d87 100644
  
  		rx_oob->wqe_req.sgl = rx_oob->sgl;
  		rx_oob->wqe_req.num_sge = rx_oob->num_sge;
-@@ -1780,9 +1805,10 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
+@@ -1785,9 +1810,10 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
  	rxq->ndev = ndev;
  	rxq->num_rx_buf = RX_BUFFERS_PER_QUEUE;
  	rxq->rxq_idx = rxq_idx;
@@ -285,5 +285,5 @@ index 343ace6de20e..da556246233e 100644
  	int xdp_rc; /* XDP redirect return code */
  
 -- 
-2.40.1
+2.45.2
 

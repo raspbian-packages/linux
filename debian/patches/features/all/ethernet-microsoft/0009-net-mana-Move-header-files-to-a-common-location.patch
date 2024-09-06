@@ -1,7 +1,7 @@
-From 36187c02914640d8c2e2ef9f11213842b5082671 Mon Sep 17 00:00:00 2001
+From c953f2ef444ea2d93a3e10b85e5f34cf4df95d5b Mon Sep 17 00:00:00 2001
 From: Long Li <longli@microsoft.com>
 Date: Thu, 3 Nov 2022 12:16:25 -0700
-Subject: [PATCH 09/23] net: mana: Move header files to a common location
+Subject: [PATCH 09/34] net: mana: Move header files to a common location
 
 In preparation to add MANA RDMA driver, move all the required header files
 to a common location for use by both Ethernet and RDMA drivers.
@@ -34,7 +34,7 @@ Signed-off-by: Bastian Blank <waldi@debian.org>
  rename {drivers/net/ethernet/microsoft => include/net}/mana/shm_channel.h (100%)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 379387e20a96..a923933bbe82 100644
+index 4b19dfb5d2fd..9b1d5a934979 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -9536,6 +9536,7 @@ F:	include/asm-generic/hyperv-tlfs.h
@@ -87,10 +87,10 @@ index 421fd39ff3a8..3caea631229c 100644
  void mana_xdp_tx(struct sk_buff *skb, struct net_device *ndev)
  {
 diff --git a/drivers/net/ethernet/microsoft/mana/mana_en.c b/drivers/net/ethernet/microsoft/mana/mana_en.c
-index 5b7aae9bf983..c0421c4a80d4 100644
+index 29194ccca31d..f2cbc5f8e52f 100644
 --- a/drivers/net/ethernet/microsoft/mana/mana_en.c
 +++ b/drivers/net/ethernet/microsoft/mana/mana_en.c
-@@ -12,8 +12,8 @@
+@@ -13,8 +13,8 @@
  #include <net/checksum.h>
  #include <net/ip6_checksum.h>
  
@@ -148,5 +148,5 @@ similarity index 100%
 rename from drivers/net/ethernet/microsoft/mana/shm_channel.h
 rename to include/net/mana/shm_channel.h
 -- 
-2.40.1
+2.45.2
 

@@ -1,7 +1,7 @@
-From 71b611192d6e5c0aa276eba89c4ac0b15ca1851b Mon Sep 17 00:00:00 2001
+From 13c272f85959af2065145bb928e49abc2f8192d8 Mon Sep 17 00:00:00 2001
 From: Ajay Sharma <sharmaajay@microsoft.com>
 Date: Thu, 3 Nov 2022 12:16:27 -0700
-Subject: [PATCH 11/23] net: mana: Define and process GDMA response code
+Subject: [PATCH 11/34] net: mana: Define and process GDMA response code
  GDMA_STATUS_MORE_ENTRIES
 
 When doing memory registration, the PF may respond with
@@ -48,5 +48,5 @@ index 11fc1cc67c01..202ac405ab59 100644
   * them are naturally aligned and hence don't need __packed.
   */
 -- 
-2.40.1
+2.45.2
 

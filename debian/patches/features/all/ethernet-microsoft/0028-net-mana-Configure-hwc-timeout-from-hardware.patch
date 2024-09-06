@@ -1,7 +1,7 @@
-From 4c91517cbcdd16c2a9aee0e21066f2f1aa193ece Mon Sep 17 00:00:00 2001
+From 2da1097b65681e61dddcfc620c05f4657e4743b2 Mon Sep 17 00:00:00 2001
 From: Souradeep Chakrabarti <schakrabarti@linux.microsoft.com>
 Date: Wed, 2 Aug 2023 04:07:40 -0700
-Subject: [PATCH 28/30] net: mana: Configure hwc timeout from hardware
+Subject: [PATCH 28/34] net: mana: Configure hwc timeout from hardware
 
 At present hwc timeout value is a fixed value. This patch sets the hwc
 timeout from the hardware. It now uses a new hardware capability
@@ -213,5 +213,5 @@ index 6a757a6e2732..3d3b5c881bc1 100644
  	struct hwc_caller_ctx *caller_ctx;
  };
 -- 
-2.40.1
+2.45.2
 
