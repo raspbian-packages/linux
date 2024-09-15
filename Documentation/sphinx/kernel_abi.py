@@ -103,6 +103,7 @@ class KernelCmd(Directive):
             lines = code_block + "\n\n"
 
         line_regex = re.compile(r"^\.\. LINENO (\S+)\#([0-9]+)$")
+        srctree = os.path.abspath(os.environ["srctree"])
         ln = 0
         n = 0
         f = fname
@@ -127,7 +128,7 @@ class KernelCmd(Directive):
                 # sphinx counts lines from 0
                 ln = int(match.group(2)) - 1
             else:
-                content.append(line, f, ln)
+                content.append(line, os.path.relpath(f, srctree), ln)
 
         kernellog.info(self.state.document.settings.env.app, "%s: parsed %i lines" % (fname, n))
 
