@@ -1,8 +1,8 @@
-From 7fa36e78732c271443834948c46d32d91c500616 Mon Sep 17 00:00:00 2001
+From f074619c83a342f854d89f3cb27956c99d0135af Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Wed, 31 Oct 2012 12:04:11 +0100
-Subject: [PATCH 36/64] arm: Add support for lazy preemption
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.96-rt35.tar.xz
+Subject: [PATCH 36/63] arm: Add support for lazy preemption
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.111-rt42.tar.xz
 
 Implement the arm pieces for lazy preempt.
 
@@ -133,5 +133,5 @@ index e07f359254c3..b50a3248e79f 100644
  		} else {
  			if (unlikely(!user_mode(regs)))
 -- 
-2.45.2
+2.46.0
 
