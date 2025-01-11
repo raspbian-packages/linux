@@ -1,8 +1,8 @@
-From 973747b68ead004c322e0b5f36a050c59a1f866f Mon Sep 17 00:00:00 2001
+From 3353a92d14c659db7bbba5d019c780f9e9338b97 Mon Sep 17 00:00:00 2001
 From: Clark Williams <clark.williams@gmail.com>
 Date: Tue, 27 Feb 2024 19:54:08 -0600
-Subject: [PATCH 61/63] Linux 6.1.79-rt25 REBASE
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.111-rt42.tar.xz
+Subject: [PATCH 61/69] Linux 6.1.79-rt25 REBASE
+Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/6.1/older/patches-6.1.120-rt47.tar.xz
 
 Signed-off-by: Clark Williams <clark.williams@gmail.com>
 ---
@@ -17,5 +17,5 @@ index 9f7d0bdbffb1..c5b71f9a229d 100644
 --rt13
 +-rt25
 -- 
-2.46.0
+2.47.1
 
