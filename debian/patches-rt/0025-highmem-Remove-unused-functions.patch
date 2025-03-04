@@ -1,8 +1,7 @@
-From a731347f678e2f6a253ae5dccb0ea5c462b16bec Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:14 +0100
 Subject: [PATCH 025/323] highmem: Remove unused functions
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=0c53de84d133ef85b68ec1ad182af3e161759aaf
 
 Nothing uses totalhigh_pages_dec() and totalhigh_pages_set().
 
@@ -38,6 +37,3 @@ index b25df1f8d48d..3297bfca78ed 100644
  void kmap_flush_unused(void);
  
  struct page *kmap_to_page(void *addr);
--- 
-2.45.2
-

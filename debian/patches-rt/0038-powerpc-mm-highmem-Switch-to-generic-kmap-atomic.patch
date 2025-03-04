@@ -1,8 +1,7 @@
-From 16a518c6dfd94e58ca318a8fd7c5cfedefd0e64c Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:27 +0100
 Subject: [PATCH 038/323] powerpc/mm/highmem: Switch to generic kmap atomic
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=80bb4769a18d09019a414d14dd8abdffc1f9b0da
 
 No reason having the same code in every architecture
 
@@ -192,7 +191,7 @@ index 624b4438aff9..000000000000
 -}
 -EXPORT_SYMBOL(kunmap_atomic_high);
 diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 08e3422eb792..1faa0789871d 100644
+index cd6a68a64d87..b6b8b09efc88 100644
 --- a/arch/powerpc/mm/mem.c
 +++ b/arch/powerpc/mm/mem.c
 @@ -63,11 +63,6 @@
@@ -216,6 +215,3 @@ index 08e3422eb792..1faa0789871d 100644
  #endif /* CONFIG_HIGHMEM */
  
  	printk(KERN_DEBUG "Top of RAM: 0x%llx, Total RAM: 0x%llx\n",
--- 
-2.45.2
-

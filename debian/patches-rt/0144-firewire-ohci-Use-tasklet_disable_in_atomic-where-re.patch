@@ -1,9 +1,8 @@
-From b637f58241472a02eea4653ca66b0ea1febbb031 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 9 Mar 2021 09:42:16 +0100
 Subject: [PATCH 144/323] firewire: ohci: Use tasklet_disable_in_atomic() where
  required
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=dbe7534fb1043517825c83b3a3cf7919791e9202
 
 tasklet_disable() is invoked in several places. Some of them are in atomic
 context which prevents a conversion of tasklet_disable() to a sleepable
@@ -56,6 +55,3 @@ index 9b2471d12783..7d94e1cbc0ed 100644
  
  	if (!test_and_set_bit_lock(0, &ctx->flushing_completions)) {
  		context_tasklet((unsigned long)&ctx->context);
--- 
-2.45.2
-

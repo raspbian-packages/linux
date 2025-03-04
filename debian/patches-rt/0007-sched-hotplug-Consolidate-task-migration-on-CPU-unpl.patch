@@ -1,9 +1,8 @@
-From e08b52032441e777d7945edd0e2017528051d0df Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Fri, 23 Oct 2020 12:12:04 +0200
 Subject: [PATCH 007/323] sched/hotplug: Consolidate task migration on CPU
  unplug
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=4ac29b83ac0cf7d3de65732c3f1c194c02cabdb2
 
 With the new mechanism which kicks tasks off the outgoing CPU at the end of
 schedule() the situation on an outgoing CPU right before the stopper thread
@@ -66,7 +65,7 @@ index 9a62ffdd296f..412cdaba33eb 100644
  #endif
  
 diff --git a/kernel/cpu.c b/kernel/cpu.c
-index d84ba5a13d17..913078a29a4b 100644
+index 7eab6e3e771f..0ffe96a042d4 100644
 --- a/kernel/cpu.c
 +++ b/kernel/cpu.c
 @@ -1674,7 +1674,7 @@ static struct cpuhp_step cpuhp_hp_states[] = {
@@ -93,10 +92,10 @@ index d84ba5a13d17..913078a29a4b 100644
  	[CPUHP_AP_SMPBOOT_THREADS] = {
  		.name			= "smpboot/threads:online",
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b902755615d7..a26a82c3e939 100644
+index bb47af6835cd..5072d8156f12 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -6741,120 +6741,6 @@ void idle_task_exit(void)
+@@ -6738,120 +6738,6 @@ void idle_task_exit(void)
  	/* finish_cpu(), as ran on the BP, will clean up the active_mm state */
  }
  
@@ -217,7 +216,7 @@ index b902755615d7..a26a82c3e939 100644
  static int __balance_push_cpu_stop(void *arg)
  {
  	struct task_struct *p = arg;
-@@ -7125,10 +7011,6 @@ int sched_cpu_deactivate(unsigned int cpu)
+@@ -7122,10 +7008,6 @@ int sched_cpu_deactivate(unsigned int cpu)
  		return ret;
  	}
  	sched_domains_numa_masks_clear(cpu);
@@ -228,7 +227,7 @@ index b902755615d7..a26a82c3e939 100644
  	return 0;
  }
  
-@@ -7148,6 +7030,41 @@ int sched_cpu_starting(unsigned int cpu)
+@@ -7145,6 +7027,41 @@ int sched_cpu_starting(unsigned int cpu)
  }
  
  #ifdef CONFIG_HOTPLUG_CPU
@@ -270,7 +269,7 @@ index b902755615d7..a26a82c3e939 100644
  int sched_cpu_dying(unsigned int cpu)
  {
  	struct rq *rq = cpu_rq(cpu);
-@@ -7161,7 +7078,6 @@ int sched_cpu_dying(unsigned int cpu)
+@@ -7158,7 +7075,6 @@ int sched_cpu_dying(unsigned int cpu)
  		BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
  		set_rq_offline(rq);
  	}
@@ -278,6 +277,3 @@ index b902755615d7..a26a82c3e939 100644
  	BUG_ON(rq->nr_running != 1);
  	rq_unlock_irqrestore(rq, &rf);
  
--- 
-2.45.2
-

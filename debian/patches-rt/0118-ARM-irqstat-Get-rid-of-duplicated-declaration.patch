@@ -1,8 +1,7 @@
-From a284d153c2e28ba541cd0f1e95ca6de04e411dc8 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Fri, 13 Nov 2020 15:02:12 +0100
 Subject: [PATCH 118/323] ARM: irqstat: Get rid of duplicated declaration
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=4b606fbd0c43811cc57445fff3a4fe760603cc5e
 
 irq_cpustat_t is exactly the same as the asm-generic one. Define
 ack_bad_irq so the generic header does not emit the generic version of it.
@@ -54,6 +53,3 @@ index 46d41140df27..1cbcc462b07e 100644
  extern void arch_trigger_cpumask_backtrace(const cpumask_t *mask,
  					   bool exclude_self);
  #define arch_trigger_cpumask_backtrace arch_trigger_cpumask_backtrace
--- 
-2.45.2
-

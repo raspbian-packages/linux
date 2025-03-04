@@ -1,23 +1,23 @@
-From 143f0c75f4fc804964d353ee7824e16ec1f8d345 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 12 Oct 2017 16:14:22 +0200
 Subject: [PATCH 167/323] locking/rtmutex: Provide rt_mutex_slowlock_locked()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=15b6b2f101435b62bb509d2ac8d1a9327d112096
 
 This is the inner-part of rt_mutex_slowlock(), required for rwsem-rt.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
 ---
  kernel/locking/rtmutex.c        | 67 +++++++++++++++++++--------------
  kernel/locking/rtmutex_common.h |  7 ++++
  2 files changed, 45 insertions(+), 29 deletions(-)
 
 diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index c3f3c23fefef..395a3e8b2463 100644
+index 1ddb34ee446a..febebbce7f42 100644
 --- a/kernel/locking/rtmutex.c
 +++ b/kernel/locking/rtmutex.c
-@@ -1234,35 +1234,16 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
+@@ -1237,35 +1237,16 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
  	}
  }
  
@@ -59,7 +59,7 @@ index c3f3c23fefef..395a3e8b2463 100644
  
  	set_current_state(state);
  
-@@ -1270,16 +1251,16 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+@@ -1273,16 +1254,16 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
  	if (unlikely(timeout))
  		hrtimer_start_expires(&timeout->timer, HRTIMER_MODE_ABS);
  
@@ -74,13 +74,13 @@ index c3f3c23fefef..395a3e8b2463 100644
  	if (unlikely(ret)) {
  		__set_current_state(TASK_RUNNING);
 -		remove_waiter(lock, &waiter);
--		rt_mutex_handle_deadlock(ret, chwalk, &waiter);
+-		rt_mutex_handle_deadlock(ret, chwalk, lock, &waiter);
 +		remove_waiter(lock, waiter);
-+		rt_mutex_handle_deadlock(ret, chwalk, waiter);
++		rt_mutex_handle_deadlock(ret, chwalk, lock, waiter);
  	}
  
  	/*
-@@ -1287,6 +1268,34 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+@@ -1290,6 +1271,34 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
  	 * unconditionally. We might have to fix that up.
  	 */
  	fixup_rt_mutex_waiters(lock);
@@ -140,6 +140,3 @@ index 37cd6b3bf6f4..b5a2affa59d5 100644
  
  #ifdef CONFIG_DEBUG_RT_MUTEXES
  # include "rtmutex-debug.h"
--- 
-2.45.2
-

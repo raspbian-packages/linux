@@ -1,9 +1,8 @@
-From 560989feb3dbba78a9bf7685de1575392b5aa335 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 12 Oct 2017 17:18:06 +0200
 Subject: [PATCH 174/323] locking/rtmutex: add rwlock implementation based on
  rtmutex
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=d84888a752c49dcf39a108ba3f2e60b225f5a483
 
 The implementation is bias-based, similar to the rwsem implementation.
 
@@ -543,6 +542,3 @@ index 000000000000..1ee16b8fedd7
 +	__rwlock_biased_rt_init(rwlock, name, key);
 +}
 +EXPORT_SYMBOL(__rt_rwlock_init);
--- 
-2.45.2
-

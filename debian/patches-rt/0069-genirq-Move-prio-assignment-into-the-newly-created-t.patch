@@ -1,9 +1,8 @@
-From c154072b5ce5a87ecfc588e022aa81bb2a876c41 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Mon, 9 Nov 2020 23:32:39 +0100
 Subject: [PATCH 069/323] genirq: Move prio assignment into the newly created
  thread
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=247e696b8b4e58e7b88ea64c6db578644662bbe2
 
 With enabled threaded interrupts the nouveau driver reported the
 following:
@@ -37,7 +36,7 @@ Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 0159925054fa..5ec167fb77b9 100644
+index c7f4f948f17e..c37240bf6df4 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
 @@ -1201,6 +1201,8 @@ static int irq_thread(void *data)
@@ -58,6 +57,3 @@ index 0159925054fa..5ec167fb77b9 100644
  	/*
  	 * We keep the reference to the task struct even if
  	 * the thread dies to avoid that the interrupt code
--- 
-2.45.2
-

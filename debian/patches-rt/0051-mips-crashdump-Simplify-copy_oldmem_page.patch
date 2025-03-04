@@ -1,8 +1,7 @@
-From 8c7a076d5234f59fbf8e9cbe18e1f8bb6337ce5e Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:40 +0100
 Subject: [PATCH 051/323] mips/crashdump: Simplify copy_oldmem_page()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=2f6bb0a44b983278a03f061f8e2bfa2300561ea5
 
 Replace kmap_atomic_pfn() with kmap_local_pfn() which is preemptible and
 can take page faults.
@@ -90,6 +89,3 @@ index 01b2bd95ba1f..9aba83e1eeb4 100644
 -	return ret;
 -}
 -arch_initcall(kdump_buf_page_init);
--- 
-2.45.2
-

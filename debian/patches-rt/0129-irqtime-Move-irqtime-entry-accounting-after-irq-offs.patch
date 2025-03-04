@@ -1,9 +1,8 @@
-From b83239bb5feeda5b34ce98d71e61d9e1d050c675 Mon Sep 17 00:00:00 2001
 From: Frederic Weisbecker <frederic@kernel.org>
 Date: Wed, 2 Dec 2020 12:57:31 +0100
 Subject: [PATCH 129/323] irqtime: Move irqtime entry accounting after irq
  offset incrementation
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e3d1196da573bffaacf16fd2443a57c0b99b598f
 
 IRQ time entry is currently accounted before HARDIRQ_OFFSET or
 SOFTIRQ_OFFSET are incremented. This is convenient to decide to which
@@ -117,7 +116,7 @@ index 6c9867419615..041d6524d144 100644
  
  #endif /* _LINUX_KERNEL_VTIME_H */
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 60129af16ed6..02a7932c7383 100644
+index 016470a62ef8..c19c69e33f89 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
 @@ -44,12 +44,13 @@ static void irqtime_account_delta(struct irqtime *irqtime, u64 delta,
@@ -208,6 +207,3 @@ index 617009ccd82c..b8f42b3ba8ca 100644
  	preempt_count_sub(HARDIRQ_OFFSET);
  	if (!in_interrupt() && local_softirq_pending())
  		invoke_softirq();
--- 
-2.45.2
-

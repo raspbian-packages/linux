@@ -10,9 +10,10 @@ import re
 
 from debian_linux import config
 from debian_linux.debian import PackageDescription, PackageRelation, \
-    PackageRelationEntry, PackageRelationGroup, VersionLinux
+    PackageRelationEntry, PackageRelationGroup, VersionLinux, \
+    restriction_requires_profile
 from debian_linux.gencontrol import Gencontrol as Base, merge_packages, \
-    iter_featuresets, iter_flavours
+    iter_featuresets, iter_flavours, add_package_build_restriction
 from debian_linux.utils import Templates, read_control
 
 locale.setlocale(locale.LC_CTYPE, "C.UTF-8")
@@ -104,6 +105,7 @@ class Gencontrol(Base):
         self.tests_control = self.process_packages(
             self.templates['tests-control.main'], vars)
         self.tests_control_image = None
+        self.tests_control_headers = None
 
         self.installer_packages = {}
 
@@ -347,6 +349,9 @@ class Gencontrol(Base):
                 raise RuntimeError("default-flavour %s for %s %s does not exist"
                                    % (self.default_flavour, arch, featureset))
 
+        self.quick_flavour = self.config.merge('base', arch, featureset) \
+                                        .get('quick-flavour')
+
     flavour_makeflags_base = (
         ('compiler', 'COMPILER', False),
         ('compiler-filename', 'COMPILER', True),
@@ -425,8 +430,10 @@ class Gencontrol(Base):
             self.substitute(config_entry_relations.get('headers%' + compiler)
                             or config_entry_relations.get(compiler), vars))
         relations_compiler_headers = PackageRelation(
-            PackageRelationGroup(entry for entry in group
-                                 if 'cross' not in entry.restrictions)
+            PackageRelationGroup(
+                entry for entry in group
+                if not restriction_requires_profile(entry.restrictions,
+                                                    'cross'))
             for group in relations_compiler_headers)
         for group in relations_compiler_headers:
             for entry in group:
@@ -550,7 +557,6 @@ class Gencontrol(Base):
             build_debug = False
 
         if build_debug:
-            makeflags['DEBUG'] = True
             packages_own.extend(self.process_packages(
                 self.templates['control.image-dbg'], vars))
             if do_meta:
@@ -559,6 +565,11 @@ class Gencontrol(Base):
                 self.substitute_debhelper_config(
                     'image-dbg.meta', vars,
                     'linux-image%(localversion)s-dbg' % vars)
+
+        # In a quick build, only build the quick flavour (if any).
+        if flavour != self.quick_flavour:
+            for package in packages_own:
+                add_package_build_restriction(package, '!pkg.linux.quick')
 
         merge_packages(packages, packages_own, arch)
 
@@ -573,6 +584,16 @@ class Gencontrol(Base):
         else:
             self.tests_control_image = tests_control
             self.tests_control.append(tests_control)
+
+        if flavour == (self.quick_flavour or self.default_flavour):
+            if not self.tests_control_headers:
+                self.tests_control_headers = self.process_package(
+                    self.templates['tests-control.headers'][0], vars)
+                self.tests_control.append(self.tests_control_headers)
+            self.tests_control_headers['Architecture'].add(arch)
+            self.tests_control_headers['Depends'].append(
+                PackageRelationGroup(package_headers['Package'],
+                                     override_arches=(arch,)))
 
         def get_config(*entry_name):
             entry_real = ('image',) + entry_name
@@ -624,8 +645,6 @@ class Gencontrol(Base):
                                     arch, featureset, flavour))
         makeflags['KCONFIG'] = ' '.join(kconfig)
         makeflags['KCONFIG_OPTIONS'] = ''
-        if build_debug:
-            makeflags['KCONFIG_OPTIONS'] += ' -o DEBUG_INFO=y'
         if build_signed:
             makeflags['KCONFIG_OPTIONS'] += ' -o SECURITY_LOCKDOWN_LSM=y -o MODULE_SIG=y'
         # Add "salt" to fix #872263

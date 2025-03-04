@@ -1,9 +1,8 @@
-From 795abe9cdb1f6cb6b2d6fcbf4897d0a20d39002f Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 18 Aug 2020 10:30:00 +0200
 Subject: [PATCH 207/323] mm: memcontrol: Provide a local_lock for per-CPU
  memcg_stock
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=eb7e8444e1abd3bd091fc2d5c9ab0c205e5689cd
 
 The interrupts are disabled to ensure CPU-local access to the per-CPU
 variable `memcg_stock'.
@@ -22,7 +21,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 18 insertions(+), 13 deletions(-)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 95fc91a06686..5f3df593b42c 100644
+index eac63bc5cd65..a1b6cf4637b7 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
 @@ -2202,6 +2202,7 @@ void unlock_page_memcg(struct page *page)
@@ -122,7 +121,7 @@ index 95fc91a06686..5f3df593b42c 100644
  }
  
  int obj_cgroup_charge(struct obj_cgroup *objcg, gfp_t gfp, size_t size)
-@@ -7161,9 +7162,13 @@ static int __init mem_cgroup_init(void)
+@@ -7181,9 +7182,13 @@ static int __init mem_cgroup_init(void)
  	cpuhp_setup_state_nocalls(CPUHP_MM_MEMCQ_DEAD, "mm/memctrl:dead", NULL,
  				  memcg_hotplug_cpu_dead);
  
@@ -139,6 +138,3 @@ index 95fc91a06686..5f3df593b42c 100644
  
  	for_each_node(node) {
  		struct mem_cgroup_tree_per_node *rtpn;
--- 
-2.45.2
-

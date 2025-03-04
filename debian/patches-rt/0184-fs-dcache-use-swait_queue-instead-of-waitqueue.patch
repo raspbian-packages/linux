@@ -1,8 +1,7 @@
-From e04005bb0131a553d3f512c0052811f230a60d9b Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Wed, 14 Sep 2016 14:35:49 +0200
 Subject: [PATCH 184/323] fs/dcache: use swait_queue instead of waitqueue
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=60a844a3f3c40a0b3b89ba98987006fbe5557516
 
 __d_lookup_done() invokes wake_up_all() while holding a hlist_bl_lock()
 which disables preemption. As a workaround convert it to swait.
@@ -50,10 +49,10 @@ index 799be3a5d25e..d5165a7da071 100644
  	cifs_dbg(FYI, "%s: for %s\n", __func__, name->name);
  
 diff --git a/fs/dcache.c b/fs/dcache.c
-index 976c7474d62a..4bcd832ace5d 100644
+index 5febd219fdeb..e2647fb62713 100644
 --- a/fs/dcache.c
 +++ b/fs/dcache.c
-@@ -2519,21 +2519,24 @@ static inline void end_dir_add(struct inode *dir, unsigned n)
+@@ -2525,21 +2525,24 @@ static inline void end_dir_add(struct inode *dir, unsigned n)
  
  static void d_wait_lookup(struct dentry *dentry)
  {
@@ -89,7 +88,7 @@ index 976c7474d62a..4bcd832ace5d 100644
  {
  	unsigned int hash = name->hash;
  	struct hlist_bl_head *b = in_lookup_hash(parent, hash);
-@@ -2648,7 +2651,7 @@ void __d_lookup_done(struct dentry *dentry)
+@@ -2654,7 +2657,7 @@ void __d_lookup_done(struct dentry *dentry)
  	hlist_bl_lock(b);
  	dentry->d_flags &= ~DCACHE_PAR_LOOKUP;
  	__hlist_bl_del(&dentry->d_u.d_in_lookup_hash);
@@ -178,10 +177,10 @@ index b27ebdccef70..f86c98a7ed04 100644
  	status = -EBUSY;
  	spin_lock(&dentry->d_lock);
 diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 712948e97991..585d0afd1af6 100644
+index b955ba5db72c..ddf2ab7c12d7 100644
 --- a/fs/proc/base.c
 +++ b/fs/proc/base.c
-@@ -96,6 +96,7 @@
+@@ -97,6 +97,7 @@
  #include <linux/posix-timers.h>
  #include <linux/time_namespace.h>
  #include <linux/resctrl.h>
@@ -189,7 +188,7 @@ index 712948e97991..585d0afd1af6 100644
  #include <trace/events/oom.h>
  #include "internal.h"
  #include "fd.h"
-@@ -2066,7 +2067,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
+@@ -2125,7 +2126,7 @@ bool proc_fill_cache(struct file *file, struct dir_context *ctx,
  
  	child = d_hash_and_lookup(dir, &qname);
  	if (!child) {
@@ -199,10 +198,10 @@ index 712948e97991..585d0afd1af6 100644
  		if (IS_ERR(child))
  			goto end_instantiate;
 diff --git a/fs/proc/proc_sysctl.c b/fs/proc/proc_sysctl.c
-index aff9593feb73..d1a29668bff8 100644
+index f5c967735335..31a655879dd3 100644
 --- a/fs/proc/proc_sysctl.c
 +++ b/fs/proc/proc_sysctl.c
-@@ -684,7 +684,7 @@ static bool proc_sys_fill_cache(struct file *file,
+@@ -682,7 +682,7 @@ static bool proc_sys_fill_cache(struct file *file,
  
  	child = d_lookup(dir, &qname);
  	if (!child) {
@@ -258,6 +257,3 @@ index e1c655f928c7..f230b1ac7f91 100644
  	raw_spin_lock_irq(&q->lock);
  	list_splice_init(&q->task_list, &tmp);
  	while (!list_empty(&tmp)) {
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From 097ca6b596ba2e70cbcf17adf8420f80e068bb2d Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 27 Oct 2020 11:09:51 +0100
 Subject: [PATCH 155/323] x86/fpu: Make kernel FPU protection RT friendly
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=2ac198588e4c49c7cf7c46e49c868842c663f7dc
 
 Non RT kernels need to protect FPU against preemption and bottom half
 processing. This is achieved by disabling bottom halfs via
@@ -59,6 +58,3 @@ index 5174c0a640ef..ad2fee785310 100644
  }
  
  #ifdef CONFIG_X86_DEBUG_FPU
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From da69de3ba76417396af7f37f8f56661b20c51941 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 8 Jan 2013 21:36:51 +0100
 Subject: [PATCH 267/323] tty/serial/pl011: Make the locking work on RT
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=8053350a753d1beeebd5e3c7085d9dca03996afe
 
 The lock is a sleeping lock and local_irq_save() is not the optimsation
 we are looking for. Redo it to make it work on -RT and non-RT.
@@ -55,6 +54,3 @@ index d4a93a94b4ca..275c625e3eb9 100644
  
  	clk_disable(uap->clk);
  }
--- 
-2.45.2
-

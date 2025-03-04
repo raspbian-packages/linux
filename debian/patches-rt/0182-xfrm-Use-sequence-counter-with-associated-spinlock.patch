@@ -1,8 +1,7 @@
-From 940121d26674dbf6921c55b8c547684741ccb94b Mon Sep 17 00:00:00 2001
 From: "Ahmed S. Darwish" <a.darwish@linutronix.de>
 Date: Wed, 10 Jun 2020 12:53:22 +0200
 Subject: [PATCH 182/323] xfrm: Use sequence counter with associated spinlock
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=dbaee700d0f7d30e718643cbc2abd146858017c1
 
 A sequence counter write side critical section must be protected by some
 form of locking to serialize writers. A plain seqcount_t does not
@@ -28,7 +27,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index ba73014805a4..14e1f36bdda5 100644
+index 94179ff475f2..d96459e60a1f 100644
 --- a/net/xfrm/xfrm_state.c
 +++ b/net/xfrm/xfrm_state.c
 @@ -2691,7 +2691,8 @@ int __net_init xfrm_state_init(struct net *net)
@@ -41,6 +40,3 @@ index ba73014805a4..14e1f36bdda5 100644
  	return 0;
  
  out_byspi:
--- 
-2.45.2
-

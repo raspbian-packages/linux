@@ -1,8 +1,7 @@
-From 8f4bd5cc1440661f59ae4a8e60418c7ff476e0ae Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 9 Mar 2021 09:55:53 +0100
 Subject: [PATCH 146/323] softirq: Add RT specific softirq accounting
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=053fc634253b92e359b116eace1d1a462ac22b23
 
 RT requires the softirq processing and local bottomhalf disabled regions to
 be preemptible. Using the normal preempt count based serialization is
@@ -70,6 +69,3 @@ index 44d8214e5c19..b827f5345db2 100644
  
  #ifdef CONFIG_LOCKDEP
  # define MAX_LOCK_DEPTH			48UL
--- 
-2.45.2
-

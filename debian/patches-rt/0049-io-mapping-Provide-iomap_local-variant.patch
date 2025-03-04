@@ -1,8 +1,7 @@
-From 7622cc9e6e93d759e826a39dcb871082de4be311 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:38 +0100
 Subject: [PATCH 049/323] io-mapping: Provide iomap_local variant
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=5c586a880159cf93c77513b939feb0c7bbd9ee29
 
 Similar to kmap local provide a iomap local variant which only disables
 migration, but neither disables pagefaults nor preemption.
@@ -18,7 +17,7 @@ diff --git a/Documentation/driver-api/io-mapping.rst b/Documentation/driver-api/
 index e33b88268554..a0cfb15988df 100644
 --- a/Documentation/driver-api/io-mapping.rst
 +++ b/Documentation/driver-api/io-mapping.rst
-@@ -20,55 +20,71 @@ A mapping object is created during driver initialization using::
+@@ -20,55 +20,71 @@ as it would consume too much of the kernel address space.
  mappable, while 'size' indicates how large a mapping region to
  enable. Both are in bytes.
  
@@ -174,6 +173,3 @@ index 60e7c83e4904..c093e81310a9 100644
  
  static inline struct io_mapping *
  io_mapping_create_wc(resource_size_t base,
--- 
-2.45.2
-

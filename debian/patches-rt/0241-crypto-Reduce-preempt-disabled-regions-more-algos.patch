@@ -1,8 +1,7 @@
-From ad40b854dad915a21937bf44f2ded9dfb8b1062d Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Fri, 21 Feb 2014 17:24:04 +0100
 Subject: [PATCH 241/323] crypto: Reduce preempt disabled regions, more algos
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=1fa940eac3b85fda583e6add83adccfcb70d3007
 
 Don Estabrook reported
 | kernel: WARNING: CPU: 2 PID: 858 at kernel/sched/core.c:2428 migrate_disable+0xed/0x100()
@@ -235,6 +234,3 @@ index d3d91a0abf88..6d0774721514 100644
  		err = skcipher_walk_done(&walk, nbytes);
  		nbytes = walk.nbytes;
  	}
--- 
-2.45.2
-

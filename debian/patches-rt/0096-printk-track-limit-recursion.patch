@@ -1,8 +1,7 @@
-From 18077e5922a98ca64be075e53c400963e4825296 Mon Sep 17 00:00:00 2001
 From: John Ogness <john.ogness@linutronix.de>
 Date: Fri, 11 Dec 2020 00:55:25 +0106
 Subject: [PATCH 096/323] printk: track/limit recursion
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e22b3df22ca0e5731031e649d2706f7b058ada02
 
 Limit printk() recursion to 1 level. This is enough to print a
 stacktrace for the printk call, should a WARN or BUG occur.
@@ -138,6 +137,3 @@ index 1e7ab017be19..08a49c8e7239 100644
  }
  
  asmlinkage int vprintk_emit(int facility, int level,
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From 46d6176623b801286a1703ffbc0c2f8add3efa3b Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:15 +0100
 Subject: [PATCH 026/323] fs: Remove asm/kmap_types.h includes
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=c0bfd189aaa12fe8ad2c138f0dec791ef9aed010
 
 Historical leftovers from the time where kmap() had fixed slots.
 
@@ -34,7 +33,7 @@ index 93b6bbf01d71..43315af1c83a 100644
  #include <linux/nospec.h>
  
 diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
-index 3ddb09f2b168..ba39097c44a7 100644
+index 7ad3091db571..ac09267f95e2 100644
 --- a/fs/btrfs/ctree.h
 +++ b/fs/btrfs/ctree.h
 @@ -17,7 +17,6 @@
@@ -45,6 +44,3 @@ index 3ddb09f2b168..ba39097c44a7 100644
  #include <asm/unaligned.h>
  #include <linux/pagemap.h>
  #include <linux/btrfs.h>
--- 
-2.45.2
-

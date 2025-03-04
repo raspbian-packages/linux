@@ -1,8 +1,7 @@
-From 43db1709c27450069f0af9004c71ac942b5550c0 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:49 +0100
 Subject: [PATCH 060/323] io-mapping: Remove io_mapping_map_atomic_wc()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e42eaa826fdde69537b5c1f5d59d3ee6b039a70a
 
 No more users. Get rid of it and remove the traces in documentation.
 
@@ -49,7 +48,7 @@ index a0cfb15988df..a7830c59481f 100644
  Nested mappings need to be undone in reverse order because the mapping
  code uses a stack for keeping track of them::
  
-@@ -65,11 +58,10 @@ code uses a stack for keeping track of them::
+@@ -65,11 +58,10 @@ Nested mappings need to be undone in reverse order because the mapping
  The mappings are released with::
  
  	void io_mapping_unmap_local(void *vaddr)
@@ -64,7 +63,7 @@ index a0cfb15988df..a7830c59481f 100644
  
  If you need to sleep while holding a mapping, you can use the regular
  variant, although this may be significantly slower::
-@@ -77,8 +69,8 @@ variant, although this may be significantly slower::
+@@ -77,8 +69,8 @@ If you need to sleep while holding a mapping, you can use the regular
  	void *io_mapping_map_wc(struct io_mapping *mapping,
  				unsigned long offset)
  
@@ -135,6 +134,3 @@ index c093e81310a9..4bb8223f2f82 100644
  static inline void __iomem *
  io_mapping_map_local_wc(struct io_mapping *mapping, unsigned long offset)
  {
--- 
-2.45.2
-

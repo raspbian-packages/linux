@@ -1,9 +1,8 @@
-From 2492fbf7d409055153845befb3b8e541ac841f0b Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Wed, 22 Sep 2021 19:34:40 +0200
 Subject: [PATCH 301/323] preempt: Move preempt_enable_no_resched() to the RT
  block
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e2ff26cf17f8ad7804028530a5a1d107917ee003
 
 preempt_enable_no_resched() should point to preempt_enable() on
 PREEMPT_RT so nobody is playing any preempt tricks and enables
@@ -40,6 +39,3 @@ index af39859f02ee..7b5b2ed55531 100644
  #endif
  
  #define preemptible()	(preempt_count() == 0 && !irqs_disabled())
--- 
-2.45.2
-

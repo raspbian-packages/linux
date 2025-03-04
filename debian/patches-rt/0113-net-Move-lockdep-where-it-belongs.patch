@@ -1,8 +1,7 @@
-From b21eb0f051ee9b5838e7a7987bba41e1adbe0509 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 8 Sep 2020 07:32:20 +0200
 Subject: [PATCH 113/323] net: Move lockdep where it belongs
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=16498728f91044c63e4e4414da5536524ad154e4
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
@@ -41,6 +40,3 @@ index d5818a5a86fd..bacc1c57a1d5 100644
  	return true;
  }
  EXPORT_SYMBOL(lock_sock_fast);
--- 
-2.45.2
-

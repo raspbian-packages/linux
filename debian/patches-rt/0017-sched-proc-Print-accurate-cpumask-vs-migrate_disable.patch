@@ -1,9 +1,8 @@
-From 2257abef8f8b3f254488dc83b5c0eb26ec870fa8 Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:14 +0200
 Subject: [PATCH 017/323] sched/proc: Print accurate cpumask vs
  migrate_disable()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=b718d16b7a622c1cc71084f1cf95419751826aa8
 
 Ensure /proc/*/status doesn't print 'random' cpumasks due to
 migrate_disable().
@@ -30,6 +29,3 @@ index 18a4588c35be..decaa7768044 100644
  }
  
  static inline void task_core_dumping(struct seq_file *m, struct mm_struct *mm)
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From 0c778f2e233cec5d0bd2e491cfcc2983e6496ff9 Mon Sep 17 00:00:00 2001
 From: Grygorii Strashko <Grygorii.Strashko@linaro.org>
 Date: Tue, 21 Jul 2015 19:43:56 +0300
 Subject: [PATCH 222/323] pid.h: include atomic.h
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=3126b6a9b5139d26ef8707423988ba4d5c548893
 
 This patch fixes build error:
   CC      kernel/pid_namespace.o
@@ -38,6 +37,3 @@ index af308e15f174..33c14785c46b 100644
  #include <linux/wait.h>
  #include <linux/refcount.h>
  
--- 
-2.45.2
-

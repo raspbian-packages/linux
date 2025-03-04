@@ -1,8 +1,7 @@
-From c6a9cbec6129d61f201033d1e5f154d429ffc43e Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:03 +0200
 Subject: [PATCH 006/323] workqueue: Manually break affinity on hotplug
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=cc719d230b40d7520a8c53dbfb41d5e0f012c5c1
 
 Don't rely on the scheduler to force break affinity for us -- it will
 stop doing that for per-cpu-kthreads.
@@ -29,6 +28,3 @@ index 63140e4dd5df..7c14773dc4c4 100644
  		mutex_unlock(&wq_pool_attach_mutex);
  
  		/*
--- 
-2.45.2
-

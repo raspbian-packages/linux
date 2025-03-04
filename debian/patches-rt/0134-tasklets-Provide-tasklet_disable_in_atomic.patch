@@ -1,8 +1,7 @@
-From 0fdd3a9d25b2afacadbfa7382d3e1466a6ed04c3 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 9 Mar 2021 09:42:06 +0100
 Subject: [PATCH 134/323] tasklets: Provide tasklet_disable_in_atomic()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=477cce925b1debecf634f2f9a2bae7ee05e780db
 
 Replacing the spin wait loops in tasklet_unlock_wait() with
 wait_var_event() is not possible as a handful of tasklet_disable()
@@ -63,6 +62,3 @@ index 75c4380afe9b..abba3eff4f86 100644
  static inline void tasklet_disable(struct tasklet_struct *t)
  {
  	tasklet_disable_nosync(t);
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From d0389163126442bb836eee909bc07eb79a88acf2 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Sun, 17 Jul 2011 21:56:42 +0200
 Subject: [PATCH 226/323] trace: Add migrate-disabled counter to tracing output
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=4cb57bea337686c93e4667574332a25d84b1d939
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
@@ -13,7 +12,7 @@ Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
  4 files changed, 27 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/trace_events.h b/include/linux/trace_events.h
-index bac1a2f3cd4f..57e1798b953c 100644
+index ce370f32a576..e55ee1a7229a 100644
 --- a/include/linux/trace_events.h
 +++ b/include/linux/trace_events.h
 @@ -69,6 +69,7 @@ struct trace_entry {
@@ -33,10 +32,10 @@ index bac1a2f3cd4f..57e1798b953c 100644
  	entry->type			= type;
  	entry->flags =			trace_ctx >> 16;
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index aa1da411d181..78a7c776fd9b 100644
+index 27d9c2a134cb..5a82d9c809bc 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -2603,6 +2603,15 @@ enum print_line_t trace_handle_return(struct trace_seq *s)
+@@ -2601,6 +2601,15 @@ enum print_line_t trace_handle_return(struct trace_seq *s)
  }
  EXPORT_SYMBOL_GPL(trace_handle_return);
  
@@ -52,7 +51,7 @@ index aa1da411d181..78a7c776fd9b 100644
  unsigned int tracing_gen_ctx_irq_test(unsigned int irqs_status)
  {
  	unsigned int trace_flags = irqs_status;
-@@ -2621,7 +2630,8 @@ unsigned int tracing_gen_ctx_irq_test(unsigned int irqs_status)
+@@ -2619,7 +2628,8 @@ unsigned int tracing_gen_ctx_irq_test(unsigned int irqs_status)
  		trace_flags |= TRACE_FLAG_NEED_RESCHED;
  	if (test_preempt_need_resched())
  		trace_flags |= TRACE_FLAG_PREEMPT_RESCHED;
@@ -103,7 +102,7 @@ index df64b92c5edc..636fb7df3714 100644
  	return ret;
  }
 diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 753b84c50848..8bd207443f4f 100644
+index 94b0991717b6..b3619b21217c 100644
 --- a/kernel/trace/trace_output.c
 +++ b/kernel/trace/trace_output.c
 @@ -497,6 +497,11 @@ int trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
@@ -118,6 +117,3 @@ index 753b84c50848..8bd207443f4f 100644
  	return !trace_seq_has_overflowed(s);
  }
  
--- 
-2.45.2
-

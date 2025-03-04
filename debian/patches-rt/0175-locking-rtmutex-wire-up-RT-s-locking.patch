@@ -1,8 +1,7 @@
-From fba4fc4911d54b154e71a26e8bb40863c0cfe91b Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 12 Oct 2017 17:31:14 +0200
 Subject: [PATCH 175/323] locking/rtmutex: wire up RT's locking
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=0bdb64899c0afc263d4f0649e97b13f703a535aa
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
@@ -343,6 +342,3 @@ index b9d93087ee66..72e306e0e8a3 100644
  }
 +
 +#endif
--- 
-2.45.2
-

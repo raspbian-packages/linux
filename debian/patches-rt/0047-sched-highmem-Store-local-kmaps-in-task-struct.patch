@@ -1,8 +1,7 @@
-From 1be9236c3f1342f79e6fb920e0429ae73541e92b Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:36 +0100
 Subject: [PATCH 047/323] sched: highmem: Store local kmaps in task struct
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=29711fbb8c7a8ad979030f0f7ec9f37b9bba2480
 
 Instead of storing the map per CPU provide and use per task storage. That
 prepares for local kmaps which are preemptible.
@@ -118,10 +117,10 @@ index 8b8a5a172b15..459842c72126 100644
  #ifdef CONFIG_FAULT_INJECTION
  	tsk->fail_nth = 0;
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 8a6135a0b2ee..390b51366f5e 100644
+index 2b5c47973750..0a1a1033ee6a 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -4092,6 +4092,22 @@ static inline void finish_lock_switch(struct rq *rq)
+@@ -4089,6 +4089,22 @@ static inline void finish_lock_switch(struct rq *rq)
  # define finish_arch_post_lock_switch()	do { } while (0)
  #endif
  
@@ -144,7 +143,7 @@ index 8a6135a0b2ee..390b51366f5e 100644
  /**
   * prepare_task_switch - prepare to switch tasks
   * @rq: the runqueue preparing to switch
-@@ -4114,6 +4130,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
+@@ -4111,6 +4127,7 @@ prepare_task_switch(struct rq *rq, struct task_struct *prev,
  	perf_event_task_sched_out(prev, next);
  	rseq_preempt(prev);
  	fire_sched_out_preempt_notifiers(prev, next);
@@ -152,7 +151,7 @@ index 8a6135a0b2ee..390b51366f5e 100644
  	prepare_task(next);
  	prepare_arch_switch(next);
  }
-@@ -4180,6 +4197,7 @@ static struct rq *finish_task_switch(struct task_struct *prev)
+@@ -4177,6 +4194,7 @@ static struct rq *finish_task_switch(struct task_struct *prev)
  	finish_lock_switch(rq);
  	finish_arch_post_lock_switch();
  	kcov_finish_switch(current);
@@ -304,6 +303,3 @@ index 54bd233846c9..d7a1c80001d0 100644
  #endif
  
  #if defined(HASHED_PAGE_VIRTUAL)
--- 
-2.45.2
-

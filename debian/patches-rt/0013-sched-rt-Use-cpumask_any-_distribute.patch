@@ -1,8 +1,7 @@
-From 3b48782e993fd40792b5bfef146ed897ab9f7f47 Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Fri, 23 Oct 2020 12:12:10 +0200
 Subject: [PATCH 013/323] sched,rt: Use cpumask_any*_distribute()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=1e0f8ae867e8913f6f4fe36797ba318bf47a644e
 
 Replace a bunch of cpumask_any*() instances with
 cpumask_any*_distribute(), by injecting this little bit of random in
@@ -19,7 +18,7 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  4 files changed, 30 insertions(+), 6 deletions(-)
 
 diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
-index f0d895d6ac39..383684e30f12 100644
+index bb29102ec966..47780abfd68f 100644
 --- a/include/linux/cpumask.h
 +++ b/include/linux/cpumask.h
 @@ -199,6 +199,11 @@ static inline int cpumask_any_and_distribute(const struct cpumask *src1p,
@@ -116,6 +115,3 @@ index fb22fb266f93..c3c76b833384 100644
 +	return next;
 +}
 +EXPORT_SYMBOL(cpumask_any_distribute);
--- 
-2.45.2
-

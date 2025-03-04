@@ -1,8 +1,7 @@
-From 75f4204044032b835e0ff3bf18ce6e7c962afb5f Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:26 +0100
 Subject: [PATCH 037/323] nds32/mm/highmem: Switch to generic kmap atomic
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=91b47c8e7e0b71ec4f4d27df427c9ccf65f16f8d
 
 The mapping code is odd and looks broken. See FIXME in the comment.
 
@@ -162,6 +161,3 @@ index 4284cd59e21a..000000000000
 -	}
 -}
 -EXPORT_SYMBOL(kunmap_atomic_high);
--- 
-2.45.2
-

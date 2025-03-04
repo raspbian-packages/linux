@@ -377,7 +377,6 @@ CONFIG_DRM_ANALOGIX_ANX6345=m
 ##
 ## file: drivers/gpu/drm/bridge/synopsys/Kconfig
 ##
-CONFIG_DRM_DW_HDMI=m
 CONFIG_DRM_DW_HDMI_CEC=m
 
 ##

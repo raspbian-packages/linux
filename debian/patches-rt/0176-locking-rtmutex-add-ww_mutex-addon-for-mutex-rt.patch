@@ -1,10 +1,10 @@
-From b31ae4e7600fa162b41ec6c924995884e49dd64b Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Thu, 12 Oct 2017 17:34:38 +0200
 Subject: [PATCH 176/323] locking/rtmutex: add ww_mutex addon for mutex-rt
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=f10b23232ae326d218d6cf7435f7ecb322e4e92e
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
 ---
  include/linux/mutex.h           |   8 -
  include/linux/ww_mutex.h        |   8 +
@@ -52,7 +52,7 @@ index 6ecf2a0220db..3145de598645 100644
  	struct task_struct *task;
  	unsigned long stamp;
 diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 1bf7a04688c5..c095d1b92f70 100644
+index 99cb78e1a3da..194eab4907f4 100644
 --- a/kernel/locking/rtmutex.c
 +++ b/kernel/locking/rtmutex.c
 @@ -24,6 +24,7 @@
@@ -127,7 +127,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  		raw_spin_unlock_irq(&lock->wait_lock);
  
  		schedule();
-@@ -1558,16 +1600,106 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
+@@ -1561,16 +1603,106 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
  	}
  }
  
@@ -235,7 +235,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  
  	set_current_state(state);
  
-@@ -1577,14 +1709,24 @@ int __sched rt_mutex_slowlock_locked(struct rt_mutex *lock, int state,
+@@ -1580,14 +1712,24 @@ int __sched rt_mutex_slowlock_locked(struct rt_mutex *lock, int state,
  
  	ret = task_blocks_on_rt_mutex(lock, waiter, current, chwalk);
  
@@ -254,16 +254,16 @@ index 1bf7a04688c5..c095d1b92f70 100644
  	if (unlikely(ret)) {
  		__set_current_state(TASK_RUNNING);
  		remove_waiter(lock, waiter);
--		rt_mutex_handle_deadlock(ret, chwalk, waiter);
+-		rt_mutex_handle_deadlock(ret, chwalk, lock, waiter);
 +		/* ww_mutex wants to report EDEADLK/EALREADY, let it */
 +		if (!ww_ctx)
-+			rt_mutex_handle_deadlock(ret, chwalk, waiter);
++			rt_mutex_handle_deadlock(ret, chwalk, lock, waiter);
 +	} else if (ww_ctx) {
 +		ww_mutex_account_lock(lock, ww_ctx);
  	}
  
  	/*
-@@ -1601,7 +1743,8 @@ int __sched rt_mutex_slowlock_locked(struct rt_mutex *lock, int state,
+@@ -1604,7 +1746,8 @@ int __sched rt_mutex_slowlock_locked(struct rt_mutex *lock, int state,
  static int __sched
  rt_mutex_slowlock(struct rt_mutex *lock, int state,
  		  struct hrtimer_sleeper *timeout,
@@ -273,7 +273,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  {
  	struct rt_mutex_waiter waiter;
  	unsigned long flags;
-@@ -1619,7 +1762,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
+@@ -1622,7 +1765,8 @@ rt_mutex_slowlock(struct rt_mutex *lock, int state,
  	 */
  	raw_spin_lock_irqsave(&lock->wait_lock, flags);
  
@@ -283,7 +283,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  
  	raw_spin_unlock_irqrestore(&lock->wait_lock, flags);
  
-@@ -1749,14 +1893,16 @@ static bool __sched rt_mutex_slowunlock(struct rt_mutex *lock,
+@@ -1752,14 +1896,16 @@ static bool __sched rt_mutex_slowunlock(struct rt_mutex *lock,
   */
  static inline int
  rt_mutex_fastlock(struct rt_mutex *lock, int state,
@@ -302,7 +302,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  }
  
  static inline int
-@@ -1801,7 +1947,7 @@ rt_mutex_fastunlock(struct rt_mutex *lock,
+@@ -1804,7 +1950,7 @@ rt_mutex_fastunlock(struct rt_mutex *lock,
  int __sched __rt_mutex_lock_state(struct rt_mutex *lock, int state)
  {
  	might_sleep();
@@ -311,7 +311,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  }
  
  /**
-@@ -2245,7 +2391,7 @@ int rt_mutex_wait_proxy_lock(struct rt_mutex *lock,
+@@ -2248,7 +2394,7 @@ int rt_mutex_wait_proxy_lock(struct rt_mutex *lock,
  	raw_spin_lock_irq(&lock->wait_lock);
  	/* sleep on the mutex */
  	set_current_state(TASK_INTERRUPTIBLE);
@@ -320,7 +320,7 @@ index 1bf7a04688c5..c095d1b92f70 100644
  	/*
  	 * try_to_take_rt_mutex() sets the waiter bit unconditionally. We might
  	 * have to fix that up.
-@@ -2315,3 +2461,97 @@ bool rt_mutex_cleanup_proxy_lock(struct rt_mutex *lock,
+@@ -2318,3 +2464,97 @@ bool rt_mutex_cleanup_proxy_lock(struct rt_mutex *lock,
  
  	return cleanup;
  }
@@ -451,6 +451,3 @@ index a0771c150041..274172d5bb3a 100644
  	/*
  	 * The slowlock() above is guaranteed to return with the rtmutex (for
  	 * ret = 0) is now held, so there can't be a writer active. Increment
--- 
-2.45.2
-

@@ -1,8 +1,7 @@
-From b76a75048e456e44595b0aa59973769f49e7e637 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:16 +0100
 Subject: [PATCH 027/323] sh/highmem: Remove all traces of unused cruft
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=55994417dd01ba9f68a493440acb692371b2f240
 
 For whatever reasons SH has highmem bits all over the place but does
 not enable it via Kconfig. Remove the bitrot.
@@ -89,6 +88,3 @@ index 3348e0c4d769..0db6919af8d3 100644
  		(unsigned long)VMALLOC_START, VMALLOC_END,
  		(VMALLOC_END - VMALLOC_START) >> 20,
  
--- 
-2.45.2
-

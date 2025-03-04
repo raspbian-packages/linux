@@ -1,8 +1,7 @@
-From a39fff732d99497bd4a74430bbb976754e7003e0 Mon Sep 17 00:00:00 2001
 From: John Ogness <john.ogness@linutronix.de>
 Date: Thu, 10 Dec 2020 16:58:02 +0106
 Subject: [PATCH 089/323] printk: add syslog_lock
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=3727bf135694317730be40bef21f12110ed45487
 
 The global variables @syslog_seq, @syslog_partial, @syslog_time
 and write access to @clear_seq are protected by @logbuf_lock.
@@ -154,6 +153,3 @@ index 818e99d359da..fb33db0b143b 100644
  		logbuf_unlock_irqrestore(flags);
  	}
  	console_unlock();
--- 
-2.45.2
-

@@ -156,6 +156,9 @@ class Gencontrol(Base):
                 raise RuntimeError("default-flavour %s for %s %s does not exist"
                                    % (self.default_flavour, arch, featureset))
 
+        self.quick_flavour = self.config.merge('base', arch, featureset) \
+                                        .get('quick-flavour')
+
     def do_flavour_setup(self, vars, makeflags, arch, featureset, flavour,
                          extra):
         super(Gencontrol, self).do_flavour_setup(vars, makeflags, arch,
@@ -177,6 +180,12 @@ class Gencontrol(Base):
                             flavour, vars, makeflags, extra):
         if not (self.config.merge('build', arch, featureset, flavour)
                 .get('signed-code', False)):
+            return
+
+        # In a quick build, only build the quick flavour (if any).
+        if 'pkg.linux.quick' in \
+           os.environ.get('DEB_BUILD_PROFILES', '').split() \
+           and flavour != self.quick_flavour:
             return
 
         image_suffix = '%(abiname)s%(localversion)s' % vars
@@ -269,6 +278,7 @@ class Gencontrol(Base):
         self.write_makefile(makefile,
                             name=(self.template_debian_dir + '/rules.gen'))
         self.write_files_json()
+        self.write_source_lintian_overrides()
 
     def write_changelog(self):
         # Copy the linux changelog, but:
@@ -363,6 +373,14 @@ linux-signed-@arch@ (@signedsourceversion@) @distribution@; urgency=@urgency@
 
         with codecs.open(self.template_top_dir + '/files.json', 'w') as f:
             json.dump(all_files, f)
+
+    def write_source_lintian_overrides(self):
+        os.makedirs(os.path.join(self.template_debian_dir, 'source'),
+                    exist_ok=True)
+        with open(os.path.join(self.template_debian_dir,
+                               'source/lintian-overrides'), 'w') as f:
+            f.write(self.substitute(self.templates['source.lintian-overrides'],
+                                    self.vars))
 
 
 if __name__ == '__main__':

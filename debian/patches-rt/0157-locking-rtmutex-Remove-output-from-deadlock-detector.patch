@@ -1,9 +1,8 @@
-From 033e809a7cb295db0bdd58b9de91127141cb0c21 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Tue, 29 Sep 2020 16:05:11 +0200
 Subject: [PATCH 157/323] locking/rtmutex: Remove output from deadlock
  detector.
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=95c93320775808ec0c04a1bb1714c41f14ed12c7
 
 In commit
   f5694788ad8da ("rt_mutex: Add lockdep annotations")
@@ -24,14 +23,15 @@ It looks like lockdep is better suited for reporting deadlocks.
 Remove rtmutex' debug print on deadlock detection.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Luis Claudio R. Goncalves <lgoncalv@redhat.com>
 ---
  include/linux/rtmutex.h         |  7 ---
  kernel/locking/rtmutex-debug.c  | 97 ---------------------------------
  kernel/locking/rtmutex-debug.h  | 11 ----
- kernel/locking/rtmutex.c        |  9 ---
+ kernel/locking/rtmutex.c        | 10 +---
  kernel/locking/rtmutex.h        |  7 ---
  kernel/locking/rtmutex_common.h |  4 --
- 6 files changed, 135 deletions(-)
+ 6 files changed, 1 insertion(+), 135 deletions(-)
 
 diff --git a/include/linux/rtmutex.h b/include/linux/rtmutex.h
 index 16f974a22f51..88a0ba806066 100644
@@ -232,7 +232,7 @@ index fc549713bba3..659e93e256c6 100644
 -	debug_rt_mutex_print_deadlock(w);
 -}
 diff --git a/kernel/locking/rtmutex.c b/kernel/locking/rtmutex.c
-index 4792fc7abe7d..9aa4d545020a 100644
+index cac92e9fcb65..c9e5748cb4fe 100644
 --- a/kernel/locking/rtmutex.c
 +++ b/kernel/locking/rtmutex.c
 @@ -597,7 +597,6 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
@@ -252,18 +252,19 @@ index 4792fc7abe7d..9aa4d545020a 100644
  		schedule();
  
  		raw_spin_lock_irq(&lock->wait_lock);
-@@ -1211,10 +1208,6 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
- 	if (res != -EDEADLOCK || detect_deadlock)
+@@ -1213,10 +1210,7 @@ static void rt_mutex_handle_deadlock(int res, int detect_deadlock,
  		return;
  
+ 	raw_spin_unlock_irq(&lock->wait_lock);
 -	/*
 -	 * Yell lowdly and stop the task right here.
 -	 */
 -	rt_mutex_print_deadlock(w);
++
  	while (1) {
  		set_current_state(TASK_INTERRUPTIBLE);
  		schedule();
-@@ -1763,8 +1756,6 @@ int __rt_mutex_start_proxy_lock(struct rt_mutex *lock,
+@@ -1765,8 +1759,6 @@ int __rt_mutex_start_proxy_lock(struct rt_mutex *lock,
  		ret = 0;
  	}
  
@@ -307,6 +308,3 @@ index e6913103d7ff..b1455dc2366f 100644
  	int prio;
  	u64 deadline;
  };
--- 
-2.45.2
-

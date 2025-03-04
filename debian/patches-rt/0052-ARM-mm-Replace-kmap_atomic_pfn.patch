@@ -1,8 +1,7 @@
-From efcf1a9620d7ba0d824b4ff6c7f9fcdc5315431a Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:41 +0100
 Subject: [PATCH 052/323] ARM: mm: Replace kmap_atomic_pfn()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=9cf9d21474b23ad16e7cfe0a8a89475ac095f4ab
 
 There is no requirement to disable pagefaults and preemption for these
 cache management mappings.
@@ -66,6 +65,3 @@ index d20d7af02d10..0e0a3abd8174 100644
  	}
  	return va + (pa_offset >> (32 - PAGE_SHIFT));
  #else
--- 
-2.45.2
-

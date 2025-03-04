@@ -1,8 +1,7 @@
-From d85c5255f9159e8ca7ecf818437775cc949cbaf7 Mon Sep 17 00:00:00 2001
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Date: Thu, 7 Nov 2019 17:49:20 +0100
 Subject: [PATCH 272/323] x86: Enable RT also on 32bit
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=721dd5ac9b6227013308ba4bc4edab5c60ef5b8b
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
@@ -29,6 +28,3 @@ index 1af3f76862c7..32adbd47a4da 100644
  	select ARCH_USE_BUILTIN_BSWAP
  	select ARCH_USE_QUEUED_RWLOCKS
  	select ARCH_USE_QUEUED_SPINLOCKS
--- 
-2.45.2
-

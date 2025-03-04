@@ -1,9 +1,8 @@
-From 550f9904a7d6ad5a0bc8c40bcf9b78e2e311f245 Mon Sep 17 00:00:00 2001
 From: Valentin Schneider <valentin.schneider@arm.com>
 Date: Fri, 23 Oct 2020 12:12:16 +0200
 Subject: [PATCH 019/323] sched: Deny self-issued __set_cpus_allowed_ptr() when
  migrate_disable()
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=f6065a503bb4f18c7afd16cbdd21c0897eab1771
 
   migrate_disable();
   set_cpus_allowed_ptr(current, {something excluding task_cpu(current)});
@@ -18,10 +17,10 @@ Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
  1 file changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b5f35b512577..3b7bb01eecc0 100644
+index f5996eb2a1b1..1bce8c4b2fa7 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2254,8 +2254,17 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
+@@ -2251,8 +2251,17 @@ static int __set_cpus_allowed_ptr(struct task_struct *p,
  		goto out;
  	}
  
@@ -41,6 +40,3 @@ index b5f35b512577..3b7bb01eecc0 100644
  
  	/*
  	 * Picking a ~random cpu helps in cases where we are changing affinity
--- 
-2.45.2
-

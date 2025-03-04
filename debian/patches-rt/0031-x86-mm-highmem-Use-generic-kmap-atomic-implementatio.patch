@@ -1,9 +1,8 @@
-From 2ce69f4f8dd7a57205f181a4dd4e1356a66be200 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:20 +0100
 Subject: [PATCH 031/323] x86/mm/highmem: Use generic kmap atomic
  implementation
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=aaa7e0a364e6a843b5121698a56843adb7f5853a
 
 Convert X86 to the generic kmap atomic implementation and make the
 iomap_atomic() naming convention consistent while at it.
@@ -384,6 +383,3 @@ index 67d2d5983cb0..77677c6844f7 100644
  DEFINE_PER_CPU(int, __kmap_atomic_idx);
  #endif
  #endif
--- 
-2.45.2
-

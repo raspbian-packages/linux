@@ -1,8 +1,7 @@
-From 5f8f1323f2be0682aaf230a824e575fa5aea108a Mon Sep 17 00:00:00 2001
 From: Peter Zijlstra <peterz@infradead.org>
 Date: Tue, 8 Jun 2021 00:37:32 -0400
 Subject: [PATCH 291/323] sched: Collate affine_move_task() stoppers
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=894925dfcc0266605fc3eca18d48657781723303
 
 commit 58b1a45086b5f80f2b2842aa7ed0da51a64a302b upstream.
 
@@ -22,10 +21,10 @@ Signed-off-by: Steven Rostedt (VMware) <rostedt@goodmis.org>
  1 file changed, 8 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 31fa925852e5..3130289baf79 100644
+index 13b1eb49a299..87e606d494ac 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -2291,30 +2291,23 @@ static int affine_move_task(struct rq *rq, struct task_struct *p, struct rq_flag
+@@ -2288,30 +2288,23 @@ static int affine_move_task(struct rq *rq, struct task_struct *p, struct rq_flag
  		return -EINVAL;
  	}
  
@@ -64,6 +63,3 @@ index 31fa925852e5..3130289baf79 100644
  	} else {
  
  		if (!is_migration_disabled(p)) {
--- 
-2.45.2
-

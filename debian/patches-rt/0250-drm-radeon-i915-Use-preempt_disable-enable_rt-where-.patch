@@ -1,9 +1,8 @@
-From 97bcbc20479fb911792cfaee3008b1b028c787a0 Mon Sep 17 00:00:00 2001
 From: Mike Galbraith <umgwanakikbuti@gmail.com>
 Date: Sat, 27 Feb 2016 08:09:11 +0100
 Subject: [PATCH 250/323] drm,radeon,i915: Use preempt_disable/enable_rt()
  where recommended
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=1be4adab88197d3d9e04afe86793a089b786341e
 
 DRM folks identified the spots, so use them.
 
@@ -56,6 +55,3 @@ index 8643eebe9e24..b128857f18e9 100644
  
  	/* Decode into vertical and horizontal scanout position. */
  	*vpos = position & 0x1fff;
--- 
-2.45.2
-

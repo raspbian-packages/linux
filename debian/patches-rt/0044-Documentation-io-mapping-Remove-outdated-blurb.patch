@@ -1,8 +1,7 @@
-From 60b1130dfbb15b6c65beae0000dbbfa186e42758 Mon Sep 17 00:00:00 2001
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Tue, 3 Nov 2020 10:27:33 +0100
 Subject: [PATCH 044/323] Documentation/io-mapping: Remove outdated blurb
-Origin: https://www.kernel.org/pub/linux/kernel/projects/rt/5.10/older/patches-5.10.221-rt113.tar.xz
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=ab2a33928efd7f6da6bc8135e402b826ad081101
 
 The implementation details in the documentation are outdated and not really
 helpful. Remove them.
@@ -43,6 +42,3 @@ index a966239f04e4..e33b88268554 100644
 -io_mapping_map_wc both use ioremap_wc, a terribly inefficient function which
 -performs an IPI to inform all processors about the new mapping. This results
 -in a significant performance penalty.
--- 
-2.45.2
-
