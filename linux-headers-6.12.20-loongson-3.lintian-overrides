@@ -1,0 +1,1 @@
+linux-headers-6.12.20-loongson-3: statically-linked-binary [usr/src/*/vmlinux]
