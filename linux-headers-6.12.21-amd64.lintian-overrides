@@ -1,0 +1,1 @@
+linux-headers-6.12.21-amd64: statically-linked-binary [usr/src/*/vmlinux]
