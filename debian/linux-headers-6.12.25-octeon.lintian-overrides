@@ -1,0 +1,1 @@
+linux-headers-6.12.25-octeon: statically-linked-binary [usr/src/*/vmlinux]
