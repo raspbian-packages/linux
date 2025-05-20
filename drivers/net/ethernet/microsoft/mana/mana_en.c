@@ -89,63 +89,137 @@ static unsigned int mana_checksum_info(struct sk_buff *skb)
 	return 0;
 }
 
+static void mana_add_sge(struct mana_tx_package *tp, struct mana_skb_head *ash,
+			 int sg_i, dma_addr_t da, int sge_len, u32 gpa_mkey)
+{
+	ash->dma_handle[sg_i] = da;
+	ash->size[sg_i] = sge_len;
+
+	tp->wqe_req.sgl[sg_i].address = da;
+	tp->wqe_req.sgl[sg_i].mem_key = gpa_mkey;
+	tp->wqe_req.sgl[sg_i].size = sge_len;
+}
+
 static int mana_map_skb(struct sk_buff *skb, struct mana_port_context *apc,
-			struct mana_tx_package *tp)
+			struct mana_tx_package *tp, int gso_hs)
 {
 	struct mana_skb_head *ash = (struct mana_skb_head *)skb->head;
+	int hsg = 1; /* num of SGEs of linear part */
 	struct gdma_dev *gd = apc->ac->gdma_dev;
+	int skb_hlen = skb_headlen(skb);
+	int sge0_len, sge1_len = 0;
 	struct gdma_context *gc;
 	struct device *dev;
 	skb_frag_t *frag;
 	dma_addr_t da;
+	int sg_i;
 	int i;
 
 	gc = gd->gdma_context;
 	dev = gc->dev;
-	da = dma_map_single(dev, skb->data, skb_headlen(skb), DMA_TO_DEVICE);
 
+	if (gso_hs && gso_hs < skb_hlen) {
+		sge0_len = gso_hs;
+		sge1_len = skb_hlen - gso_hs;
+	} else {
+		sge0_len = skb_hlen;
+	}
+
+	da = dma_map_single(dev, skb->data, sge0_len, DMA_TO_DEVICE);
 	if (dma_mapping_error(dev, da))
 		return -ENOMEM;
 
-	ash->dma_handle[0] = da;
-	ash->size[0] = skb_headlen(skb);
+	mana_add_sge(tp, ash, 0, da, sge0_len, gd->gpa_mkey);
 
-	tp->wqe_req.sgl[0].address = ash->dma_handle[0];
-	tp->wqe_req.sgl[0].mem_key = gd->gpa_mkey;
-	tp->wqe_req.sgl[0].size = ash->size[0];
-
-	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-		frag = &skb_shinfo(skb)->frags[i];
-		da = skb_frag_dma_map(dev, frag, 0, skb_frag_size(frag),
-				      DMA_TO_DEVICE);
-
+	if (sge1_len) {
+		sg_i = 1;
+		da = dma_map_single(dev, skb->data + sge0_len, sge1_len,
+				    DMA_TO_DEVICE);
 		if (dma_mapping_error(dev, da))
 			goto frag_err;
 
-		ash->dma_handle[i + 1] = da;
-		ash->size[i + 1] = skb_frag_size(frag);
+		mana_add_sge(tp, ash, sg_i, da, sge1_len, gd->gpa_mkey);
+		hsg = 2;
+	}
 
-		tp->wqe_req.sgl[i + 1].address = ash->dma_handle[i + 1];
-		tp->wqe_req.sgl[i + 1].mem_key = gd->gpa_mkey;
-		tp->wqe_req.sgl[i + 1].size = ash->size[i + 1];
+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+		sg_i = hsg + i;
+
+		frag = &skb_shinfo(skb)->frags[i];
+		da = skb_frag_dma_map(dev, frag, 0, skb_frag_size(frag),
+				      DMA_TO_DEVICE);
+		if (dma_mapping_error(dev, da))
+			goto frag_err;
+
+		mana_add_sge(tp, ash, sg_i, da, skb_frag_size(frag),
+			     gd->gpa_mkey);
 	}
 
 	return 0;
 
 frag_err:
-	for (i = i - 1; i >= 0; i--)
-		dma_unmap_page(dev, ash->dma_handle[i + 1], ash->size[i + 1],
+	for (i = sg_i - 1; i >= hsg; i--)
+		dma_unmap_page(dev, ash->dma_handle[i], ash->size[i],
 			       DMA_TO_DEVICE);
 
-	dma_unmap_single(dev, ash->dma_handle[0], ash->size[0], DMA_TO_DEVICE);
+	for (i = hsg - 1; i >= 0; i--)
+		dma_unmap_single(dev, ash->dma_handle[i], ash->size[i],
+				 DMA_TO_DEVICE);
 
 	return -ENOMEM;
+}
+
+/* Handle the case when GSO SKB linear length is too large.
+ * MANA NIC requires GSO packets to put only the packet header to SGE0.
+ * So, we need 2 SGEs for the skb linear part which contains more than the
+ * header.
+ * Return a positive value for the number of SGEs, or a negative value
+ * for an error.
+ */
+static int mana_fix_skb_head(struct net_device *ndev, struct sk_buff *skb,
+			     int gso_hs)
+{
+	int num_sge = 1 + skb_shinfo(skb)->nr_frags;
+	int skb_hlen = skb_headlen(skb);
+
+	if (gso_hs < skb_hlen) {
+		num_sge++;
+	} else if (gso_hs > skb_hlen) {
+		if (net_ratelimit())
+			netdev_err(ndev,
+				   "TX nonlinear head: hs:%d, skb_hlen:%d\n",
+				   gso_hs, skb_hlen);
+
+		return -EINVAL;
+	}
+
+	return num_sge;
+}
+
+/* Get the GSO packet's header size */
+static int mana_get_gso_hs(struct sk_buff *skb)
+{
+	int gso_hs;
+
+	if (skb->encapsulation) {
+		gso_hs = skb_inner_tcp_all_headers(skb);
+	} else {
+		if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_L4) {
+			gso_hs = skb_transport_offset(skb) +
+				 sizeof(struct udphdr);
+		} else {
+			gso_hs = skb_tcp_all_headers(skb);
+		}
+	}
+
+	return gso_hs;
 }
 
 netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 {
 	enum mana_tx_pkt_format pkt_fmt = MANA_SHORT_PKT_FMT;
 	struct mana_port_context *apc = netdev_priv(ndev);
+	int gso_hs = 0; /* zero for non-GSO pkts */
 	u16 txq_idx = skb_get_queue_mapping(skb);
 	struct gdma_dev *gd = apc->ac->gdma_dev;
 	bool ipv4 = false, ipv6 = false;
@@ -157,7 +231,6 @@ netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	struct mana_txq *txq;
 	struct mana_cq *cq;
 	int err, len;
-	u16 ihs;
 
 	if (unlikely(!apc->port_is_up))
 		goto tx_drop;
@@ -207,19 +280,6 @@ netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	pkg.wqe_req.client_data_unit = 0;
 
 	pkg.wqe_req.num_sge = 1 + skb_shinfo(skb)->nr_frags;
-	WARN_ON_ONCE(pkg.wqe_req.num_sge > MAX_TX_WQE_SGL_ENTRIES);
-
-	if (pkg.wqe_req.num_sge <= ARRAY_SIZE(pkg.sgl_array)) {
-		pkg.wqe_req.sgl = pkg.sgl_array;
-	} else {
-		pkg.sgl_ptr = kmalloc_array(pkg.wqe_req.num_sge,
-					    sizeof(struct gdma_sge),
-					    GFP_ATOMIC);
-		if (!pkg.sgl_ptr)
-			goto tx_drop_count;
-
-		pkg.wqe_req.sgl = pkg.sgl_ptr;
-	}
 
 	if (skb->protocol == htons(ETH_P_IP))
 		ipv4 = true;
@@ -227,6 +287,26 @@ netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 		ipv6 = true;
 
 	if (skb_is_gso(skb)) {
+		int num_sge;
+
+		gso_hs = mana_get_gso_hs(skb);
+
+		num_sge = mana_fix_skb_head(ndev, skb, gso_hs);
+		if (num_sge > 0)
+			pkg.wqe_req.num_sge = num_sge;
+		else
+			goto tx_drop_count;
+
+		u64_stats_update_begin(&tx_stats->syncp);
+		if (skb->encapsulation) {
+			tx_stats->tso_inner_packets++;
+			tx_stats->tso_inner_bytes += skb->len - gso_hs;
+		} else {
+			tx_stats->tso_packets++;
+			tx_stats->tso_bytes += skb->len - gso_hs;
+		}
+		u64_stats_update_end(&tx_stats->syncp);
+
 		pkg.tx_oob.s_oob.is_outer_ipv4 = ipv4;
 		pkg.tx_oob.s_oob.is_outer_ipv6 = ipv6;
 
@@ -250,28 +330,6 @@ netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 						 &ipv6_hdr(skb)->daddr, 0,
 						 IPPROTO_TCP, 0);
 		}
-
-		if (skb->encapsulation) {
-			ihs = skb_inner_tcp_all_headers(skb);
-			u64_stats_update_begin(&tx_stats->syncp);
-			tx_stats->tso_inner_packets++;
-			tx_stats->tso_inner_bytes += skb->len - ihs;
-			u64_stats_update_end(&tx_stats->syncp);
-		} else {
-			if (skb_shinfo(skb)->gso_type & SKB_GSO_UDP_L4) {
-				ihs = skb_transport_offset(skb) + sizeof(struct udphdr);
-			} else {
-				ihs = skb_tcp_all_headers(skb);
-				if (ipv6_has_hopopt_jumbo(skb))
-					ihs -= sizeof(struct hop_jumbo_hdr);
-			}
-
-			u64_stats_update_begin(&tx_stats->syncp);
-			tx_stats->tso_packets++;
-			tx_stats->tso_bytes += skb->len - ihs;
-			u64_stats_update_end(&tx_stats->syncp);
-		}
-
 	} else if (skb->ip_summed == CHECKSUM_PARTIAL) {
 		csum_type = mana_checksum_info(skb);
 
@@ -294,11 +352,25 @@ netdev_tx_t mana_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 		} else {
 			/* Can't do offload of this type of checksum */
 			if (skb_checksum_help(skb))
-				goto free_sgl_ptr;
+				goto tx_drop_count;
 		}
 	}
 
-	if (mana_map_skb(skb, apc, &pkg)) {
+	WARN_ON_ONCE(pkg.wqe_req.num_sge > MAX_TX_WQE_SGL_ENTRIES);
+
+	if (pkg.wqe_req.num_sge <= ARRAY_SIZE(pkg.sgl_array)) {
+		pkg.wqe_req.sgl = pkg.sgl_array;
+	} else {
+		pkg.sgl_ptr = kmalloc_array(pkg.wqe_req.num_sge,
+					    sizeof(struct gdma_sge),
+					    GFP_ATOMIC);
+		if (!pkg.sgl_ptr)
+			goto tx_drop_count;
+
+		pkg.wqe_req.sgl = pkg.sgl_ptr;
+	}
+
+	if (mana_map_skb(skb, apc, &pkg, gso_hs)) {
 		u64_stats_update_begin(&tx_stats->syncp);
 		tx_stats->mana_map_err++;
 		u64_stats_update_end(&tx_stats->syncp);
@@ -407,7 +479,7 @@ static int mana_get_tx_queue(struct net_device *ndev, struct sk_buff *skb,
 	struct sock *sk = skb->sk;
 	int txq;
 
-	txq = apc->indir_table[hash & MANA_INDIRECT_TABLE_MASK];
+	txq = apc->indir_table[hash & (apc->indir_table_sz - 1)];
 
 	if (txq != old_q && sk && sk_fullsock(sk) &&
 	    rcu_access_pointer(sk->sk_dst_cache))
@@ -651,6 +723,13 @@ static void mana_cleanup_port_context(struct mana_port_context *apc)
 	apc->rxqs = NULL;
 }
 
+static void mana_cleanup_indir_table(struct mana_port_context *apc)
+{
+	apc->indir_table_sz = 0;
+	kfree(apc->indir_table);
+	kfree(apc->rxobj_table);
+}
+
 static int mana_init_port_context(struct mana_port_context *apc)
 {
 	apc->rxqs = kcalloc(apc->num_queues, sizeof(struct mana_rxq *),
@@ -892,7 +971,16 @@ static int mana_query_vport_cfg(struct mana_port_context *apc, u32 vport_index,
 
 	*max_sq = resp.max_num_sq;
 	*max_rq = resp.max_num_rq;
-	*num_indir_entry = resp.num_indirection_ent;
+	if (resp.num_indirection_ent > 0 &&
+	    resp.num_indirection_ent <= MANA_INDIRECT_TABLE_MAX_SIZE &&
+	    is_power_of_2(resp.num_indirection_ent)) {
+		*num_indir_entry = resp.num_indirection_ent;
+	} else {
+		netdev_warn(apc->ndev,
+			    "Setting indirection table size to default %d for vPort %d\n",
+			    MANA_INDIRECT_TABLE_DEF_SIZE, apc->port_idx);
+		*num_indir_entry = MANA_INDIRECT_TABLE_DEF_SIZE;
+	}
 
 	apc->port_handle = resp.vport;
 	ether_addr_copy(apc->mac_addr, resp.mac_addr);
@@ -984,15 +1072,13 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
 				   bool update_default_rxobj, bool update_key,
 				   bool update_tab)
 {
-	u16 num_entries = MANA_INDIRECT_TABLE_SIZE;
 	struct mana_cfg_rx_steer_req_v2 *req;
 	struct mana_cfg_rx_steer_resp resp = {};
 	struct net_device *ndev = apc->ndev;
-	mana_handle_t *req_indir_tab;
 	u32 req_buf_size;
 	int err;
 
-	req_buf_size = sizeof(*req) + sizeof(mana_handle_t) * num_entries;
+	req_buf_size = struct_size(req, indir_tab, apc->indir_table_sz);
 	req = kzalloc(req_buf_size, GFP_KERNEL);
 	if (!req)
 		return -ENOMEM;
@@ -1003,8 +1089,9 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
 	req->hdr.req.msg_version = GDMA_MESSAGE_V2;
 
 	req->vport = apc->port_handle;
-	req->num_indir_entries = num_entries;
-	req->indir_tab_offset = sizeof(*req);
+	req->num_indir_entries = apc->indir_table_sz;
+	req->indir_tab_offset = offsetof(struct mana_cfg_rx_steer_req_v2,
+					 indir_tab);
 	req->rx_enable = rx;
 	req->rss_enable = apc->rss_state;
 	req->update_default_rxobj = update_default_rxobj;
@@ -1016,11 +1103,9 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
 	if (update_key)
 		memcpy(&req->hashkey, apc->hashkey, MANA_HASH_KEY_SIZE);
 
-	if (update_tab) {
-		req_indir_tab = (mana_handle_t *)(req + 1);
-		memcpy(req_indir_tab, apc->rxobj_table,
-		       req->num_indir_entries * sizeof(mana_handle_t));
-	}
+	if (update_tab)
+		memcpy(req->indir_tab, apc->rxobj_table,
+		       flex_array_size(req, indir_tab, req->num_indir_entries));
 
 	err = mana_send_request(apc->ac, req, req_buf_size, &resp,
 				sizeof(resp));
@@ -1043,7 +1128,7 @@ static int mana_cfg_vport_steering(struct mana_port_context *apc,
 	}
 
 	netdev_info(ndev, "Configured steering vPort %llu entries %u\n",
-		    apc->port_handle, num_entries);
+		    apc->port_handle, apc->indir_table_sz);
 out:
 	kfree(req);
 	return err;
@@ -1260,11 +1345,16 @@ static void mana_unmap_skb(struct sk_buff *skb, struct mana_port_context *apc)
 	struct mana_skb_head *ash = (struct mana_skb_head *)skb->head;
 	struct gdma_context *gc = apc->ac->gdma_dev->gdma_context;
 	struct device *dev = gc->dev;
-	int i;
+	int hsg, i;
 
-	dma_unmap_single(dev, ash->dma_handle[0], ash->size[0], DMA_TO_DEVICE);
+	/* Number of SGEs of linear part */
+	hsg = (skb_is_gso(skb) && skb_headlen(skb) > ash->size[0]) ? 2 : 1;
 
-	for (i = 1; i < skb_shinfo(skb)->nr_frags + 1; i++)
+	for (i = 0; i < hsg; i++)
+		dma_unmap_single(dev, ash->dma_handle[i], ash->size[i],
+				 DMA_TO_DEVICE);
+
+	for (i = hsg; i < skb_shinfo(skb)->nr_frags + hsg; i++)
 		dma_unmap_page(dev, ash->dma_handle[i], ash->size[i],
 			       DMA_TO_DEVICE);
 }
@@ -1423,8 +1513,8 @@ static struct sk_buff *mana_build_skb(struct mana_rxq *rxq, void *buf_va,
 	return skb;
 }
 
-static void mana_rx_skb(void *buf_va, struct mana_rxcomp_oob *cqe,
-			struct mana_rxq *rxq)
+static void mana_rx_skb(void *buf_va, bool from_pool,
+			struct mana_rxcomp_oob *cqe, struct mana_rxq *rxq)
 {
 	struct mana_stats_rx *rx_stats = &rxq->stats;
 	struct net_device *ndev = rxq->ndev;
@@ -1456,6 +1546,9 @@ static void mana_rx_skb(void *buf_va, struct mana_rxcomp_oob *cqe,
 
 	if (!skb)
 		goto drop;
+
+	if (from_pool)
+		skb_mark_for_recycle(skb);
 
 	skb->dev = napi->dev;
 
@@ -1507,9 +1600,14 @@ drop_xdp:
 	u64_stats_update_end(&rx_stats->syncp);
 
 drop:
-	WARN_ON_ONCE(rxq->xdp_save_va);
-	/* Save for reuse */
-	rxq->xdp_save_va = buf_va;
+	if (from_pool) {
+		page_pool_recycle_direct(rxq->page_pool,
+					 virt_to_head_page(buf_va));
+	} else {
+		WARN_ON_ONCE(rxq->xdp_save_va);
+		/* Save for reuse */
+		rxq->xdp_save_va = buf_va;
+	}
 
 	++ndev->stats.rx_dropped;
 
@@ -1517,10 +1615,12 @@ drop:
 }
 
 static void *mana_get_rxfrag(struct mana_rxq *rxq, struct device *dev,
-			     dma_addr_t *da, bool is_napi)
+			     dma_addr_t *da, bool *from_pool, bool is_napi)
 {
 	struct page *page;
 	void *va;
+
+	*from_pool = false;
 
 	/* Reuse XDP dropped page if available */
 	if (rxq->xdp_save_va) {
@@ -1542,17 +1642,22 @@ static void *mana_get_rxfrag(struct mana_rxq *rxq, struct device *dev,
 			return NULL;
 		}
 	} else {
-		page = dev_alloc_page();
+		page = page_pool_dev_alloc_pages(rxq->page_pool);
 		if (!page)
 			return NULL;
 
+		*from_pool = true;
 		va = page_to_virt(page);
 	}
 
 	*da = dma_map_single(dev, va + rxq->headroom, rxq->datasize,
 			     DMA_FROM_DEVICE);
 	if (dma_mapping_error(dev, *da)) {
-		put_page(virt_to_head_page(va));
+		if (*from_pool)
+			page_pool_put_full_page(rxq->page_pool, page, false);
+		else
+			put_page(virt_to_head_page(va));
+
 		return NULL;
 	}
 
@@ -1561,21 +1666,25 @@ static void *mana_get_rxfrag(struct mana_rxq *rxq, struct device *dev,
 
 /* Allocate frag for rx buffer, and save the old buf */
 static void mana_refill_rx_oob(struct device *dev, struct mana_rxq *rxq,
-			       struct mana_recv_buf_oob *rxoob, void **old_buf)
+			       struct mana_recv_buf_oob *rxoob, void **old_buf,
+			       bool *old_fp)
 {
+	bool from_pool;
 	dma_addr_t da;
 	void *va;
 
-	va = mana_get_rxfrag(rxq, dev, &da, true);
+	va = mana_get_rxfrag(rxq, dev, &da, &from_pool, true);
 	if (!va)
 		return;
 
 	dma_unmap_single(dev, rxoob->sgl[0].address, rxq->datasize,
 			 DMA_FROM_DEVICE);
 	*old_buf = rxoob->buf_va;
+	*old_fp = rxoob->from_pool;
 
 	rxoob->buf_va = va;
 	rxoob->sgl[0].address = da;
+	rxoob->from_pool = from_pool;
 }
 
 static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
@@ -1589,6 +1698,7 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
 	struct device *dev = gc->dev;
 	void *old_buf = NULL;
 	u32 curr, pktlen;
+	bool old_fp;
 
 	apc = netdev_priv(ndev);
 
@@ -1631,12 +1741,12 @@ static void mana_process_rx_cqe(struct mana_rxq *rxq, struct mana_cq *cq,
 	rxbuf_oob = &rxq->rx_oobs[curr];
 	WARN_ON_ONCE(rxbuf_oob->wqe_inf.wqe_size_in_bu != 1);
 
-	mana_refill_rx_oob(dev, rxq, rxbuf_oob, &old_buf);
+	mana_refill_rx_oob(dev, rxq, rxbuf_oob, &old_buf, &old_fp);
 
 	/* Unsuccessful refill will have old_buf == NULL.
 	 * In this case, mana_rx_skb() will drop the packet.
 	 */
-	mana_rx_skb(old_buf, oob, rxq);
+	mana_rx_skb(old_buf, old_fp, oob, rxq);
 
 drop:
 	mana_move_wq_tail(rxq->gdma_rq, rxbuf_oob->wqe_inf.wqe_size_in_bu);
@@ -1803,10 +1913,10 @@ static int mana_create_txq(struct mana_port_context *apc,
 	 *  to prevent overflow.
 	 */
 	txq_size = MAX_SEND_BUFFERS_PER_QUEUE * 32;
-	BUILD_BUG_ON(!PAGE_ALIGNED(txq_size));
+	BUILD_BUG_ON(!MANA_PAGE_ALIGNED(txq_size));
 
 	cq_size = MAX_SEND_BUFFERS_PER_QUEUE * COMP_ENTRY_SIZE;
-	cq_size = PAGE_ALIGN(cq_size);
+	cq_size = MANA_PAGE_ALIGN(cq_size);
 
 	gc = gd->gdma_context;
 
@@ -1906,6 +2016,7 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
 	struct mana_recv_buf_oob *rx_oob;
 	struct device *dev = gc->dev;
 	struct napi_struct *napi;
+	struct page *page;
 	int i;
 
 	if (!rxq)
@@ -1938,9 +2049,17 @@ static void mana_destroy_rxq(struct mana_port_context *apc,
 		dma_unmap_single(dev, rx_oob->sgl[0].address,
 				 rx_oob->sgl[0].size, DMA_FROM_DEVICE);
 
-		put_page(virt_to_head_page(rx_oob->buf_va));
+		page = virt_to_head_page(rx_oob->buf_va);
+
+		if (rx_oob->from_pool)
+			page_pool_put_full_page(rxq->page_pool, page, false);
+		else
+			put_page(page);
+
 		rx_oob->buf_va = NULL;
 	}
+
+	page_pool_destroy(rxq->page_pool);
 
 	if (rxq->gdma_rq)
 		mana_gd_destroy_queue(gc, rxq->gdma_rq);
@@ -1952,18 +2071,20 @@ static int mana_fill_rx_oob(struct mana_recv_buf_oob *rx_oob, u32 mem_key,
 			    struct mana_rxq *rxq, struct device *dev)
 {
 	struct mana_port_context *mpc = netdev_priv(rxq->ndev);
+	bool from_pool = false;
 	dma_addr_t da;
 	void *va;
 
 	if (mpc->rxbufs_pre)
 		va = mana_get_rxbuf_pre(rxq, &da);
 	else
-		va = mana_get_rxfrag(rxq, dev, &da, false);
+		va = mana_get_rxfrag(rxq, dev, &da, &from_pool, false);
 
 	if (!va)
 		return -ENOMEM;
 
 	rx_oob->buf_va = va;
+	rx_oob->from_pool = from_pool;
 
 	rx_oob->sgl[0].address = da;
 	rx_oob->sgl[0].size = rxq->datasize;
@@ -2033,6 +2154,25 @@ static int mana_push_wqe(struct mana_rxq *rxq)
 	return 0;
 }
 
+static int mana_create_page_pool(struct mana_rxq *rxq, struct gdma_context *gc)
+{
+	struct page_pool_params pprm = {};
+	int ret;
+
+	pprm.pool_size = RX_BUFFERS_PER_QUEUE;
+	pprm.nid = gc->numa_node;
+
+	rxq->page_pool = page_pool_create(&pprm);
+
+	if (IS_ERR(rxq->page_pool)) {
+		ret = PTR_ERR(rxq->page_pool);
+		rxq->page_pool = NULL;
+		return ret;
+	}
+
+	return 0;
+}
+
 static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
 					u32 rxq_idx, struct mana_eq *eq,
 					struct net_device *ndev)
@@ -2062,12 +2202,19 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
 	mana_get_rxbuf_cfg(ndev->mtu, &rxq->datasize, &rxq->alloc_size,
 			   &rxq->headroom);
 
+	/* Create page pool for RX queue */
+	err = mana_create_page_pool(rxq, gc);
+	if (err) {
+		netdev_err(ndev, "Create page pool err:%d\n", err);
+		goto out;
+	}
+
 	err = mana_alloc_rx_wqe(apc, rxq, &rq_size, &cq_size);
 	if (err)
 		goto out;
 
-	rq_size = PAGE_ALIGN(rq_size);
-	cq_size = PAGE_ALIGN(cq_size);
+	rq_size = MANA_PAGE_ALIGN(rq_size);
+	cq_size = MANA_PAGE_ALIGN(cq_size);
 
 	/* Create RQ */
 	memset(&spec, 0, sizeof(spec));
@@ -2133,8 +2280,8 @@ static struct mana_rxq *mana_create_rxq(struct mana_port_context *apc,
 
 	WARN_ON(xdp_rxq_info_reg(&rxq->xdp_rxq, ndev, rxq_idx,
 				 cq->napi.napi_id));
-	WARN_ON(xdp_rxq_info_reg_mem_model(&rxq->xdp_rxq,
-					   MEM_TYPE_PAGE_SHARED, NULL));
+	WARN_ON(xdp_rxq_info_reg_mem_model(&rxq->xdp_rxq, MEM_TYPE_PAGE_POOL,
+					   rxq->page_pool));
 
 	napi_enable(&cq->napi);
 
@@ -2221,11 +2368,33 @@ static int mana_create_vport(struct mana_port_context *apc,
 	return mana_create_txq(apc, net);
 }
 
+static int mana_rss_table_alloc(struct mana_port_context *apc)
+{
+	if (!apc->indir_table_sz) {
+		netdev_err(apc->ndev,
+			   "Indirection table size not set for vPort %d\n",
+			   apc->port_idx);
+		return -EINVAL;
+	}
+
+	apc->indir_table = kcalloc(apc->indir_table_sz, sizeof(u32), GFP_KERNEL);
+	if (!apc->indir_table)
+		return -ENOMEM;
+
+	apc->rxobj_table = kcalloc(apc->indir_table_sz, sizeof(mana_handle_t), GFP_KERNEL);
+	if (!apc->rxobj_table) {
+		kfree(apc->indir_table);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
 static void mana_rss_table_init(struct mana_port_context *apc)
 {
 	int i;
 
-	for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++)
+	for (i = 0; i < apc->indir_table_sz; i++)
 		apc->indir_table[i] =
 			ethtool_rxfh_indir_default(i, apc->num_queues);
 }
@@ -2238,7 +2407,7 @@ int mana_config_rss(struct mana_port_context *apc, enum TRI_STATE rx,
 	int i;
 
 	if (update_tab) {
-		for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++) {
+		for (i = 0; i < apc->indir_table_sz; i++) {
 			queue_idx = apc->indir_table[i];
 			apc->rxobj_table[i] = apc->rxqs[queue_idx]->rxobj;
 		}
@@ -2343,7 +2512,6 @@ static int mana_init_port(struct net_device *ndev)
 	struct mana_port_context *apc = netdev_priv(ndev);
 	u32 max_txq, max_rxq, max_queues;
 	int port_idx = apc->port_idx;
-	u32 num_indirect_entries;
 	int err;
 
 	err = mana_init_port_context(apc);
@@ -2351,7 +2519,7 @@ static int mana_init_port(struct net_device *ndev)
 		return err;
 
 	err = mana_query_vport_cfg(apc, port_idx, &max_txq, &max_rxq,
-				   &num_indirect_entries);
+				   &apc->indir_table_sz);
 	if (err) {
 		netdev_err(ndev, "Failed to query info for vPort %d\n",
 			   port_idx);
@@ -2370,8 +2538,7 @@ static int mana_init_port(struct net_device *ndev)
 	return 0;
 
 reset_apc:
-	kfree(apc->rxqs);
-	apc->rxqs = NULL;
+	mana_cleanup_port_context(apc);
 	return err;
 }
 
@@ -2600,6 +2767,10 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
 	if (err)
 		goto free_net;
 
+	err = mana_rss_table_alloc(apc);
+	if (err)
+		goto reset_apc;
+
 	netdev_lockdep_set_classes(ndev);
 
 	ndev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
@@ -2613,14 +2784,15 @@ static int mana_probe_port(struct mana_context *ac, int port_idx,
 	err = register_netdev(ndev);
 	if (err) {
 		netdev_err(ndev, "Unable to register netdev.\n");
-		goto reset_apc;
+		goto free_indir;
 	}
 
 	return 0;
 
+free_indir:
+	mana_cleanup_indir_table(apc);
 reset_apc:
-	kfree(apc->rxqs);
-	apc->rxqs = NULL;
+	mana_cleanup_port_context(apc);
 free_net:
 	*ndev_storage = NULL;
 	netdev_err(ndev, "Failed to probe vPort %d: %d\n", port_idx, err);
@@ -2748,16 +2920,30 @@ int mana_probe(struct gdma_dev *gd, bool resuming)
 	if (!resuming) {
 		for (i = 0; i < ac->num_ports; i++) {
 			err = mana_probe_port(ac, i, &ac->ports[i]);
-			if (err)
+			/* we log the port for which the probe failed and stop
+			 * probes for subsequent ports.
+			 * Note that we keep running ports, for which the probes
+			 * were successful, unless add_adev fails too
+			 */
+			if (err) {
+				dev_err(dev, "Probe Failed for port %d\n", i);
 				break;
+			}
 		}
 	} else {
 		for (i = 0; i < ac->num_ports; i++) {
 			rtnl_lock();
 			err = mana_attach(ac->ports[i]);
 			rtnl_unlock();
-			if (err)
+			/* we log the port for which the attach failed and stop
+			 * attach for subsequent ports
+			 * Note that we keep running ports, for which the attach
+			 * were successful, unless add_adev fails too
+			 */
+			if (err) {
+				dev_err(dev, "Attach Failed for port %d\n", i);
 				break;
+			}
 		}
 	}
 
@@ -2773,6 +2959,7 @@ void mana_remove(struct gdma_dev *gd, bool suspending)
 {
 	struct gdma_context *gc = gd->gdma_context;
 	struct mana_context *ac = gd->driver_data;
+	struct mana_port_context *apc;
 	struct device *dev = gc->dev;
 	struct net_device *ndev;
 	int err;
@@ -2784,6 +2971,7 @@ void mana_remove(struct gdma_dev *gd, bool suspending)
 
 	for (i = 0; i < ac->num_ports; i++) {
 		ndev = ac->ports[i];
+		apc = netdev_priv(ndev);
 		if (!ndev) {
 			if (i == 0)
 				dev_err(dev, "No net device to remove\n");
@@ -2807,6 +2995,7 @@ void mana_remove(struct gdma_dev *gd, bool suspending)
 		}
 
 		unregister_netdevice(ndev);
+		mana_cleanup_indir_table(apc);
 
 		rtnl_unlock();
 
