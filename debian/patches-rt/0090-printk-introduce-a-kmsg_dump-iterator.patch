@@ -1,7 +1,7 @@
 From: John Ogness <john.ogness@linutronix.de>
 Date: Fri, 18 Dec 2020 11:40:08 +0000
-Subject: [PATCH 090/323] printk: introduce a kmsg_dump iterator
-Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e00045c4d7612426d40a288cc279c833d3c14877
+Subject: [PATCH 090/327] printk: introduce a kmsg_dump iterator
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=5b6c21436832c229c8a3661aadbd25f5abefc816
 
 Rather than store the iterator information into the registered
 kmsg_dump structure, create a separate iterator structure. The
@@ -129,7 +129,7 @@ index e4abac6c9727..f38349ad00ea 100644
  		printf("%s", line);
  	}
 diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index 39339b152b8b..fd8b962e35d8 100644
+index e8bea7c79169..c822f5f06a79 100644
 --- a/drivers/hv/vmbus_drv.c
 +++ b/drivers/hv/vmbus_drv.c
 @@ -1359,7 +1359,8 @@ static void vmbus_isr(void)
@@ -337,7 +337,7 @@ index c27b3dfa1921..aa424a1d65d0 100644
  			skip--;
  			continue;
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index fb33db0b143b..cc5f7e0fb157 100644
+index 4ea5c7f8f98a..6e7e8137427e 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -3423,6 +3423,7 @@ EXPORT_SYMBOL_GPL(kmsg_dump_reason_str);

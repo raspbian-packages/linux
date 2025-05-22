@@ -1,8 +1,8 @@
 From: Thomas Gleixner <tglx@linutronix.de>
 Date: Thu, 12 Oct 2017 16:36:39 +0200
-Subject: [PATCH 168/323] locking/rtmutex: export lockdep-less version of
+Subject: [PATCH 168/327] locking/rtmutex: export lockdep-less version of
  rt_mutex's lock, trylock and unlock
-Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=e6296f51021eb224f4d1e7135e9cda85a684e791
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=9ed10fa13087f59efca0e22faa81a9369bf782ac
 
 Required for lock implementation ontop of rtmutex.
 
