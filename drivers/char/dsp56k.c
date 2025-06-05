@@ -142,8 +142,11 @@ static int dsp56k_upload(u_char __user *bin, int len)
 	}
 	err = request_firmware(&fw, fw_name, &pdev->dev);
 	platform_device_unregister(pdev);
-	if (err)
+	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fw_name, err);
 		return err;
+	}
 	if (fw->size % 3) {
 		printk(KERN_ERR "Bogus length %d in image \"%s\"\n",
 		       fw->size, fw_name);
@@ -527,5 +530,6 @@ static void __exit dsp56k_cleanup_driver(void)
 }
 module_exit(dsp56k_cleanup_driver);
 
+MODULE_DESCRIPTION("Atari DSP56001 Device Driver");
 MODULE_LICENSE("GPL");
 MODULE_FIRMWARE("dsp56k/bootstrap.bin");

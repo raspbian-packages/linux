@@ -32,10 +32,6 @@
 struct opera1_state {
 	u32 last_key_pressed;
 };
-struct rc_map_opera_table {
-	u32 keycode;
-	u32 event;
-};
 
 static int dvb_usb_opera1_debug;
 module_param_named(debug, dvb_usb_opera1_debug, int, 0644);
@@ -439,9 +435,14 @@ MODULE_DEVICE_TABLE(usb, opera1_table);
 
 static int opera1_read_mac_address(struct dvb_usb_device *d, u8 mac[6])
 {
+	int ret;
 	u8 command[] = { READ_MAC_ADDR };
-	opera1_xilinx_rw(d->udev, 0xb1, 0xa0, command, 1, OPERA_WRITE_MSG);
-	opera1_xilinx_rw(d->udev, 0xb1, 0xa1, mac, 6, OPERA_READ_MSG);
+	ret = opera1_xilinx_rw(d->udev, 0xb1, 0xa0, command, 1, OPERA_WRITE_MSG);
+	if (ret)
+		return ret;
+	ret = opera1_xilinx_rw(d->udev, 0xb1, 0xa1, mac, 6, OPERA_READ_MSG);
+	if (ret)
+		return ret;
 	return 0;
 }
 static int opera1_xilinx_load_firmware(struct usb_device *dev,
@@ -454,6 +455,8 @@ static int opera1_xilinx_load_firmware(struct usb_device *dev,
 	info("start downloading fpga firmware %s",filename);
 
 	if ((ret = request_firmware(&fw, filename, &dev->dev)) != 0) {
+		err("did not find the firmware file '%s'. You can use <kernel_dir>/scripts/get_dvb_firmware to get the firmware",
+			filename);
 		return ret;
 	} else {
 		p = kmalloc(fw->size, GFP_KERNEL);

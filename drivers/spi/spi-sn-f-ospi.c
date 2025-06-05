@@ -10,7 +10,7 @@
 #include <linux/iopoll.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#include <linux/of_device.h>
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi-mem.h>
@@ -116,6 +116,9 @@ struct f_ospi {
 
 static u32 f_ospi_get_dummy_cycle(const struct spi_mem_op *op)
 {
+	if (!op->dummy.nbytes)
+		return 0;
+
 	return (op->dummy.nbytes * 8) / op->dummy.buswidth;
 }
 
@@ -501,7 +504,7 @@ out:
 
 static int f_ospi_exec_op(struct spi_mem *mem, const struct spi_mem_op *op)
 {
-	struct f_ospi *ospi = spi_controller_get_devdata(mem->spi->master);
+	struct f_ospi *ospi = spi_controller_get_devdata(mem->spi->controller);
 	int err = 0;
 
 	switch (op->data.dir) {
@@ -606,7 +609,7 @@ static int f_ospi_probe(struct platform_device *pdev)
 	u32 num_cs = OSPI_NUM_CS;
 	int ret;
 
-	ctlr = spi_alloc_master(dev, sizeof(*ospi));
+	ctlr = spi_alloc_host(dev, sizeof(*ospi));
 	if (!ctlr)
 		return -ENOMEM;
 

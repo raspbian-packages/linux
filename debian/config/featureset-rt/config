@@ -1,10 +1,15 @@
 ##
+## file: init/Kconfig
+##
+# CONFIG_SCHED_AUTOGROUP is not set
+
+##
 ## file: kernel/Kconfig.preempt
 ##
 ## choice: Preemption Model
 # CONFIG_PREEMPT_VOLUNTARY is not set
-CONFIG_PREEMPT_RT=y
 ## end choice
+CONFIG_PREEMPT_RT=y
 
 ##
 ## file: kernel/rcu/Kconfig

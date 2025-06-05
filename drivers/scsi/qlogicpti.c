@@ -28,7 +28,7 @@
 #include <linux/jiffies.h>
 #include <linux/dma-mapping.h>
 #include <linux/of.h>
-#include <linux/of_device.h>
+#include <linux/platform_device.h>
 #include <linux/firmware.h>
 #include <linux/pgtable.h>
 
@@ -486,8 +486,11 @@ static int qlogicpti_load_firmware(struct qlogicpti *qpti)
 	int i, timeout;
 
 	err = request_firmware(&fw, fwname, &qpti->op->dev);
-	if (err)
+	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fwname, err);
 		return err;
+	}
 	if (fw->size % 2) {
 		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
 		       fw->size, fwname);
@@ -840,7 +843,7 @@ static int qpti_map_queues(struct qlogicpti *qpti)
 	return 0;
 }
 
-const char *qlogicpti_info(struct Scsi_Host *host)
+static const char *qlogicpti_info(struct Scsi_Host *host)
 {
 	static char buf[80];
 	struct qlogicpti *qpti = (struct qlogicpti *) host->hostdata;
@@ -1406,7 +1409,7 @@ fail_unlink:
 	return -ENODEV;
 }
 
-static int qpti_sbus_remove(struct platform_device *op)
+static void qpti_sbus_remove(struct platform_device *op)
 {
 	struct qlogicpti *qpti = dev_get_drvdata(&op->dev);
 
@@ -1435,8 +1438,6 @@ static int qpti_sbus_remove(struct platform_device *op)
 		of_iounmap(&op->resource[0], qpti->sreg, sizeof(unsigned char));
 
 	scsi_host_put(qpti->qhost);
-
-	return 0;
 }
 
 static const struct of_device_id qpti_match[] = {
@@ -1462,12 +1463,12 @@ static struct platform_driver qpti_sbus_driver = {
 		.of_match_table = qpti_match,
 	},
 	.probe		= qpti_sbus_probe,
-	.remove		= qpti_sbus_remove,
+	.remove_new	= qpti_sbus_remove,
 };
 module_platform_driver(qpti_sbus_driver);
 
 MODULE_DESCRIPTION("QlogicISP SBUS driver");
-MODULE_AUTHOR("David S. Miller (davem@davemloft.net)");
+MODULE_AUTHOR("David S. Miller <davem@davemloft.net>");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("2.1");
 MODULE_FIRMWARE("qlogic/isp1000.bin");

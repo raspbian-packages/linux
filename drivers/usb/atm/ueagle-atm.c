@@ -25,7 +25,7 @@
 #include <linux/slab.h>
 #include <linux/kernel.h>
 
-#include <asm/unaligned.h>
+#include <linux/unaligned.h>
 
 #include "usbatm.h"
 
@@ -546,7 +546,7 @@ MODULE_PARM_DESC(annex,
 
 #define uea_wait(sc, cond, timeo) \
 ({ \
-	int _r = wait_event_interruptible_timeout(sc->sync_q, \
+	int _r = wait_event_freezable_timeout(sc->sync_q, \
 			(cond) || kthread_should_stop(), timeo); \
 	if (kthread_should_stop()) \
 		_r = -ENODEV; \
@@ -606,8 +606,10 @@ static void uea_upload_pre_firmware(const struct firmware *fw_entry,
 	int ret, size;
 
 	uea_enters(usb);
-	if (!fw_entry)
+	if (!fw_entry) {
+		uea_err(usb, "firmware is not available\n");
 		goto err;
+	}
 
 	pfw = fw_entry->data;
 	size = fw_entry->size;
@@ -702,6 +704,10 @@ static int uea_load_firmware(struct usb_device *usb, unsigned int ver)
 	ret = request_firmware_nowait(THIS_MODULE, 1, fw_name, &usb->dev,
 					GFP_KERNEL, usb,
 					uea_upload_pre_firmware);
+	if (ret)
+		uea_err(usb, "firmware %s is not available\n", fw_name);
+	else
+		uea_info(usb, "loading firmware %s\n", fw_name);
 
 	uea_leaves(usb);
 	return ret;
@@ -863,8 +869,12 @@ static int request_dsp(struct uea_softc *sc)
 	}
 
 	ret = request_firmware(&sc->dsp_firm, dsp_name, &sc->usb_dev->dev);
-	if (ret)
+	if (ret < 0) {
+		uea_err(INS_TO_USBDEV(sc),
+		       "requesting firmware %s failed with error %d\n",
+			dsp_name, ret);
 		return ret;
+	}
 
 	if (UEA_CHIP_VERSION(sc) == EAGLE_IV)
 		ret = check_dsp_e4(sc->dsp_firm->data, sc->dsp_firm->size);
@@ -1577,8 +1587,12 @@ static int request_cmvs_old(struct uea_softc *sc,
 
 	cmvs_file_name(sc, cmv_name, 1);
 	ret = request_firmware(fw, cmv_name, &sc->usb_dev->dev);
-	if (ret)
+	if (ret < 0) {
+		uea_err(INS_TO_USBDEV(sc),
+		       "requesting firmware %s failed with error %d\n",
+		       cmv_name, ret);
 		return ret;
+	}
 
 	data = (u8 *) (*fw)->data;
 	size = (*fw)->size;
@@ -1615,6 +1629,9 @@ static int request_cmvs(struct uea_softc *sc,
 				"try to get older cmvs\n", cmv_name);
 			return request_cmvs_old(sc, cmvs, fw);
 		}
+		uea_err(INS_TO_USBDEV(sc),
+		       "requesting firmware %s failed with error %d\n",
+		       cmv_name, ret);
 		return ret;
 	}
 
@@ -1879,7 +1896,6 @@ static int uea_kthread(void *data)
 			ret = sc->stat(sc);
 		if (ret != -EAGAIN)
 			uea_wait(sc, 0, msecs_to_jiffies(1000));
-		try_to_freeze();
 	}
 	uea_leaves(INS_TO_USBDEV(sc));
 	return ret;
@@ -1897,8 +1913,11 @@ static int load_XILINX_firmware(struct uea_softc *sc)
 	uea_enters(INS_TO_USBDEV(sc));
 
 	ret = request_firmware(&fw_entry, fw_name, &sc->usb_dev->dev);
-	if (ret)
+	if (ret) {
+		uea_err(INS_TO_USBDEV(sc), "firmware %s is not available\n",
+		       fw_name);
 		goto err0;
+	}
 
 	pfw = fw_entry->data;
 	size = fw_entry->size;
@@ -2232,7 +2251,7 @@ static ssize_t stat_status_show(struct device *dev, struct device_attribute *att
 	sc = dev_to_uea(dev);
 	if (!sc)
 		goto out;
-	ret = snprintf(buf, 10, "%08x\n", sc->stats.phy.state);
+	ret = sysfs_emit(buf, "%08x\n", sc->stats.phy.state);
 out:
 	mutex_unlock(&uea_mutex);
 	return ret;
@@ -2298,19 +2317,19 @@ static ssize_t stat_human_status_show(struct device *dev,
 
 	switch (modem_state) {
 	case 0:
-		ret = sprintf(buf, "Modem is booting\n");
+		ret = sysfs_emit(buf, "Modem is booting\n");
 		break;
 	case 1:
-		ret = sprintf(buf, "Modem is initializing\n");
+		ret = sysfs_emit(buf, "Modem is initializing\n");
 		break;
 	case 2:
-		ret = sprintf(buf, "Modem is operational\n");
+		ret = sysfs_emit(buf, "Modem is operational\n");
 		break;
 	case 3:
-		ret = sprintf(buf, "Modem synchronization failed\n");
+		ret = sysfs_emit(buf, "Modem synchronization failed\n");
 		break;
 	default:
-		ret = sprintf(buf, "Modem state is unknown\n");
+		ret = sysfs_emit(buf, "Modem state is unknown\n");
 		break;
 	}
 out:
@@ -2344,7 +2363,7 @@ static ssize_t stat_delin_show(struct device *dev, struct device_attribute *attr
 			delin = "LOSS";
 	}
 
-	ret = sprintf(buf, "%s\n", delin);
+	ret = sysfs_emit(buf, "%s\n", delin);
 out:
 	mutex_unlock(&uea_mutex);
 	return ret;
@@ -2364,7 +2383,7 @@ static ssize_t stat_##name##_show(struct device *dev,		\
 	sc = dev_to_uea(dev);					\
 	if (!sc)						\
 		goto out;					\
-	ret = snprintf(buf, 10, "%08x\n", sc->stats.phy.name);	\
+	ret = sysfs_emit(buf, "%08x\n", sc->stats.phy.name);	\
 	if (reset)						\
 		sc->stats.phy.name = 0;				\
 out:								\

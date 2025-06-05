@@ -1009,6 +1009,8 @@ static int download_fw(struct edgeport_serial *serial)
 
 	status = request_firmware(&fw, fw_name, dev);
 	if (status) {
+		dev_err(dev, "Failed to load image \"%s\" err %d\n",
+				fw_name, status);
 		return status;
 	}
 
@@ -2668,7 +2670,6 @@ static int edge_resume(struct usb_serial *serial)
 
 static struct usb_serial_driver edgeport_1port_device = {
 	.driver = {
-		.owner		= THIS_MODULE,
 		.name		= "edgeport_ti_1",
 	},
 	.description		= "Edgeport TI 1 port adapter",
@@ -2706,7 +2707,6 @@ static struct usb_serial_driver edgeport_1port_device = {
 
 static struct usb_serial_driver edgeport_2port_device = {
 	.driver = {
-		.owner		= THIS_MODULE,
 		.name		= "edgeport_ti_2",
 	},
 	.description		= "Edgeport TI 2 port adapter",

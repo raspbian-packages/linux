@@ -1090,7 +1090,7 @@ static const struct dma_map_ops sba_ops = {
 	.map_sg =		sba_map_sg,
 	.unmap_sg =		sba_unmap_sg,
 	.get_sgtable =		dma_common_get_sgtable,
-	.alloc_pages =		dma_common_alloc_pages,
+	.alloc_pages_op =	dma_common_alloc_pages,
 	.free_pages =		dma_common_free_pages,
 };
 
@@ -1988,10 +1988,11 @@ static int __init sba_driver_callback(struct parisc_device *dev)
 ** This is the only routine which is NOT static.
 ** Must be called exactly once before pci_init().
 */
-void __init sba_init(void)
+static int __init sba_init(void)
 {
-	register_parisc_driver(&sba_driver);
+	return register_parisc_driver(&sba_driver);
 }
+arch_initcall(sba_init);
 
 
 /**
@@ -2006,7 +2007,7 @@ void * sba_get_iommu(struct parisc_device *pci_hba)
 	struct parisc_device *sba_dev = parisc_parent(pci_hba);
 	struct sba_device *sba = dev_get_drvdata(&sba_dev->dev);
 	char t = sba_dev->id.hw_type;
-	int iocnum = (pci_hba->hw_path >> 3);	/* rope # */
+	int iocnum = (pci_hba->hw_path >> 3);	/* IOC # */
 
 	WARN_ON((t != HPHW_IOA) && (t != HPHW_BCPORT));
 

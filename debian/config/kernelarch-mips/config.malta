@@ -1,11 +1,15 @@
 ##
+## file: arch/Kconfig
+##
+## choice: MMU page size
+CONFIG_PAGE_SIZE_4KB=y
+## end choice
+
+##
 ## file: arch/mips/Kconfig
 ##
 ## choice: System type
 CONFIG_MIPS_MALTA=y
-## end choice
-## choice: Kernel page size
-CONFIG_PAGE_SIZE_4KB=y
 ## end choice
 
 ##
@@ -54,7 +58,6 @@ CONFIG_IPMI_POWEROFF=m
 ##
 ## file: drivers/hwmon/Kconfig
 ##
-CONFIG_SENSORS_ADM1021=m
 CONFIG_SENSORS_ADM1025=m
 CONFIG_SENSORS_ADM1026=m
 CONFIG_SENSORS_ADM1031=m
@@ -224,35 +227,16 @@ CONFIG_EPIC100=m
 CONFIG_VIA_RHINE=m
 
 ##
-## file: drivers/net/wireless/atmel/Kconfig
-##
-CONFIG_ATMEL=m
-CONFIG_PCI_ATMEL=m
-
-##
 ## file: drivers/net/wireless/intel/ipw2x00/Kconfig
 ##
 CONFIG_IPW2100=m
 CONFIG_IPW2100_MONITOR=y
 
 ##
-## file: drivers/net/wireless/intersil/orinoco/Kconfig
-##
-CONFIG_HERMES=m
-CONFIG_PLX_HERMES=m
-CONFIG_TMD_HERMES=m
-CONFIG_PCI_HERMES=m
-
-##
 ## file: drivers/net/wireless/marvell/mwifiex/Kconfig
 ##
 CONFIG_MWIFIEX=m
 CONFIG_MWIFIEX_SDIO=m
-
-##
-## file: drivers/net/wireless/zydas/Kconfig
-##
-CONFIG_USB_ZD1201=m
 
 ##
 ## file: drivers/pci/pcie/Kconfig
@@ -337,8 +321,6 @@ CONFIG_USB_USS720=m
 ##
 ## file: drivers/video/fbdev/Kconfig
 ##
-CONFIG_FB_MODE_HELPERS=y
-CONFIG_FB_TILEBLITTING=y
 CONFIG_FB_CIRRUS=y
 CONFIG_FB_PM2=m
 CONFIG_FB_PM2_FIFO_DISCONNECT=y
@@ -368,6 +350,12 @@ CONFIG_FB_KYRO=m
 CONFIG_FB_VOODOO1=m
 CONFIG_FB_TRIDENT=m
 CONFIG_FB_VIRTUAL=m
+
+##
+## file: drivers/video/fbdev/core/Kconfig
+##
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
 
 ##
 ## file: drivers/watchdog/Kconfig

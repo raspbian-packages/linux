@@ -1693,9 +1693,8 @@ bfad_init(void)
 
 	error = bfad_im_module_init();
 	if (error) {
-		error = -ENOMEM;
 		printk(KERN_WARNING "bfad_im_module_init failure\n");
-		goto ext;
+		return -ENOMEM;
 	}
 
 	if (strcmp(FCPI_NAME, " fcpim") == 0)
@@ -1737,6 +1736,7 @@ bfad_read_firmware(struct pci_dev *pdev, u32 **bfi_image,
 	const struct firmware *fw;
 
 	if (request_firmware(&fw, fw_name, &pdev->dev)) {
+		printk(KERN_ALERT "Can't locate firmware %s\n", fw_name);
 		*bfi_image = NULL;
 		goto out;
 	}

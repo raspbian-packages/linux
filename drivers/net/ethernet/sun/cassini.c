@@ -73,6 +73,7 @@
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/skbuff.h>
+#include <linux/skbuff_ref.h>
 #include <linux/ethtool.h>
 #include <linux/crc32.h>
 #include <linux/random.h>
@@ -176,7 +177,7 @@ static char version[] =
 static int cassini_debug = -1;	/* -1 == use CAS_DEF_MSG_ENABLE as value */
 static int link_mode;
 
-MODULE_AUTHOR("Adrian Sun (asun@darksunrising.com)");
+MODULE_AUTHOR("Adrian Sun <asun@darksunrising.com>");
 MODULE_DESCRIPTION("Sun Cassini(+) ethernet driver");
 MODULE_LICENSE("GPL");
 MODULE_FIRMWARE("sun/cassini.bin");
@@ -792,8 +793,11 @@ static void cas_saturn_firmware_init(struct cas *cp)
 		return;
 
 	err = request_firmware(&fw, fw_name, &cp->pdev->dev);
-	if (err)
+	if (err) {
+		pr_err("Failed to load firmware \"%s\"\n",
+		       fw_name);
 		return;
+	}
 	if (fw->size < 2) {
 		pr_err("bogus length %zu in \"%s\"\n",
 		       fw->size, fw_name);
@@ -3800,7 +3804,7 @@ static int cas_change_mtu(struct net_device *dev, int new_mtu)
 {
 	struct cas *cp = netdev_priv(dev);
 
-	dev->mtu = new_mtu;
+	WRITE_ONCE(dev->mtu, new_mtu);
 	if (!netif_running(dev) || !netif_device_present(dev))
 		return 0;
 

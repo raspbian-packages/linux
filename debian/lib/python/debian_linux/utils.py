@@ -6,6 +6,7 @@ import typing
 
 import jinja2
 
+from .dataclasses_deb822 import read_deb822
 from .debian import SourcePackage, BinaryPackage, TestsControl
 
 
@@ -34,8 +35,7 @@ class Templates(object):
                 filename = "%s/%s.%s%s" % (dir, pkgid, name, suffix)
                 if os.path.exists(filename):
                     with open(filename, 'r', encoding='utf-8') as f:
-                        mode = os.stat(f.fileno()).st_mode
-                        return (f.read(), mode, suffix)
+                        return (f.read(), suffix)
 
         raise KeyError(name)
 
@@ -48,30 +48,39 @@ class Templates(object):
 
     def get(self, key: str, context: dict[str, str] = {}) -> str:
         value = self._get(key)
-        suffix = value[2]
+        suffix = value[1]
 
         if context:
             if suffix == '.in':
-                def subst(match):
-                    return context[match.group(1)]
-                return re.sub(r'@([-_a-z0-9]+)@', subst, str(value[0]))
+                try:
+                    def subst(match):
+                        return context[match.group(1)]
+                    return re.sub(r'@([-_a-z0-9]+)@', subst, str(value[0]))
+                except KeyError as e:
+                    raise RuntimeError(f'templates/{key}.in: {e} is undefined') from None
 
             elif suffix == '.j2':
-                return self._jinja2.from_string(value[0]).render(context)
+                try:
+                    return self._jinja2.from_string(value[0]).render(context)
+                except jinja2.exceptions.UndefinedError as e:
+                    raise RuntimeError(f'templates/{key}.j2: {e}') from None
 
         return value[0]
 
-    def get_mode(self, key: str) -> str:
-        return self._get(key)[1]
+    def get_control(
+        self, key: str, context: dict[str, str] = {},
+    ) -> typing.Iterable[BinaryPackage]:
+        return read_deb822(BinaryPackage, io.StringIO(self.get(key, context)))
 
-    def get_control(self, key: str, context: dict[str, str] = {}) -> BinaryPackage:
-        return BinaryPackage.read_rfc822(io.StringIO(self.get(key, context)))
+    def get_source_control(
+        self, key: str, context: dict[str, str] = {},
+    ) -> typing.Iterable[SourcePackage]:
+        return read_deb822(SourcePackage, io.StringIO(self.get(key, context)))
 
-    def get_source_control(self, key: str, context: dict[str, str] = {}) -> SourcePackage:
-        return SourcePackage.read_rfc822(io.StringIO(self.get(key, context)))
-
-    def get_tests_control(self, key: str, context: dict[str, str] = {}) -> TestsControl:
-        return TestsControl.read_rfc822(io.StringIO(self.get(key, context)))
+    def get_tests_control(
+        self, key: str, context: dict[str, str] = {},
+    ) -> typing.Iterable[TestsControl]:
+        return read_deb822(TestsControl, io.StringIO(self.get(key, context)))
 
 
 class TextWrapper(textwrap.TextWrapper):

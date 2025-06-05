@@ -524,7 +524,6 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 				    phy_interface_t mode, bool force)
 {
 	u16 cmode;
-	int lane;
 	u16 reg;
 	int err;
 
@@ -577,19 +576,6 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 	if (cmode == chip->ports[port].cmode && !force)
 		return 0;
 
-	lane = mv88e6xxx_serdes_get_lane(chip, port);
-	if (lane >= 0) {
-		if (chip->ports[port].serdes_irq) {
-			err = mv88e6xxx_serdes_irq_disable(chip, port, lane);
-			if (err)
-				return err;
-		}
-
-		err = mv88e6xxx_serdes_power_down(chip, port, lane);
-		if (err)
-			return err;
-	}
-
 	chip->ports[port].cmode = 0;
 
 	if (cmode) {
@@ -605,22 +591,6 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			return err;
 
 		chip->ports[port].cmode = cmode;
-
-		lane = mv88e6xxx_serdes_get_lane(chip, port);
-		if (lane == -ENODEV)
-			return 0;
-		if (lane < 0)
-			return lane;
-
-		err = mv88e6xxx_serdes_power_up(chip, port, lane);
-		if (err)
-			return err;
-
-		if (chip->ports[port].serdes_irq) {
-			err = mv88e6xxx_serdes_irq_enable(chip, port, lane);
-			if (err)
-				return err;
-		}
 	}
 
 	return 0;
@@ -1743,6 +1713,7 @@ int mv88e6393x_port_set_policy(struct mv88e6xxx_chip *chip, int port,
 	ptr = shift / 8;
 	shift %= 8;
 	mask >>= ptr * 8;
+	ptr <<= 8;
 
 	err = mv88e6393x_port_policy_read(chip, port, ptr, &reg);
 	if (err)

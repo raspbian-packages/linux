@@ -1,5 +1,12 @@
 include $(top_rulesdir)/Makefile.inc
 
+# gas only understands the -fdebug-prefix-map option, and gcc doesn't
+# convert the -ffile-prefix-map option to that when invoking gas.  So
+# use both options.
+ifneq ($(filter -ffile-prefix-map=%,$(CFLAGS)),)
+CFLAGS += -fdebug-prefix-map=$(DEB_BUILD_PATH)=.
+endif
+
 MAKE_PERF := $(MAKE) O=$(CURDIR) prefix=/usr V=1 VF=1 ARCH=$(KERNEL_ARCH) WERROR=0 EXTRA_CFLAGS='$(CFLAGS) $(CPPFLAGS)' EXTRA_CXXFLAGS='$(CXXFLAGS) $(CPPFLAGS)' LDFLAGS='$(LDFLAGS)'
 
 # Disable Gtk UI until it's more usable
@@ -9,11 +16,6 @@ MAKE_PERF += NO_GTK2=1
 MAKE_PERF += feature-jvmti=0
 
 MAKE_PERF += perfexecdir=lib/perf-core plugindir=/usr/lib/traceevent/plugins tipdir=share/doc/linux-perf perf_include_dir=include/perf perf_examples_dir=share/doc/linux-perf/examples
-
-# perf can link against libdebuginfod if available, but the result is
-# undistributable for the same reason.  Override detection of
-# libdebuginfod.
-MAKE_PERF += NO_LIBDEBUGINFOD=1
 
 # perf can link against libcrypto if available, but the result is
 # undistributable as GPL v2 and Apache 2.0 are not compatible without
@@ -50,8 +52,12 @@ ifeq (,$(filter nodoc,$(DEB_BUILD_PROFILES)))
 	+$(MAKE_PERF) -C $(top_srcdir)/tools/perf/Documentation man
 endif
 # Check that perf didn't get linked against incompatibly-licensed libraries
-	type ldd
-	! ldd $(CURDIR)/perf | grep -E '\blib(bfd|crypto|debuginfod)'
+	@if readelf -d $(CURDIR)/perf | sed -rne 's/.*NEEDED.*\[(.*)\]/\1/p' | grep -E '\blib(bfd|crypto)'; then \
+		echo; \
+		echo 'perf linked against incompatibly-licensed libraries'; \
+		echo; \
+		exit 1; \
+	fi
 # Check that it links against abi::__cxa_demangle from libstdc++
 	grep __cxa_demangle $(CURDIR)/perf
 

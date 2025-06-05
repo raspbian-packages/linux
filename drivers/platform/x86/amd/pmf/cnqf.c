@@ -8,6 +8,7 @@
  * Author: Shyam Sundar S K <Shyam-sundar.S-k@amd.com>
  */
 
+#include <linux/string_choices.h>
 #include <linux/workqueue.h>
 #include "pmf.h"
 
@@ -80,10 +81,10 @@ static int amd_pmf_set_cnqf(struct amd_pmf_dev *dev, int src, int idx,
 	amd_pmf_send_cmd(dev, SET_SPPT, false, pc->sppt, NULL);
 	amd_pmf_send_cmd(dev, SET_SPPT_APU_ONLY, false, pc->sppt_apu_only, NULL);
 	amd_pmf_send_cmd(dev, SET_STT_MIN_LIMIT, false, pc->stt_min, NULL);
-	amd_pmf_send_cmd(dev, SET_STT_LIMIT_APU, false, pc->stt_skin_temp[STT_TEMP_APU],
-			 NULL);
-	amd_pmf_send_cmd(dev, SET_STT_LIMIT_HS2, false, pc->stt_skin_temp[STT_TEMP_HS2],
-			 NULL);
+	amd_pmf_send_cmd(dev, SET_STT_LIMIT_APU, false,
+			 fixp_q88_fromint(pc->stt_skin_temp[STT_TEMP_APU]), NULL);
+	amd_pmf_send_cmd(dev, SET_STT_LIMIT_HS2, false,
+			 fixp_q88_fromint(pc->stt_skin_temp[STT_TEMP_HS2]), NULL);
 
 	if (is_apmf_func_supported(dev, APMF_FUNC_SET_FAN_IDX))
 		apmf_update_fan_idx(dev,
@@ -399,7 +400,7 @@ static ssize_t cnqf_enable_store(struct device *dev,
 			amd_pmf_set_sps_power_limits(pdev);
 	}
 
-	dev_dbg(pdev->dev, "Received CnQF %s\n", input ? "on" : "off");
+	dev_dbg(pdev->dev, "Received CnQF %s\n", str_on_off(input));
 	return count;
 }
 
@@ -409,7 +410,7 @@ static ssize_t cnqf_enable_show(struct device *dev,
 {
 	struct amd_pmf_dev *pdev = dev_get_drvdata(dev);
 
-	return sysfs_emit(buf, "%s\n", pdev->cnqf_enabled ? "on" : "off");
+	return sysfs_emit(buf, "%s\n", str_on_off(pdev->cnqf_enabled));
 }
 
 static DEVICE_ATTR_RW(cnqf_enable);

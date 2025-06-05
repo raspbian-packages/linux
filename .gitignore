@@ -24,6 +24,7 @@
 *.dwo
 *.elf
 *.gcno
+*.gcda
 *.gz
 *.i
 *.ko
@@ -46,12 +47,12 @@
 *.so.dbg
 *.su
 *.symtypes
-*.symversions
 *.tab.[ch]
 *.tar
 *.xz
 *.zst
 Module.symvers
+dtbs-list
 modules.order
 
 #
@@ -69,12 +70,12 @@ modules.order
 /Module.markers
 /modules.builtin
 /modules.builtin.modinfo
+/modules.builtin.ranges
 /modules.nsdeps
 
 #
 # RPM spec file (make rpm-pkg)
 #
-/*.spec
 /rpmbuild/
 
 #
@@ -86,6 +87,12 @@ modules.order
 # tar directory (make tar*-pkg)
 #
 /tar-install/
+
+#
+# pacman files (make pacman-pkg)
+#
+/PKGBUILD
+/pacman/
 
 #
 # Generated include files
@@ -118,7 +125,6 @@ GTAGS
 # id-utils files
 ID
 
-*.orig
 *~
 \#*#
 

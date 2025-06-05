@@ -7,7 +7,6 @@ CONFIG_SECCOMP=y
 ## file: arch/powerpc/Kconfig
 ##
 # CONFIG_HOTPLUG_CPU is not set
-CONFIG_KEXEC=y
 CONFIG_CMDLINE="console=ttyS0,9600 console=tty0"
 # CONFIG_ADVANCED_OPTIONS is not set
 
@@ -210,7 +209,6 @@ CONFIG_USB_HID=m
 ##
 ## file: drivers/hwmon/Kconfig
 ##
-CONFIG_SENSORS_ADM1021=m
 CONFIG_SENSORS_ADM1025=m
 CONFIG_SENSORS_ADM1026=m
 CONFIG_SENSORS_ADM1031=m
@@ -546,37 +544,9 @@ CONFIG_WANXL=m
 CONFIG_FARSYNC=m
 
 ##
-## file: drivers/net/wireless/atmel/Kconfig
-##
-CONFIG_ATMEL=m
-# CONFIG_PCI_ATMEL is not set
-CONFIG_PCMCIA_ATMEL=m
-
-##
-## file: drivers/net/wireless/cisco/Kconfig
-##
-CONFIG_AIRO_CS=m
-
-##
 ## file: drivers/net/wireless/intel/ipw2x00/Kconfig
 ##
 # CONFIG_IPW2100 is not set
-
-##
-## file: drivers/net/wireless/intersil/orinoco/Kconfig
-##
-CONFIG_HERMES=m
-CONFIG_APPLE_AIRPORT=m
-CONFIG_PLX_HERMES=m
-CONFIG_TMD_HERMES=m
-CONFIG_PCI_HERMES=m
-CONFIG_PCMCIA_HERMES=m
-
-##
-## file: drivers/net/wireless/legacy/Kconfig
-##
-CONFIG_PCMCIA_RAYCS=m
-CONFIG_PCMCIA_WL3501=m
 
 ##
 ## file: drivers/net/wireless/marvell/mwifiex/Kconfig
@@ -584,11 +554,6 @@ CONFIG_PCMCIA_WL3501=m
 CONFIG_MWIFIEX=m
 CONFIG_MWIFIEX_SDIO=m
 CONFIG_MWIFIEX_PCIE=m
-
-##
-## file: drivers/net/wireless/zydas/Kconfig
-##
-CONFIG_USB_ZD1201=m
 
 ##
 ## file: drivers/pci/Kconfig
@@ -729,8 +694,6 @@ CONFIG_VGA_CONSOLE=y
 ##
 ## file: drivers/video/fbdev/Kconfig
 ##
-CONFIG_FB_MODE_HELPERS=y
-CONFIG_FB_TILEBLITTING=y
 CONFIG_FB_CIRRUS=m
 # CONFIG_FB_PM2 is not set
 # CONFIG_FB_CYBER2000 is not set
@@ -765,6 +728,12 @@ CONFIG_FB_IBM_GXT4500=m
 # CONFIG_FB_VIRTUAL is not set
 
 ##
+## file: drivers/video/fbdev/core/Kconfig
+##
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
+
+##
 ## file: drivers/watchdog/Kconfig
 ##
 CONFIG_WATCHDOG_RTAS=m
@@ -775,7 +744,16 @@ CONFIG_USBPCWATCHDOG=m
 ##
 ## file: init/Kconfig
 ##
+## choice: Kernel compression mode
+CONFIG_KERNEL_XZ=y
+## end choice
 CONFIG_SGETMASK_SYSCALL=y
+CONFIG_KALLSYMS_ALL=y
+
+##
+## file: kernel/Kconfig.kexec
+##
+CONFIG_KEXEC=y
 
 ##
 ## file: lib/Kconfig.debug

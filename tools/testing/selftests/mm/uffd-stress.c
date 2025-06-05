@@ -36,6 +36,7 @@
 
 #include "uffd-common.h"
 
+uint64_t features;
 #ifdef __NR_userfaultfd
 
 #define BOUNCE_RANDOM		(1<<0)
@@ -53,21 +54,21 @@ pthread_attr_t attr;
 	do { typeof(a) __tmp = (a); (a) = (b); (b) = __tmp; } while (0)
 
 const char *examples =
-    "# Run anonymous memory test on 100MiB region with 99999 bounces:\n"
-    "./userfaultfd anon 100 99999\n\n"
-    "# Run share memory test on 1GiB region with 99 bounces:\n"
-    "./userfaultfd shmem 1000 99\n\n"
-    "# Run hugetlb memory test on 256MiB region with 50 bounces:\n"
-    "./userfaultfd hugetlb 256 50\n\n"
-    "# Run the same hugetlb test but using private file:\n"
-    "./userfaultfd hugetlb-private 256 50\n\n"
-    "# 10MiB-~6GiB 999 bounces anonymous test, "
-    "continue forever unless an error triggers\n"
-    "while ./userfaultfd anon $[RANDOM % 6000 + 10] 999; do true; done\n\n";
+	"# Run anonymous memory test on 100MiB region with 99999 bounces:\n"
+	"./uffd-stress anon 100 99999\n\n"
+	"# Run share memory test on 1GiB region with 99 bounces:\n"
+	"./uffd-stress shmem 1000 99\n\n"
+	"# Run hugetlb memory test on 256MiB region with 50 bounces:\n"
+	"./uffd-stress hugetlb 256 50\n\n"
+	"# Run the same hugetlb test but using private file:\n"
+	"./uffd-stress hugetlb-private 256 50\n\n"
+	"# 10MiB-~6GiB 999 bounces anonymous test, "
+	"continue forever unless an error triggers\n"
+	"while ./uffd-stress anon $[RANDOM % 6000 + 10] 999; do true; done\n\n";
 
 static void usage(void)
 {
-	fprintf(stderr, "\nUsage: ./userfaultfd <test type> <MiB> <bounces>\n\n");
+	fprintf(stderr, "\nUsage: ./uffd-stress <test type> <MiB> <bounces>\n\n");
 	fprintf(stderr, "Supported <test type>: anon, hugetlb, "
 		"hugetlb-private, shmem, shmem-private\n\n");
 	fprintf(stderr, "Examples:\n\n");
@@ -189,10 +190,8 @@ static int stress(struct uffd_args *args)
 				   locking_thread, (void *)cpu))
 			return 1;
 		if (bounces & BOUNCE_POLL) {
-			if (pthread_create(&uffd_threads[cpu], &attr,
-					   uffd_poll_thread,
-					   (void *)&args[cpu]))
-				return 1;
+			if (pthread_create(&uffd_threads[cpu], &attr, uffd_poll_thread, &args[cpu]))
+				err("uffd_poll_thread create");
 		} else {
 			if (pthread_create(&uffd_threads[cpu], &attr,
 					   uffd_read_thread,
@@ -249,8 +248,14 @@ static int userfaultfd_stress(void)
 	unsigned long nr;
 	struct uffd_args args[nr_cpus];
 	uint64_t mem_size = nr_pages * page_size;
+	int flags = 0;
 
-	if (uffd_test_ctx_init(UFFD_FEATURE_WP_UNPOPULATED, NULL))
+	memset(args, 0, sizeof(struct uffd_args) * nr_cpus);
+
+	if (features & UFFD_FEATURE_WP_UNPOPULATED && test_type == TEST_ANON)
+		flags = UFFD_FEATURE_WP_UNPOPULATED;
+
+	if (uffd_test_ctx_init(flags, NULL))
 		err("context init failed");
 
 	if (posix_memalign(&area, page_size, page_size))
@@ -323,8 +328,10 @@ static int userfaultfd_stress(void)
 		uffd_stats_reset(args, nr_cpus);
 
 		/* bounce pass */
-		if (stress(args))
+		if (stress(args)) {
+			uffd_test_ctx_clear();
 			return 1;
+		}
 
 		/* Clear all the write protections if there is any */
 		if (test_uffdio_wp)
@@ -354,6 +361,7 @@ static int userfaultfd_stress(void)
 
 		uffd_stats_report(args, nr_cpus);
 	}
+	uffd_test_ctx_clear();
 
 	return 0;
 }
@@ -382,8 +390,6 @@ static void set_test_type(const char *type)
 
 static void parse_test_type_arg(const char *raw_type)
 {
-	uint64_t features = UFFD_API_FEATURES;
-
 	set_test_type(raw_type);
 
 	if (!test_type)
@@ -406,11 +412,14 @@ static void parse_test_type_arg(const char *raw_type)
 	 * feature.
 	 */
 
-	if (userfaultfd_open(&features))
-		err("Userfaultfd open failed");
+	if (uffd_get_features(&features))
+		err("failed to get available features");
 
 	test_uffdio_wp = test_uffdio_wp &&
 		(features & UFFD_FEATURE_PAGEFAULT_FLAG_WP);
+
+	if (test_type != TEST_ANON && !(features & UFFD_FEATURE_WP_HUGETLBFS_SHMEM))
+		test_uffdio_wp = false;
 
 	close(uffd);
 	uffd = -1;
@@ -437,6 +446,12 @@ int main(int argc, char **argv)
 
 	parse_test_type_arg(argv[1]);
 	bytes = atol(argv[2]) * 1024 * 1024;
+
+	if (test_type == TEST_HUGETLB &&
+	   get_free_hugepages() < bytes / page_size) {
+		printf("skip: Skipping userfaultfd... not enough hugepages\n");
+		return KSFT_SKIP;
+	}
 
 	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 

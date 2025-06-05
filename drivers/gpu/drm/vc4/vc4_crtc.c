@@ -31,7 +31,8 @@
 
 #include <linux/clk.h>
 #include <linux/component.h>
-#include <linux/of_device.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 
 #include <drm/drm_atomic.h>
@@ -262,7 +263,7 @@ static u32 vc4_get_fifo_full_level(struct vc4_crtc *vc4_crtc, u32 format)
 		 * Removing 1 from the FIFO full level however
 		 * seems to completely remove that issue.
 		 */
-		if (!vc4->is_vc5)
+		if (vc4->gen == VC4_GEN_4)
 			return fifo_len_bytes - 3 * HVS_FIFO_LATENCY_PIX - 1;
 
 		return fifo_len_bytes - 3 * HVS_FIFO_LATENCY_PIX;
@@ -427,7 +428,7 @@ static void vc4_crtc_config_pv(struct drm_crtc *crtc, struct drm_encoder *encode
 	if (is_dsi)
 		CRTC_WRITE(PV_HACT_ACT, mode->hdisplay * pixel_rep);
 
-	if (vc4->is_vc5)
+	if (vc4->gen == VC4_GEN_5)
 		CRTC_WRITE(PV_MUX_CFG,
 			   VC4_SET_FIELD(PV_MUX_CFG_RGB_PIXEL_MUX_MODE_NO_SWAP,
 					 PV_MUX_CFG_RGB_PIXEL_MUX_MODE));
@@ -912,7 +913,7 @@ static int vc4_async_set_fence_cb(struct drm_device *dev,
 	struct dma_fence *fence;
 	int ret;
 
-	if (!vc4->is_vc5) {
+	if (vc4->gen == VC4_GEN_4) {
 		struct vc4_bo *bo = to_vc4_bo(&dma_bo->base);
 
 		return vc4_queue_seqno_cb(dev, &flip_state->cb.seqno, bo->seqno,
@@ -999,7 +1000,7 @@ static int vc4_async_page_flip(struct drm_crtc *crtc,
 	struct vc4_bo *bo = to_vc4_bo(&dma_bo->base);
 	int ret;
 
-	if (WARN_ON_ONCE(vc4->is_vc5))
+	if (WARN_ON_ONCE(vc4->gen == VC4_GEN_5))
 		return -ENODEV;
 
 	/*
@@ -1042,7 +1043,7 @@ int vc4_page_flip(struct drm_crtc *crtc,
 		struct drm_device *dev = crtc->dev;
 		struct vc4_dev *vc4 = to_vc4_dev(dev);
 
-		if (vc4->is_vc5)
+		if (vc4->gen == VC4_GEN_5)
 			return vc5_async_page_flip(crtc, fb, event, flags);
 		else
 			return vc4_async_page_flip(crtc, fb, event, flags);
@@ -1337,9 +1338,8 @@ int __vc4_crtc_init(struct drm_device *drm,
 
 	drm_crtc_helper_add(crtc, crtc_helper_funcs);
 
-	if (!vc4->is_vc5) {
+	if (vc4->gen == VC4_GEN_4) {
 		drm_mode_crtc_set_gamma_size(crtc, ARRAY_SIZE(vc4_crtc->lut_r));
-
 		drm_crtc_enable_color_mgmt(crtc, 0, false, crtc->gamma_size);
 
 		/* We support CTM, but only for one CRTC at a time. It's therefore
@@ -1450,15 +1450,14 @@ static int vc4_crtc_dev_probe(struct platform_device *pdev)
 	return component_add(&pdev->dev, &vc4_crtc_ops);
 }
 
-static int vc4_crtc_dev_remove(struct platform_device *pdev)
+static void vc4_crtc_dev_remove(struct platform_device *pdev)
 {
 	component_del(&pdev->dev, &vc4_crtc_ops);
-	return 0;
 }
 
 struct platform_driver vc4_crtc_driver = {
 	.probe = vc4_crtc_dev_probe,
-	.remove = vc4_crtc_dev_remove,
+	.remove_new = vc4_crtc_dev_remove,
 	.driver = {
 		.name = "vc4_crtc",
 		.of_match_table = vc4_crtc_dt_match,

@@ -4054,6 +4054,8 @@ static int AscInitAsc1000Driver(ASC_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fwname, err);
 		asc_dvc->err_code |= ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
@@ -4418,6 +4420,8 @@ static int AdvInitAsc3550Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fwname, err);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
@@ -4916,6 +4920,8 @@ static int AdvInitAsc38C0800Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fwname, err);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
@@ -5402,6 +5408,8 @@ static int AdvInitAsc38C1600Driver(ADV_DVC_VAR *asc_dvc)
 
 	err = request_firmware(&fw, fwname, asc_dvc->drv_ptr->dev);
 	if (err) {
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fwname, err);
 		asc_dvc->err_code = ASC_IERR_MCODE_CHKSUM;
 		return err;
 	}
@@ -11537,6 +11545,7 @@ static void __exit advansys_exit(void)
 module_init(advansys_init);
 module_exit(advansys_exit);
 
+MODULE_DESCRIPTION("AdvanSys SCSI Adapter driver");
 MODULE_LICENSE("GPL");
 MODULE_FIRMWARE("advansys/mcode.bin");
 MODULE_FIRMWARE("advansys/3550.bin");

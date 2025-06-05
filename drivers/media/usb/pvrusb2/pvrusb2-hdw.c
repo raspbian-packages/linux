@@ -1370,6 +1370,25 @@ static int pvr2_locate_firmware(struct pvr2_hdw *hdw,
 			   "request_firmware fatal error with code=%d",ret);
 		return ret;
 	}
+	pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+		   "***WARNING*** Device %s firmware seems to be missing.",
+		   fwtypename);
+	pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+		   "Did you install the pvrusb2 firmware files in their proper location?");
+	if (fwcount == 1) {
+		pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+			   "request_firmware unable to locate %s file %s",
+			   fwtypename,fwnames[0]);
+	} else {
+		pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+			   "request_firmware unable to locate one of the following %s files:",
+			   fwtypename);
+		for (idx = 0; idx < fwcount; idx++) {
+			pvr2_trace(PVR2_TRACE_ERROR_LEGS,
+				   "request_firmware: Failed to find %s",
+				   fwnames[idx]);
+		}
+	}
 	return ret;
 }
 
@@ -3266,12 +3285,14 @@ int pvr2_hdw_get_cropcap(struct pvr2_hdw *hdw, struct v4l2_cropcap *pp)
 /* Return information about the tuner */
 int pvr2_hdw_get_tuner_status(struct pvr2_hdw *hdw,struct v4l2_tuner *vtp)
 {
-	LOCK_TAKE(hdw->big_lock); do {
+	LOCK_TAKE(hdw->big_lock);
+	do {
 		if (hdw->tuner_signal_stale) {
 			pvr2_hdw_status_poll(hdw);
 		}
 		memcpy(vtp,&hdw->tuner_signal_info,sizeof(struct v4l2_tuner));
-	} while (0); LOCK_GIVE(hdw->big_lock);
+	} while (0);
+	LOCK_GIVE(hdw->big_lock);
 	return 0;
 }
 

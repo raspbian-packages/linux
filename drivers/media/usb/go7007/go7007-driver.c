@@ -80,12 +80,14 @@ static int go7007_load_encoder(struct go7007 *go)
 	const struct firmware *fw_entry;
 	char fw_name[] = "go7007/go7007fw.bin";
 	void *bounce;
-	int fw_len, rv = 0;
+	int fw_len;
 	u16 intr_val, intr_data;
 
 	if (go->boot_fw == NULL) {
-		if (request_firmware(&fw_entry, fw_name, go->dev))
+		if (request_firmware(&fw_entry, fw_name, go->dev)) {
+			v4l2_err(go, "unable to load firmware from file \"%s\"\n", fw_name);
 			return -1;
+		}
 		if (fw_entry->size < 16 || memcmp(fw_entry->data, "WISGO7007FW", 11)) {
 			v4l2_err(go, "file \"%s\" does not appear to be go7007 firmware\n", fw_name);
 			release_firmware(fw_entry);
@@ -107,9 +109,11 @@ static int go7007_load_encoder(struct go7007 *go)
 	    go7007_read_interrupt(go, &intr_val, &intr_data) < 0 ||
 			(intr_val & ~0x1) != 0x5a5a) {
 		v4l2_err(go, "error transferring firmware\n");
-		rv = -1;
+		kfree(go->boot_fw);
+		go->boot_fw = NULL;
+		return -1;
 	}
-	return rv;
+	return 0;
 }
 
 MODULE_FIRMWARE("go7007/go7007fw.bin");
@@ -732,4 +736,5 @@ void go7007_update_board(struct go7007 *go)
 }
 EXPORT_SYMBOL(go7007_update_board);
 
+MODULE_DESCRIPTION("WIS GO7007 MPEG encoder support");
 MODULE_LICENSE("GPL v2");

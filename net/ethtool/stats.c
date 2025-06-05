@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
+#include <linux/phy.h>
+#include <linux/phylib_stubs.h>
+
 #include "netlink.h"
 #include "common.h"
 #include "bitset.h"
@@ -20,6 +23,7 @@ struct stats_reply_data {
 		struct ethtool_eth_mac_stats	mac_stats;
 		struct ethtool_eth_ctrl_stats	ctrl_stats;
 		struct ethtool_rmon_stats	rmon_stats;
+		struct ethtool_phy_stats	phydev_stats;
 	);
 	const struct ethtool_rmon_hist_range	*rmon_ranges;
 };
@@ -114,14 +118,20 @@ static int stats_parse_request(struct ethnl_req_info *req_base,
 
 static int stats_prepare_data(const struct ethnl_req_info *req_base,
 			      struct ethnl_reply_data *reply_base,
-			      struct genl_info *info)
+			      const struct genl_info *info)
 {
 	const struct stats_req_info *req_info = STATS_REQINFO(req_base);
-	struct netlink_ext_ack *extack = info ? info->extack : NULL;
 	struct stats_reply_data *data = STATS_REPDATA(reply_base);
 	enum ethtool_mac_stats_src src = req_info->src;
 	struct net_device *dev = reply_base->dev;
+	struct nlattr **tb = info->attrs;
+	struct phy_device *phydev;
 	int ret;
+
+	phydev = ethnl_req_get_phydev(req_base, tb, ETHTOOL_A_STATS_HEADER,
+				      info->extack);
+	if (IS_ERR(phydev))
+		return PTR_ERR(phydev);
 
 	ret = ethnl_ops_begin(dev);
 	if (ret < 0)
@@ -130,7 +140,7 @@ static int stats_prepare_data(const struct ethnl_req_info *req_base,
 	if ((src == ETHTOOL_MAC_STATS_SRC_EMAC ||
 	     src == ETHTOOL_MAC_STATS_SRC_PMAC) &&
 	    !__ethtool_dev_mm_supported(dev)) {
-		NL_SET_ERR_MSG_MOD(extack,
+		NL_SET_ERR_MSG_MOD(info->extack,
 				   "Device does not support MAC merge layer");
 		ethnl_ops_complete(dev);
 		return -EOPNOTSUPP;
@@ -145,6 +155,13 @@ static int stats_prepare_data(const struct ethnl_req_info *req_base,
 	data->mac_stats.src = src;
 	data->ctrl_stats.src = src;
 	data->rmon_stats.src = src;
+
+	if (test_bit(ETHTOOL_STATS_ETH_PHY, req_info->stat_mask) &&
+	    src == ETHTOOL_MAC_STATS_SRC_AGGREGATE) {
+		if (phydev)
+			phy_ethtool_get_phy_stats(phydev, &data->phy_stats,
+						  &data->phydev_stats);
+	}
 
 	if (test_bit(ETHTOOL_STATS_ETH_PHY, req_info->stat_mask) &&
 	    dev->ethtool_ops->get_eth_phy_stats)

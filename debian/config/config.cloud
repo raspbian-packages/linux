@@ -566,11 +566,6 @@ CONFIG_XEN_NETDEV_FRONTEND=m
 # CONFIG_FUJITSU_ES is not set
 
 ##
-## file: drivers/net/appletalk/Kconfig
-##
-# CONFIG_ATALK is not set
-
-##
 ## file: drivers/net/arcnet/Kconfig
 ##
 # CONFIG_ARCNET is not set
@@ -1242,7 +1237,6 @@ CONFIG_HYPERV_STORAGE=m
 ##
 # CONFIG_SERIAL_NONSTANDARD is not set
 # CONFIG_N_HDLC is not set
-# CONFIG_N_GSM is not set
 # CONFIG_NOZOMI is not set
 
 ##
@@ -1298,8 +1292,6 @@ CONFIG_FB_EFI=y
 # CONFIG_FB_OPENCORES is not set
 # CONFIG_FB_S1D13XXX is not set
 # CONFIG_FB_I740 is not set
-# CONFIG_FB_LE80578 is not set
-# CONFIG_FB_CARILLO_RANCH is not set
 # CONFIG_FB_MATROX is not set
 # CONFIG_FB_RADEON is not set
 # CONFIG_FB_ATY128 is not set
@@ -1322,11 +1314,6 @@ CONFIG_FB_EFI=y
 CONFIG_FB_HYPERV=m
 # CONFIG_FB_SIMPLE is not set
 # CONFIG_FB_SM712 is not set
-
-##
-## file: drivers/virt/Kconfig
-##
-# CONFIG_VIRT_DRIVERS is not set
 
 ##
 ## file: drivers/w1/Kconfig
@@ -1496,14 +1483,6 @@ CONFIG_EXT4_FS=y
 # CONFIG_UFS_FS is not set
 
 ##
-## file: init/Kconfig
-##
-## choice: Kernel compression mode
-# CONFIG_KERNEL_XZ is not set
-CONFIG_KERNEL_LZ4=y
-## end choice
-
-##
 ## file: kernel/power/Kconfig
 ##
 # CONFIG_PM is not set
@@ -1513,7 +1492,6 @@ CONFIG_KERNEL_LZ4=y
 ## file: lib/Kconfig.debug
 ##
 # CONFIG_DEBUG_MEMORY_INIT is not set
-# CONFIG_TEST_USER_COPY is not set
 # CONFIG_TEST_BPF is not set
 # CONFIG_TEST_FIRMWARE is not set
 # CONFIG_TEST_STATIC_KEYS is not set
@@ -1544,6 +1522,11 @@ CONFIG_KERNEL_LZ4=y
 ## file: net/9p/Kconfig
 ##
 # CONFIG_NET_9P is not set
+
+##
+## file: net/appletalk/Kconfig
+##
+# CONFIG_ATALK is not set
 
 ##
 ## file: net/atm/Kconfig

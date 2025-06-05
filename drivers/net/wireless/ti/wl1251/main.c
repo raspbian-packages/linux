@@ -57,8 +57,10 @@ static int wl1251_fetch_firmware(struct wl1251 *wl)
 
 	ret = request_firmware(&fw, WL1251_FW_NAME, dev);
 
-	if (ret)
+	if (ret < 0) {
+		wl1251_error("could not get firmware: %d", ret);
 		return ret;
+	}
 
 	if (fw->size % 4) {
 		wl1251_error("firmware size is not multiple of 32 bits: %zu",
@@ -94,8 +96,10 @@ static int wl1251_fetch_nvs(struct wl1251 *wl)
 
 	ret = request_firmware(&fw, WL1251_NVS_NAME, dev);
 
-	if (ret)
+	if (ret < 0) {
+		wl1251_error("could not get nvs file: %d", ret);
 		return ret;
+	}
 
 	if (fw->size % 4) {
 		wl1251_error("nvs size is not multiple of 32 bits: %zu",
@@ -400,7 +404,7 @@ static int wl1251_op_start(struct ieee80211_hw *hw)
 
 	/* update hw/fw version info in wiphy struct */
 	wiphy->hw_version = wl->chip_id;
-	strncpy(wiphy->fw_version, wl->fw_ver, sizeof(wiphy->fw_version));
+	strscpy(wiphy->fw_version, wl->fw_ver, sizeof(wiphy->fw_version));
 
 out:
 	if (ret < 0)
@@ -411,7 +415,7 @@ out:
 	return ret;
 }
 
-static void wl1251_op_stop(struct ieee80211_hw *hw)
+static void wl1251_op_stop(struct ieee80211_hw *hw, bool suspend)
 {
 	struct wl1251 *wl = hw->priv;
 
@@ -1347,6 +1351,10 @@ static struct ieee80211_supported_band wl1251_band_2ghz = {
 };
 
 static const struct ieee80211_ops wl1251_ops = {
+	.add_chanctx = ieee80211_emulate_add_chanctx,
+	.remove_chanctx = ieee80211_emulate_remove_chanctx,
+	.change_chanctx = ieee80211_emulate_change_chanctx,
+	.switch_vif_chanctx = ieee80211_emulate_switch_vif_chanctx,
 	.start = wl1251_op_start,
 	.stop = wl1251_op_stop,
 	.add_interface = wl1251_op_add_interface,

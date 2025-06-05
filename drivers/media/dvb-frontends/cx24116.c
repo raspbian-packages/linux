@@ -479,8 +479,13 @@ static int cx24116_firmware_ondemand(struct dvb_frontend *fe)
 			__func__, CX24116_DEFAULT_FIRMWARE);
 		ret = request_firmware(&fw, CX24116_DEFAULT_FIRMWARE,
 			state->i2c->dev.parent);
-		if (ret)
+		printk(KERN_INFO "%s: Waiting for firmware upload(2)...\n",
+			__func__);
+		if (ret) {
+			printk(KERN_ERR "%s: No firmware uploaded (timeout or file not found?)\n",
+			       __func__);
 			return ret;
+		}
 
 		/* Make sure we don't recurse back through here
 		 * during loading */
@@ -736,6 +741,7 @@ static int cx24116_read_snr_pct(struct dvb_frontend *fe, u16 *snr)
 {
 	struct cx24116_state *state = fe->demodulator_priv;
 	u8 snr_reading;
+	int ret;
 	static const u32 snr_tab[] = { /* 10 x Table (rounded up) */
 		0x00000, 0x0199A, 0x03333, 0x04ccD, 0x06667,
 		0x08000, 0x0999A, 0x0b333, 0x0cccD, 0x0e667,
@@ -744,7 +750,11 @@ static int cx24116_read_snr_pct(struct dvb_frontend *fe, u16 *snr)
 
 	dprintk("%s()\n", __func__);
 
-	snr_reading = cx24116_readreg(state, CX24116_REG_QUALITY0);
+	ret = cx24116_readreg(state, CX24116_REG_QUALITY0);
+	if (ret  < 0)
+		return ret;
+
+	snr_reading = ret;
 
 	if (snr_reading >= 0xa0 /* 100% */)
 		*snr = 0xffff;

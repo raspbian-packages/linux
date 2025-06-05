@@ -107,8 +107,11 @@ static int vnt_download_firmware(struct vnt_private *priv)
 	dev_dbg(dev, "---->Download firmware\n");
 
 	ret = request_firmware(&fw, FIRMWARE_NAME, dev);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "firmware file %s request failed (%d)\n",
+			FIRMWARE_NAME, ret);
 		goto end;
+	}
 
 	for (ii = 0; ii < fw->size; ii += FIRMWARE_CHUNK_SIZE) {
 		length = min_t(int, fw->size - ii, FIRMWARE_CHUNK_SIZE);
@@ -610,7 +613,7 @@ err:
 	return ret;
 }
 
-static void vnt_stop(struct ieee80211_hw *hw)
+static void vnt_stop(struct ieee80211_hw *hw, bool suspend)
 {
 	struct vnt_private *priv = hw->priv;
 	int i;
@@ -791,7 +794,7 @@ static void vnt_bss_info_changed(struct ieee80211_hw *hw,
 		vnt_set_bss_mode(priv);
 
 	if (changed & (BSS_CHANGED_TXPOWER | BSS_CHANGED_BANDWIDTH))
-		vnt_rf_setpower(priv, conf->chandef.chan);
+		vnt_rf_setpower(priv, conf->chanreq.oper.chan);
 
 	if (changed & BSS_CHANGED_BEACON_ENABLED) {
 		dev_dbg(&priv->usb->dev,
@@ -953,6 +956,10 @@ static void vnt_reset_tsf(struct ieee80211_hw *hw, struct ieee80211_vif *vif)
 }
 
 static const struct ieee80211_ops vnt_mac_ops = {
+	.add_chanctx = ieee80211_emulate_add_chanctx,
+	.remove_chanctx = ieee80211_emulate_remove_chanctx,
+	.change_chanctx = ieee80211_emulate_change_chanctx,
+	.switch_vif_chanctx = ieee80211_emulate_switch_vif_chanctx,
 	.tx			= vnt_tx_80211,
 	.wake_tx_queue		= ieee80211_handle_wake_tx_queue,
 	.start			= vnt_start,

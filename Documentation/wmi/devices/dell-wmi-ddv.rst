@@ -8,7 +8,7 @@ Introduction
 ============
 
 Many Dell notebooks made after ~2020 support a WMI-based interface for
-retrieving various system data like battery temperature, ePPID, diagostic data
+retrieving various system data like battery temperature, ePPID, diagnostic data
 and fan/thermal sensor data.
 
 This interface is likely used by the `Dell Data Vault` software on Windows,
@@ -185,7 +185,7 @@ Performs an analysis of the battery and returns a status code:
 WMI method BatteryeRawAnalytics()
 ---------------------------------
 
-Returns a buffer usually containg 12 blocks of analytics data.
+Returns a buffer usually containing 12 blocks of analytics data.
 Those blocks contain:
 
 - a block number starting with 0 (u8)
@@ -218,7 +218,7 @@ Returns the WMI interface version as an u32.
 WMI method FanSensorInformation()
 ---------------------------------
 
-Returns a buffer containg fan sensor entries, terminated
+Returns a buffer containing fan sensor entries, terminated
 with a single ``0xff``.
 Those entries contain:
 
@@ -277,7 +277,7 @@ Reverse-Engineering the DDV WMI interface
 4. Try to deduce the meaning of a certain WMI method by comparing the control
    flow with other ACPI methods (_BIX or _BIF for battery related methods
    for example).
-5. Use the built-in UEFI diagostics to view sensor types/values for fan/thermal
+5. Use the built-in UEFI diagnostics to view sensor types/values for fan/thermal
    related methods (sometimes overwriting static ACPI data fields can be used
    to test different sensor type values, since on some machines this data is
    not reinitialized upon a warm reset).

@@ -36,8 +36,8 @@
 
 #define rseq_smp_load_acquire(p)					\
 __extension__ ({							\
-	__typeof(*(p)) ____p1 = RSEQ_READ_ONCE(*(p));			\
-	RISCV_FENCE(r, rw)						\
+	rseq_unqual_scalar_typeof(*(p)) ____p1 = RSEQ_READ_ONCE(*(p));	\
+	RISCV_FENCE(r, rw);						\
 	____p1;								\
 })
 
@@ -46,7 +46,7 @@ __extension__ ({							\
 #define rseq_smp_store_release(p, v)					\
 do {									\
 	RISCV_FENCE(rw, w);						\
-	RSEQ_WRITE_ONCE(*(p), v);						\
+	RSEQ_WRITE_ONCE(*(p), v);					\
 } while (0)
 
 #define __RSEQ_ASM_DEFINE_TABLE(label, version, flags, start_ip,	\
@@ -158,7 +158,7 @@ do {									\
 	"bnez	" RSEQ_ASM_TMP_REG_1 ", 222b\n"				\
 	"333:\n"
 
-#define RSEQ_ASM_OP_R_DEREF_ADDV(ptr, off, post_commit_label)		\
+#define RSEQ_ASM_OP_R_DEREF_ADDV(ptr, off, inc, post_commit_label)	\
 	"mv	" RSEQ_ASM_TMP_REG_1 ", %[" __rseq_str(ptr) "]\n"	\
 	RSEQ_ASM_OP_R_ADD(off)						\
 	REG_L	  RSEQ_ASM_TMP_REG_1 ", 0(" RSEQ_ASM_TMP_REG_1 ")\n"	\

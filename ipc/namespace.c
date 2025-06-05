@@ -83,13 +83,15 @@ static struct ipc_namespace *create_ipc_ns(struct user_namespace *user_ns,
 
 	err = msg_init_ns(ns);
 	if (err)
-		goto fail_put;
+		goto fail_ipc;
 
 	sem_init_ns(ns);
 	shm_init_ns(ns);
 
 	return ns;
 
+fail_ipc:
+	retire_ipc_sysctls(ns);
 fail_mq:
 	retire_mq_sysctls(ns);
 
@@ -205,6 +207,7 @@ void put_ipc_ns(struct ipc_namespace *ns)
 			schedule_work(&free_ipc_work);
 	}
 }
+EXPORT_SYMBOL_GPL(put_ipc_ns);
 
 static inline struct ipc_namespace *to_ipc_ns(struct ns_common *ns)
 {

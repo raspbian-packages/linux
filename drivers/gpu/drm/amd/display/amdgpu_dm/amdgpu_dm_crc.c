@@ -30,6 +30,7 @@
 #include "amdgpu_dm.h"
 #include "dc.h"
 #include "amdgpu_securedisplay.h"
+#include "amdgpu_dm_psr.h"
 
 static const char *const pipe_crc_sources[] = {
 	"none",
@@ -123,9 +124,8 @@ static void amdgpu_dm_crtc_notify_ta_to_read(struct work_struct *work)
 	secure_display_ctx = container_of(work, struct secure_display_context, notify_ta_work);
 	crtc = secure_display_ctx->crtc;
 
-	if (!crtc) {
+	if (!crtc)
 		return;
-	}
 
 	psp = &drm_to_adev(crtc->dev)->psp;
 
@@ -151,9 +151,8 @@ static void amdgpu_dm_crtc_notify_ta_to_read(struct work_struct *work)
 	ret = psp_securedisplay_invoke(psp, TA_SECUREDISPLAY_COMMAND__SEND_ROI_CRC);
 
 	if (!ret) {
-		if (securedisplay_cmd->status != TA_SECUREDISPLAY_STATUS__SUCCESS) {
+		if (securedisplay_cmd->status != TA_SECUREDISPLAY_STATUS__SUCCESS)
 			psp_securedisplay_parse_resp_status(psp, securedisplay_cmd->status);
-		}
 	}
 
 	mutex_unlock(&psp->securedisplay_context.mutex);
@@ -225,6 +224,10 @@ int amdgpu_dm_crtc_configure_crc_source(struct drm_crtc *crtc,
 		return -EINVAL;
 
 	mutex_lock(&adev->dm.dc_lock);
+
+	/* For PSR1, check that the panel has exited PSR */
+	if (stream_state->link->psr_settings.psr_version < DC_PSR_VERSION_SU_1)
+		amdgpu_dm_psr_wait_disable(stream_state);
 
 	/* Enable or disable CRTC CRC generation */
 	if (dm_is_crc_source_crtc(source) || source == AMDGPU_DM_PIPE_CRC_SOURCE_NONE) {
@@ -328,6 +331,9 @@ int amdgpu_dm_crtc_set_crc_source(struct drm_crtc *crtc, const char *src_name)
 			if (!connector->state || connector->state->crtc != crtc)
 				continue;
 
+			if (connector->connector_type == DRM_MODE_CONNECTOR_WRITEBACK)
+				continue;
+
 			aconn = to_amdgpu_dm_connector(connector);
 			break;
 		}
@@ -356,6 +362,17 @@ int amdgpu_dm_crtc_set_crc_source(struct drm_crtc *crtc, const char *src_name)
 
 	}
 
+	/*
+	 * Reading the CRC requires the vblank interrupt handler to be
+	 * enabled. Keep a reference until CRC capture stops.
+	 */
+	enabled = amdgpu_dm_is_valid_crc_source(cur_crc_src);
+	if (!enabled && enable) {
+		ret = drm_crtc_vblank_get(crtc);
+		if (ret)
+			goto cleanup;
+	}
+
 #if defined(CONFIG_DRM_AMD_SECURE_DISPLAY)
 	/* Reset secure_display when we change crc source from debugfs */
 	amdgpu_dm_set_crc_window_default(crtc, crtc_state->stream);
@@ -366,16 +383,7 @@ int amdgpu_dm_crtc_set_crc_source(struct drm_crtc *crtc, const char *src_name)
 		goto cleanup;
 	}
 
-	/*
-	 * Reading the CRC requires the vblank interrupt handler to be
-	 * enabled. Keep a reference until CRC capture stops.
-	 */
-	enabled = amdgpu_dm_is_valid_crc_source(cur_crc_src);
 	if (!enabled && enable) {
-		ret = drm_crtc_vblank_get(crtc);
-		if (ret)
-			goto cleanup;
-
 		if (dm_is_crc_source_dprx(source)) {
 			if (drm_dp_start_crc(aux, crtc)) {
 				DRM_DEBUG_DRIVER("dp start crc failed\n");

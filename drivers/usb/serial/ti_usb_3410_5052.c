@@ -417,7 +417,6 @@ static const struct usb_device_id ti_id_table_combined[] = {
 
 static struct usb_serial_driver ti_1port_device = {
 	.driver = {
-		.owner		= THIS_MODULE,
 		.name		= "ti_usb_3410_5052_1",
 	},
 	.description		= "TI USB 3410 1 port adapter",
@@ -450,7 +449,6 @@ static struct usb_serial_driver ti_1port_device = {
 
 static struct usb_serial_driver ti_2port_device = {
 	.driver = {
-		.owner		= THIS_MODULE,
 		.name		= "ti_usb_3410_5052_2",
 	},
 	.description		= "TI USB 5052 2 port adapter",
@@ -1635,8 +1633,10 @@ static int ti_download_firmware(struct ti_device *tdev)
 	}
 
 check_firmware:
-	if (status)
+	if (status) {
+		dev_err(&dev->dev, "%s - firmware not found\n", __func__);
 		return -ENOENT;
+	}
 	if (fw_p->size > TI_FIRMWARE_BUF_SIZE) {
 		dev_err(&dev->dev, "%s - firmware too large %zu\n", __func__, fw_p->size);
 		release_firmware(fw_p);

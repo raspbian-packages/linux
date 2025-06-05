@@ -367,6 +367,7 @@ static void bnx2_setup_cnic_irq_info(struct bnx2 *bp)
 	cp->irq_arr[0].status_blk = (void *)
 		((unsigned long) bnapi->status_blk.msi +
 		(BNX2_SBLK_MSIX_ALIGN_SIZE * sb_id));
+	cp->irq_arr[0].status_blk_map = bp->status_blk_mapping;
 	cp->irq_arr[0].status_blk_num = sb_id;
 	cp->num_irq = 1;
 }
@@ -3710,13 +3711,16 @@ static int bnx2_request_uncached_firmware(struct bnx2 *bp)
 	}
 
 	rc = request_firmware(&bp->mips_firmware, mips_fw_file, &bp->pdev->dev);
-	if (rc)
+	if (rc) {
+		pr_err("Can't load firmware file \"%s\"\n", mips_fw_file);
 		goto out;
+	}
 
 	rc = request_firmware(&bp->rv2p_firmware, rv2p_fw_file, &bp->pdev->dev);
-	if (rc)
+	if (rc) {
+		pr_err("Can't load firmware file \"%s\"\n", rv2p_fw_file);
 		goto err_release_mips_firmware;
-
+	}
 	mips_fw = (const struct bnx2_mips_fw_file *) bp->mips_firmware->data;
 	rv2p_fw = (const struct bnx2_rv2p_fw_file *) bp->rv2p_firmware->data;
 	if (bp->mips_firmware->size < sizeof(*mips_fw) ||
@@ -7908,7 +7912,7 @@ bnx2_change_mtu(struct net_device *dev, int new_mtu)
 {
 	struct bnx2 *bp = netdev_priv(dev);
 
-	dev->mtu = new_mtu;
+	WRITE_ONCE(dev->mtu, new_mtu);
 	return bnx2_change_ring_size(bp, bp->rx_ring_size, bp->tx_ring_size,
 				     false);
 }

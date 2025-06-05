@@ -237,24 +237,16 @@ static void __update_mqd(struct mqd_manager *mm, void *mqd,
 	q->is_active = QUEUE_IS_ACTIVE(*q);
 }
 
-
-static void update_mqd(struct mqd_manager *mm, void *mqd,
-			struct queue_properties *q,
-			struct mqd_update_info *minfo)
-{
-	__update_mqd(mm, mqd, q, minfo, MTYPE_CC, 1);
-}
-
-static uint32_t read_doorbell_id(void *mqd)
+static bool check_preemption_failed(struct mqd_manager *mm, void *mqd)
 {
 	struct vi_mqd *m = (struct vi_mqd *)mqd;
 
-	return m->queue_doorbell_id0;
+	return kfd_check_hiq_mqd_doorbell_id(mm->dev, m->queue_doorbell_id0, 0);
 }
 
-static void update_mqd_tonga(struct mqd_manager *mm, void *mqd,
-			struct queue_properties *q,
-			struct mqd_update_info *minfo)
+static void update_mqd(struct mqd_manager *mm, void *mqd,
+		       struct queue_properties *q,
+		       struct mqd_update_info *minfo)
 {
 	__update_mqd(mm, mqd, q, minfo, MTYPE_UC, 0);
 }
@@ -490,7 +482,7 @@ struct mqd_manager *mqd_manager_init_vi(enum KFD_MQD_TYPE type,
 #if defined(CONFIG_DEBUG_FS)
 		mqd->debugfs_show_mqd = debugfs_show_mqd;
 #endif
-		mqd->read_doorbell_id = read_doorbell_id;
+		mqd->check_preemption_failed = check_preemption_failed;
 		break;
 	case KFD_MQD_TYPE_DIQ:
 		mqd->allocate_mqd = allocate_mqd;
@@ -527,18 +519,5 @@ struct mqd_manager *mqd_manager_init_vi(enum KFD_MQD_TYPE type,
 		return NULL;
 	}
 
-	return mqd;
-}
-
-struct mqd_manager *mqd_manager_init_vi_tonga(enum KFD_MQD_TYPE type,
-			struct kfd_node *dev)
-{
-	struct mqd_manager *mqd;
-
-	mqd = mqd_manager_init_vi(type, dev);
-	if (!mqd)
-		return NULL;
-	if (type == KFD_MQD_TYPE_CP)
-		mqd->update_mqd = update_mqd_tonga;
 	return mqd;
 }

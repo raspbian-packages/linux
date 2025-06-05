@@ -3,7 +3,7 @@
 // This file is provided under a dual BSD/GPLv2 license.  When using or
 // redistributing this file, you may do so under either license.
 //
-// Copyright(c) 2022 Intel Corporation. All rights reserved.
+// Copyright(c) 2022 Intel Corporation
 //
 
 /*
@@ -329,6 +329,11 @@ static bool hdaml_link_check_cmdsync(u32 __iomem *lsync, u32 cmdsync_mask)
 	val = readl(lsync);
 
 	return !!(val & cmdsync_mask);
+}
+
+static u16 hdaml_link_get_lsdiid(u16 __iomem *lsdiid)
+{
+	return readw(lsdiid);
 }
 
 static void hdaml_link_set_lsdiid(u16 __iomem *lsdiid, int dev_num)
@@ -752,6 +757,22 @@ int hdac_bus_eml_sdw_power_down_unlocked(struct hdac_bus *bus, int sublink)
 }
 EXPORT_SYMBOL_NS(hdac_bus_eml_sdw_power_down_unlocked, SND_SOC_SOF_HDA_MLINK);
 
+int hdac_bus_eml_sdw_get_lsdiid_unlocked(struct hdac_bus *bus, int sublink, u16 *lsdiid)
+{
+	struct hdac_ext2_link *h2link;
+	struct hdac_ext_link *hlink;
+
+	h2link = find_ext2_link(bus, true, AZX_REG_ML_LEPTR_ID_SDW);
+	if (!h2link)
+		return -ENODEV;
+
+	hlink = &h2link->hext_link;
+
+	*lsdiid = hdaml_link_get_lsdiid(hlink->ml_addr + AZX_REG_ML_LSDIID_OFFSET(sublink));
+
+	return 0;
+} EXPORT_SYMBOL_NS(hdac_bus_eml_sdw_get_lsdiid_unlocked, SND_SOC_SOF_HDA_MLINK);
+
 int hdac_bus_eml_sdw_set_lsdiid(struct hdac_bus *bus, int sublink, int dev_num)
 {
 	struct hdac_ext2_link *h2link;
@@ -810,8 +831,8 @@ int hdac_bus_eml_sdw_map_stream_ch(struct hdac_bus *bus, int sublink, int y,
 
 	val = readw(pcmsycm);
 
-	dev_dbg(bus->dev, "channel_mask %#x stream_id %d dir %d pcmscm %#x\n",
-		channel_mask, stream_id, dir, val);
+	dev_dbg(bus->dev, "sublink %d channel_mask %#x stream_id %d dir %d pcmscm %#x\n",
+		sublink, channel_mask, stream_id, dir, val);
 
 	return 0;
 } EXPORT_SYMBOL_NS(hdac_bus_eml_sdw_map_stream_ch, SND_SOC_SOF_HDA_MLINK);
@@ -951,3 +972,4 @@ EXPORT_SYMBOL_NS(hdac_bus_eml_enable_offload, SND_SOC_SOF_HDA_MLINK);
 #endif
 
 MODULE_LICENSE("Dual BSD/GPL");
+MODULE_DESCRIPTION("SOF support for HDaudio multi-link");
