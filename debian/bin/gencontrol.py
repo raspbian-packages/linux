@@ -54,6 +54,15 @@ class Gencontrol(Base):
             Templates(template_dirs),
             VersionLinux)
         self.config_dirs = config_dirs
+
+        for debianrelease in self.config.debianreleases:
+            if debianrelease.name_regex.fullmatch(self.changelog[0].distribution):
+                self.debianrelease = debianrelease
+                break
+        else:
+            raise RuntimeError(
+                f'No debianrelease config matches {self.changelog[0].distribution}')
+
         self.process_changelog()
 
         for env, attr, desc in self.env_flags:
@@ -556,14 +565,22 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
     def process_changelog(self) -> None:
         version = self.version = self.changelog[0].version
 
-        if self.changelog[0].distribution == 'UNRELEASED':
-            self.abiname = f'{version.linux_upstream}+unreleased'
-        elif self.changelog[0].distribution == 'experimental':
-            self.abiname = f'{version.linux_upstream}'
-        elif version.linux_revision_backports:
-            self.abiname = f'{version.linux_upstream_full}+bpo'
+        if self.debianrelease.abi_version_full:
+            self.abiname = version.linux_upstream_full \
+                + self.debianrelease.abi_suffix
+            # All Debian versions must have a distinct ABI version.
+            # So if this is not the first Debian version with its
+            # upstream version and Debian release, distinguish it by
+            # adding a serial number suffix.
+            n = sum(1
+                    for entry in self.changelog
+                    if (entry.version.linux_upstream_full == version.linux_upstream_full
+                        and self.debianrelease.name_regex.fullmatch(entry.distribution)))
+            if n > 1:
+                self.abiname += f'+{n-1}'
         else:
-            self.abiname = f'{version.linux_upstream_full}'
+            self.abiname = version.linux_upstream \
+                + self.debianrelease.abi_suffix
 
         self.vars = {
             'upstreamversion': self.version.linux_upstream,
@@ -578,26 +595,9 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
         self.vars['source_suffix'] = \
             self.changelog[0].source[len(self.vars['source_basename']):]
 
-        distribution = self.changelog[0].distribution
-        if distribution in ('unstable', ):
-            if version.linux_revision_experimental or \
-               version.linux_revision_backports or \
-               version.linux_revision_other:
-                raise RuntimeError("Can't upload to %s with a version of %s" %
-                                   (distribution, version))
-        if distribution in ('experimental', ):
-            if not version.linux_revision_experimental:
-                raise RuntimeError("Can't upload to %s with a version of %s" %
-                                   (distribution, version))
-        if distribution.endswith('-security') or distribution.endswith('-lts'):
-            if version.linux_revision_backports or \
-               version.linux_revision_other:
-                raise RuntimeError("Can't upload to %s with a version of %s" %
-                                   (distribution, version))
-        if distribution.endswith('-backports'):
-            if not version.linux_revision_backports:
-                raise RuntimeError("Can't upload to %s with a version of %s" %
-                                   (distribution, version))
+        if not self.debianrelease.revision_regex.fullmatch(version.revision):
+            raise RuntimeError(
+                f"Can't upload to {self.changelog[0].distribution} with a version of {version}")
 
     def write(self) -> None:
         super().write()

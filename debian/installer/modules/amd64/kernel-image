@@ -10,3 +10,6 @@ crc32_pclmul
 # pmem drivers for UEFI HTTP boot
 nd_pmem
 nfit
+
+# Intel pinctrl drivers
+drivers/pinctrl/intel/**
