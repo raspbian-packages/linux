@@ -1,0 +1,4 @@
+boot/vmlinu?-6.18.5+deb14-test
+lib/modules/6.18.5+deb14-test/modules.builtin  lib/modules/6.18.5+deb14-test
+lib/modules/6.18.5+deb14-test/modules.order    lib/modules/6.18.5+deb14-test
+lib/modules/6.18.5+deb14-test/dtb              lib/modules/6.18.5+deb14-test
