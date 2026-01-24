@@ -11,6 +11,7 @@
 #include <linux/bio.h>
 #include <linux/posix_acl.h>
 #include <linux/security.h>
+#include <linux/log2.h>
 
 #include "gfs2.h"
 #include "incore.h"
@@ -450,6 +451,11 @@ static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
 		gfs2_consist_inode(ip);
 		return -EIO;
 	}
+	if ((ip->i_diskflags & GFS2_DIF_EXHASH) &&
+	    depth < ilog2(sdp->sd_hash_ptrs)) {
+		gfs2_consist_inode(ip);
+		return -EIO;
+	}
 	ip->i_depth = (u8)depth;
 	ip->i_entries = be32_to_cpu(str->di_entries);
 
@@ -470,7 +476,7 @@ static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
  * Returns: errno
  */
 
-int gfs2_inode_refresh(struct gfs2_inode *ip)
+static int gfs2_inode_refresh(struct gfs2_inode *ip)
 {
 	struct buffer_head *dibh;
 	int error;
@@ -601,14 +607,13 @@ static int freeze_go_xmote_bh(struct gfs2_glock *gl)
 	if (test_bit(SDF_JOURNAL_LIVE, &sdp->sd_flags)) {
 		j_gl->gl_ops->go_inval(j_gl, DIO_METADATA);
 
-		error = gfs2_find_jhead(sdp->sd_jdesc, &head, false);
+		error = gfs2_find_jhead(sdp->sd_jdesc, &head);
 		if (gfs2_assert_withdraw_delayed(sdp, !error))
 			return error;
 		if (gfs2_assert_withdraw_delayed(sdp, head.lh_flags &
 						 GFS2_LOG_HEAD_UNMOUNT))
 			return -EIO;
-		sdp->sd_log_sequence = head.lh_sequence + 1;
-		gfs2_log_pointers_init(sdp, head.lh_blkno);
+		gfs2_log_pointers_init(sdp, &head);
 	}
 	return 0;
 }

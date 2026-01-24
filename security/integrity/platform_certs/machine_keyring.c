@@ -68,7 +68,10 @@ static bool __init trust_moklist(void)
 
 	if (!initialized) {
 		initialized = true;
-		trust_mok = true;
+		trust_mok = false;
+
+		if (uefi_check_trust_mok_keys())
+			trust_mok = true;
 	}
 
 	return trust_mok;

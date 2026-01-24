@@ -84,16 +84,6 @@ name = 'x86'
 [[featureset]]
 name = 'none'
 
-[[featureset]]
-name = 'rt'
-enable = true
-  [featureset.description]
-  parts = ['rt']
-  [featureset.description.long]
-  rt = 'This kernel includes the PREEMPT_RT realtime patch set.'
-  [featureset.description.short]
-  rt = 'PREEMPT_RT'
-
 [[debianrelease]]
 name_regex = 'UNRELEASED'
 abi_version_full = false
@@ -106,8 +96,18 @@ revision_regex = '\d+~exp\d+'
 
 [[debianrelease]]
 name_regex = 'unstable'
-abi_suffix = '+deb13'
+abi_suffix = '+deb14'
 revision_regex = '\d+(\.\d+)?'
+
+[[debianrelease]]
+name_regex = 'forky(-security)?'
+abi_suffix = '+deb14'
+revision_regex = '\d+(\.\d+)?(\+deb14u\d+)?'
+
+[[debianrelease]]
+name_regex = 'trixie-backports'
+abi_suffix = '+deb13'
+revision_regex = '\d+(\.\d+)?(\+deb14u\d+)?~bpo13\+\d+'
 
 [[debianrelease]]
 name_regex = 'trixie(-security)?'
@@ -123,8 +123,13 @@ revision_regex = '\d+(\.\d+)?(\+deb13u\d+)?~bpo12\+\d+'
 [[debianrelease]]
 name_regex = '.*'
 
+[description.long]
+rt = 'This kernel is configured with PREEMPT_RT real time support.'
+[description.short]
+rt = 'PREEMPT_RT'
+
 [build]
-compiler = 'gcc-14'
+compiler = 'gcc-15'
 
 [relations.image]
 depends = [

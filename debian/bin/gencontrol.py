@@ -89,8 +89,7 @@ class Gencontrol(Base):
     ) -> None:
         super().do_main_setup(config, vars, makeflags)
         makeflags.update({
-            'VERSION': self.version.linux_version,
-            'UPSTREAMVERSION': self.version.linux_upstream,
+            'UPSTREAMVERSION': self.version.linux_version,
             'ABINAME': self.abiname,
             'SOURCEVERSION': self.version.complete,
         })
@@ -191,7 +190,7 @@ class Gencontrol(Base):
         vars: dict[str, str],
         makeflags: MakeFlags,
     ) -> None:
-        makeflags['KERNEL_ARCH'] = config.name_kernelarch
+        makeflags['KERNEL_ARCH'] = vars['kernel_arch'] = config.name_kernelarch
 
     def do_arch_packages(
         self,
@@ -291,27 +290,17 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
         do_meta = config.packages.meta
 
         relation_compiler = PackageRelationEntry(cast(str, config.build.compiler))
+        relation_compiler_host = PackageRelationEntry(
+            relation_compiler,
+            name=f'{relation_compiler.name}-for-host',
+        )
 
-        relation_compiler_header = PackageRelationGroup([relation_compiler])
-
-        # Generate compiler build-depends for native:
-        # gcc-N [arm64] <!cross !pkg.linux.nokernel>
+        # Generate compiler build-depends:
         self.bundle.source.build_depends_arch.merge([
             PackageRelationEntry(
-                relation_compiler,
+                relation_compiler_host,
                 arches={arch},
-                restrictions='<!cross !pkg.linux.nokernel>',
-            )
-        ])
-
-        # Generate compiler build-depends for cross:
-        # gcc-N-aarch64-linux-gnu [arm64] <cross !pkg.linux.nokernel>
-        self.bundle.source.build_depends_arch.merge([
-            PackageRelationEntry(
-                relation_compiler,
-                name=f'{relation_compiler.name}-{config.defs_debianarch.gnutype_package}',
-                arches={arch},
-                restrictions='<cross !pkg.linux.nokernel>',
+                restrictions='<!pkg.linux.nokernel>',
             )
         ])
 
@@ -397,7 +386,7 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
                     desc.append(config.description.long[part])
                     desc.append_short(config.description.short[part])
 
-        packages_headers[0].depends.merge(relation_compiler_header)
+        packages_headers[0].depends.merge([relation_compiler_host])
         packages_own.extend(packages_image)
         packages_own.extend(packages_headers)
 
@@ -447,8 +436,11 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
                 self.bundle.add('image-extra-dev', ruleid, makeflags, vars, arch=arch)
             )
 
-        # In a quick build, only build the quick flavour (if any).
-        if not config.defs_flavour.is_quick:
+        # In a quick build, only build the test flavour.
+        if config.defs_flavour.is_test:
+            for package in packages_own:
+                package.build_profiles[0].pos.add('pkg.linux.quick')
+        else:
             for package in packages_own:
                 package.build_profiles[0].neg.add('pkg.linux.quick')
 
@@ -471,7 +463,7 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
         self.tests_control.extend(tests_control_headers)
 
         kconfig = []
-        for c in config.config:
+        for c in (config.config_nodefault if config.defs_flavour.is_test else config.config):
             for d in self.config_dirs:
                 if (f := d / c).exists():
                     kconfig.append(str(f))
@@ -579,11 +571,11 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
             if n > 1:
                 self.abiname += f'+{n-1}'
         else:
-            self.abiname = version.linux_upstream \
+            self.abiname = version.linux_version_update \
                 + self.debianrelease.abi_suffix
 
         self.vars = {
-            'upstreamversion': self.version.linux_upstream,
+            'upstreamversion': self.version.linux_upstream_full,
             'version': self.version.linux_version,
             'version_complete': self.version.complete,
             'source_basename': re.sub(r'-[\d.]+$', '',
@@ -606,14 +598,15 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
 
     def write_signed(self) -> None:
         for bundle in self.bundles.values():
-            pkg_sign_entries = {}
+            pkg_sign_entries_notquick = {}
+            pkg_sign_entries_quick = {}
 
             for p in bundle.packages.values():
                 if not isinstance(p, BinaryPackage):
                     continue
 
                 if pkg_sign_pkg := p.meta_sign_package:
-                    pkg_sign_entries[pkg_sign_pkg] = {
+                    e = {
                         'trusted_certs': [],
                         'files': [
                             {
@@ -624,9 +617,16 @@ linux-signed-{vars['arch']} (@signedtemplate_sourceversion@) {dist}; urgency={ur
                         ],
                     }
 
-            if pkg_sign_entries:
-                with bundle.path('files.json').open('w') as f:
-                    json.dump({'packages': pkg_sign_entries}, f, indent=2)
+                    if 'pkg.linux.quick' in p.build_profiles[0].pos:
+                        pkg_sign_entries_quick[pkg_sign_pkg] = e
+                    else:
+                        pkg_sign_entries_notquick[pkg_sign_pkg] = e
+
+            if pkg_sign_entries_notquick or pkg_sign_entries_quick:
+                with bundle.path('files.notquick.json').open('w') as f:
+                    json.dump({'packages': pkg_sign_entries_notquick}, f, indent=2)
+                with bundle.path('files.quick.json').open('w') as f:
+                    json.dump({'packages': pkg_sign_entries_quick}, f, indent=2)
 
     def write_tests_control(self) -> None:
         with open("debian/tests/control", 'w') as f:

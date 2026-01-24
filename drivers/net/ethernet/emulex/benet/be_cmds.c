@@ -2615,7 +2615,11 @@ err:
 	return status;
 }
 
-static char flash_cookie[2][16] = {"*** SE FLAS", "H DIRECTORY *** "};
+/*
+ * Since the cookie is text, add a parsing-skipped space to keep it from
+ * ever being matched on storage holding this source file.
+ */
+static const char flash_cookie[32] __nonstring = "*** SE FLAS" "H DIRECTORY *** ";
 
 static bool phy_flashing_required(struct be_adapter *adapter)
 {
@@ -3852,8 +3856,8 @@ int be_cmd_set_mac_list(struct be_adapter *adapter, u8 *mac_array,
 	status = be_mcc_notify_wait(adapter);
 
 err:
-	dma_free_coherent(&adapter->pdev->dev, cmd.size, cmd.va, cmd.dma);
 	spin_unlock_bh(&adapter->mcc_lock);
+	dma_free_coherent(&adapter->pdev->dev, cmd.size, cmd.va, cmd.dma);
 	return status;
 }
 

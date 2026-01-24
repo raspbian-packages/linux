@@ -89,6 +89,19 @@ static int iget_set(struct inode *inode, void *opaque)
 	return 0;
 }
 
+void gfs2_setup_inode(struct inode *inode)
+{
+	gfp_t gfp_mask;
+
+	/*
+	 * Ensure all page cache allocations are done from GFP_NOFS context to
+	 * prevent direct reclaim recursion back into the filesystem and blowing
+	 * stacks or deadlocking.
+	 */
+	gfp_mask = mapping_gfp_mask(inode->i_mapping);
+	mapping_set_gfp_mask(inode->i_mapping, gfp_mask & ~__GFP_FS);
+}
+
 /**
  * gfs2_inode_lookup - Lookup an inode
  * @sb: The super block
@@ -132,6 +145,7 @@ struct inode *gfs2_inode_lookup(struct super_block *sb, unsigned int type,
 		struct gfs2_glock *io_gl;
 		int extra_flags = 0;
 
+		gfs2_setup_inode(inode);
 		error = gfs2_glock_get(sdp, no_addr, &gfs2_inode_glops, CREATE,
 				       &ip->i_gl);
 		if (unlikely(error))
@@ -444,11 +458,9 @@ static void gfs2_final_release_pages(struct gfs2_inode *ip)
 	struct inode *inode = &ip->i_inode;
 	struct gfs2_glock *gl = ip->i_gl;
 
-	if (unlikely(!gl)) {
-		/* This can only happen during incomplete inode creation. */
-		BUG_ON(!test_bit(GIF_ALLOC_FAILED, &ip->i_flags));
+	/* This can only happen during incomplete inode creation. */
+	if (unlikely(!gl))
 		return;
-	}
 
 	truncate_inode_pages(gfs2_glock2aspace(gl), 0);
 	truncate_inode_pages(&inode->i_data, 0);
@@ -754,6 +766,7 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
 	error = -ENOMEM;
 	if (!inode)
 		goto fail_gunlock;
+	gfs2_setup_inode(inode);
 	ip = GFS2_I(inode);
 
 	error = posix_acl_create(dir, &mode, &default_acl, &acl);
@@ -837,6 +850,7 @@ retry:
 	error = gfs2_glock_nq_init(ip->i_gl, LM_ST_EXCLUSIVE, GL_SKIP, &gh);
 	if (error)
 		goto fail_gunlock3;
+	clear_bit(GLF_INSTANTIATE_NEEDED, &ip->i_gl->gl_flags);
 
 	error = gfs2_trans_begin(sdp, blocks, 0);
 	if (error)
@@ -901,7 +915,6 @@ fail_gunlock3:
 fail_gunlock2:
 	gfs2_glock_put(io_gl);
 fail_dealloc_inode:
-	set_bit(GIF_ALLOC_FAILED, &ip->i_flags);
 	dealloc_error = 0;
 	if (ip->i_eattr)
 		dealloc_error = gfs2_ea_dealloc(ip, xattr_initialized);
@@ -1328,14 +1341,15 @@ static int gfs2_symlink(struct mnt_idmap *idmap, struct inode *dir,
  * @dentry: The dentry of the new directory
  * @mode: The mode of the new directory
  *
- * Returns: errno
+ * Returns: the dentry, or ERR_PTR(errno)
  */
 
-static int gfs2_mkdir(struct mnt_idmap *idmap, struct inode *dir,
-		      struct dentry *dentry, umode_t mode)
+static struct dentry *gfs2_mkdir(struct mnt_idmap *idmap, struct inode *dir,
+				 struct dentry *dentry, umode_t mode)
 {
 	unsigned dsize = gfs2_max_stuffed_size(GFS2_I(dir));
-	return gfs2_create_inode(dir, dentry, NULL, S_IFDIR | mode, 0, NULL, dsize, 0);
+
+	return ERR_PTR(gfs2_create_inode(dir, dentry, NULL, S_IFDIR | mode, 0, NULL, dsize, 0));
 }
 
 /**

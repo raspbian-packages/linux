@@ -1279,7 +1279,7 @@ int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
 		mhi_cntrl->ready_timeout_ms : mhi_cntrl->timeout_ms;
 	wait_event_timeout(mhi_cntrl->state_event,
 			   MHI_IN_MISSION_MODE(mhi_cntrl->ee) ||
-			   MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state),
+			   MHI_PM_FATAL_ERROR(mhi_cntrl->pm_state),
 			   msecs_to_jiffies(timeout_ms));
 
 	ret = (MHI_IN_MISSION_MODE(mhi_cntrl->ee)) ? 0 : -ETIMEDOUT;
@@ -1311,20 +1311,6 @@ int mhi_force_rddm_mode(struct mhi_controller *mhi_cntrl)
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mhi_force_rddm_mode);
-
-void mhi_device_get(struct mhi_device *mhi_dev)
-{
-	struct mhi_controller *mhi_cntrl = mhi_dev->mhi_cntrl;
-
-	mhi_dev->dev_wake++;
-	read_lock_bh(&mhi_cntrl->pm_lock);
-	if (MHI_PM_IN_SUSPEND_STATE(mhi_cntrl->pm_state))
-		mhi_trigger_resume(mhi_cntrl);
-
-	mhi_cntrl->wake_get(mhi_cntrl, true);
-	read_unlock_bh(&mhi_cntrl->pm_lock);
-}
-EXPORT_SYMBOL_GPL(mhi_device_get);
 
 int mhi_device_get_sync(struct mhi_device *mhi_dev)
 {
