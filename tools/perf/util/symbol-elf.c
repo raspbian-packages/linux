@@ -871,7 +871,8 @@ out:
 	return err;
 }
 
-/*#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
+//*#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
+#if 0
 
 static int read_build_id(const char *filename, struct build_id *bid, bool block)
 {
@@ -904,7 +905,7 @@ out_close:
 	return err;
 }
 
-#else // HAVE_LIBBFD_BUILDID_SUPPORT */
+#else // HAVE_LIBBFD_BUILDID_SUPPORT
 
 static int read_build_id(const char *filename, struct build_id *bid, bool block)
 {
@@ -936,7 +937,7 @@ out:
 	return err;
 }
 
-//#endif // HAVE_LIBBFD_BUILDID_SUPPORT
+#endif // HAVE_LIBBFD_BUILDID_SUPPORT
 
 int filename__read_build_id(const char *filename, struct build_id *bid, bool block)
 {
