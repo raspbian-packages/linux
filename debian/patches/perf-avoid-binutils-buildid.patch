@@ -1,32 +1,34 @@
 Description: Disable libbfd buildid support, it seems to fail to build.
 Author: Peter Michael Green <plugwash@raspbian.org>
 
---- linux-5.15.15.orig/tools/perf/util/symbol-elf.c
-+++ linux-5.15.15/tools/perf/util/symbol-elf.c
-@@ -537,7 +537,7 @@ out:
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 1346fd18065..7613f1475b7 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -871,7 +871,7 @@ static int elf_read_build_id(Elf *elf, void *bf, size_t size)
  	return err;
  }
  
 -#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
 +/*#ifdef HAVE_LIBBFD_BUILDID_SUPPORT
  
- static int read_build_id(const char *filename, struct build_id *bid)
+ static int read_build_id(const char *filename, struct build_id *bid, bool block)
  {
-@@ -566,7 +566,7 @@ out_close:
+@@ -904,7 +904,7 @@ static int read_build_id(const char *filename, struct build_id *bid, bool block)
  	return err;
  }
  
 -#else // HAVE_LIBBFD_BUILDID_SUPPORT
 +#else // HAVE_LIBBFD_BUILDID_SUPPORT */
  
- static int read_build_id(const char *filename, struct build_id *bid)
+ static int read_build_id(const char *filename, struct build_id *bid, bool block)
  {
-@@ -598,7 +598,7 @@ out:
+@@ -936,7 +936,7 @@ static int read_build_id(const char *filename, struct build_id *bid, bool block)
  	return err;
  }
  
 -#endif // HAVE_LIBBFD_BUILDID_SUPPORT
 +//#endif // HAVE_LIBBFD_BUILDID_SUPPORT
  
- int filename__read_build_id(const char *filename, struct build_id *bid)
+ int filename__read_build_id(const char *filename, struct build_id *bid, bool block)
  {
