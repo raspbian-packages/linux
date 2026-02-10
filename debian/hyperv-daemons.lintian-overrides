@@ -1,0 +1,5 @@
+# Our use of systemctl is properly conditional on systemd
+hyperv-daemons: maintainer-script-calls-systemctl *
+
+# lsb-base is not obsolete in bullseye
+hyperv-daemons: depends-on-obsolete-package Depends: lsb-base
