@@ -1,0 +1,13 @@
+{
+  "packages": {
+    "linux-binary-unsigned-6.19.8+deb14-test": {
+      "trusted_certs": [],
+      "files": [
+        {
+          "sig_type": "efi",
+          "file": "boot/vmlinuz-6.19.8+deb14-test"
+        }
+      ]
+    }
+  }
+}
