@@ -2,6 +2,14 @@
 name = 'none'
 
 [build]
-enable_vdso = true
+enable_dtb = true
+enable_rust = true
 kernel_file = 'arch/arm/boot/zImage'
 kernel_stem = 'vmlinuz'
+
+[relations.image]
+breaks = [
+  'u-boot-efi-dtb (<< 5~)',
+  'reform-tools (<< 1.83~)',
+  'flash-kernel (<< 3.110~)',
+]

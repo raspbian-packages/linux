@@ -304,7 +304,7 @@ void __sync_icache_dcache(pte_t pteval)
 	else
 		mapping = NULL;
 
-	if (!test_and_set_bit(PG_dcache_clean, &folio->flags))
+	if (!test_and_set_bit(PG_dcache_clean, &folio->flags.f))
 		__flush_dcache_folio(mapping, folio);
 
 	if (pte_exec(pteval))
@@ -344,8 +344,8 @@ void flush_dcache_folio(struct folio *folio)
 		return;
 
 	if (!cache_ops_need_broadcast() && cache_is_vipt_nonaliasing()) {
-		if (test_bit(PG_dcache_clean, &folio->flags))
-			clear_bit(PG_dcache_clean, &folio->flags);
+		if (test_bit(PG_dcache_clean, &folio->flags.f))
+			clear_bit(PG_dcache_clean, &folio->flags.f);
 		return;
 	}
 
@@ -353,14 +353,14 @@ void flush_dcache_folio(struct folio *folio)
 
 	if (!cache_ops_need_broadcast() &&
 	    mapping && !folio_mapped(folio))
-		clear_bit(PG_dcache_clean, &folio->flags);
+		clear_bit(PG_dcache_clean, &folio->flags.f);
 	else {
 		__flush_dcache_folio(mapping, folio);
 		if (mapping && cache_is_vivt())
 			__flush_dcache_aliases(mapping, folio);
 		else if (mapping)
 			__flush_icache_all();
-		set_bit(PG_dcache_clean, &folio->flags);
+		set_bit(PG_dcache_clean, &folio->flags.f);
 	}
 }
 EXPORT_SYMBOL(flush_dcache_folio);

@@ -1,4 +1,0 @@
-usr/lib/linux-kbuild-6.17.13+deb14/scripts                          usr/src/linux-headers-6.17.13+deb14-rpi/scripts
-usr/lib/linux-kbuild-6.17.13+deb14/tools                            usr/src/linux-headers-6.17.13+deb14-rpi/tools
-usr/src/linux-headers-6.17.13+deb14-rpi                                               usr/lib/modules/6.17.13+deb14-rpi/build
-usr/src/linux-headers-6.17.13+deb14-common  usr/lib/modules/6.17.13+deb14-rpi/source

@@ -98,15 +98,6 @@ struct serial8250_config {
 
 extern unsigned int nr_uarts;
 
-#ifdef CONFIG_SERIAL_8250_SHARE_IRQ
-#define SERIAL8250_SHARE_IRQS 1
-#else
-#define SERIAL8250_SHARE_IRQS 0
-#endif
-
-extern unsigned int share_irqs;
-extern unsigned int skip_txen_test;
-
 #define SERIAL8250_PORT_FLAGS(_base, _irq, _flags)		\
 	{							\
 		.iobase		= _base,			\
@@ -185,6 +176,11 @@ static unsigned int __maybe_unused serial_icr_read(struct uart_8250_port *up,
 }
 
 void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p);
+
+void serial8250_rpm_get(struct uart_8250_port *p);
+void serial8250_rpm_put(struct uart_8250_port *p);
+DEFINE_GUARD(serial8250_rpm, struct uart_8250_port *,
+	     serial8250_rpm_get(_T), serial8250_rpm_put(_T));
 
 static inline u32 serial_dl_read(struct uart_8250_port *up)
 {
