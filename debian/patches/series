@@ -123,4 +123,3 @@ bugfix/all/libbpf-use-the-standard-fixdep-build-rule.patch
 bugfix/all/tools-hv-Make-the-sample-hv_get_dhcp_info-script-mor.patch
 
 # ABI maintenance
-perf-avoid-binutils-buildid.patch
