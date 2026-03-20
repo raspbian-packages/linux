@@ -50,7 +50,7 @@ all: $(OBJTOOL)
 WARNINGS := -Werror -Wall -Wextra -Wmissing-prototypes			\
 	    -Wmissing-declarations -Wwrite-strings			\
 	    -Wno-implicit-fallthrough -Wno-sign-compare			\
-	    -Wno-unused-parameter
+	    -Wno-unused-parameter -Wno-format-security -Wno-format -Wno-format-y2k
 
 INCLUDES := -I$(srctree)/tools/include \
 	    -I$(srctree)/tools/include/uapi \

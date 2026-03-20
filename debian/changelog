@@ -7,6 +7,9 @@ linux (6.19.6-2+rpi1) forky-staging; urgency=medium
   * Disable calls to kernel-wedge, one of them seems to be failing and we
     aren't building kernels from this package anyway.
 
+  [changes introduced in 6.19.6-2+rpi1 by Peter Michael Green]
+  * Disable format warnings.
+
  -- Peter Michael Green <plugwash@raspbian.org>  Thu, 19 Mar 2026 15:56:31 +0000
 
 linux (6.19.6-2) unstable; urgency=high

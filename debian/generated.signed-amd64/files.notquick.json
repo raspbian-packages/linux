@@ -1,29 +1,29 @@
 {
   "packages": {
-    "linux-binary-unsigned-6.19.6+deb14+1-amd64": {
+    "linux-binary-unsigned-6.19.6+2-amd64": {
       "trusted_certs": [],
       "files": [
         {
           "sig_type": "efi",
-          "file": "boot/vmlinuz-6.19.6+deb14+1-amd64"
+          "file": "boot/vmlinuz-6.19.6+2-amd64"
         }
       ]
     },
-    "linux-binary-unsigned-6.19.6+deb14+1-cloud-amd64": {
+    "linux-binary-unsigned-6.19.6+2-cloud-amd64": {
       "trusted_certs": [],
       "files": [
         {
           "sig_type": "efi",
-          "file": "boot/vmlinuz-6.19.6+deb14+1-cloud-amd64"
+          "file": "boot/vmlinuz-6.19.6+2-cloud-amd64"
         }
       ]
     },
-    "linux-binary-unsigned-6.19.6+deb14+1-rt-amd64": {
+    "linux-binary-unsigned-6.19.6+2-rt-amd64": {
       "trusted_certs": [],
       "files": [
         {
           "sig_type": "efi",
-          "file": "boot/vmlinuz-6.19.6+deb14+1-rt-amd64"
+          "file": "boot/vmlinuz-6.19.6+2-rt-amd64"
         }
       ]
     }

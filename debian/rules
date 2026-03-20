@@ -5,6 +5,8 @@ include /usr/share/dpkg/pkg-info.mk
 
 DEB_VERSION_SOURCE = $(shell echo '$(DEB_VERSION)' | sed -re 's/\+b([0-9]+)$$//')
 
+export DEB_CFLAGS_MAINT_STRIP = -Wformat -Werror=format-security
+
 SHELL    := sh -e
 
 include debian/rules.defs
