@@ -80,6 +80,10 @@ static const int amd_div0[] =
 	AMD_LEGACY_ERRATUM(AMD_MODEL_RANGE(0x17, 0x00, 0x0, 0x2f, 0xf),
 			   AMD_MODEL_RANGE(0x17, 0x50, 0x0, 0x5f, 0xf));
 
+static const int amd_fpdss[] =
+	AMD_LEGACY_ERRATUM(AMD_MODEL_RANGE(0x17, 0x00, 0x0, 0x2f, 0xf),
+			   AMD_MODEL_RANGE(0x17, 0x50, 0x0, 0x5f, 0xf));
+
 static const int amd_erratum_1485[] =
 	AMD_LEGACY_ERRATUM(AMD_MODEL_RANGE(0x19, 0x10, 0x0, 0x1f, 0xf),
 			   AMD_MODEL_RANGE(0x19, 0x60, 0x0, 0xaf, 0xf));
@@ -1097,8 +1101,10 @@ static void init_amd_zen1(struct cpuinfo_x86 *c)
 			set_cpu_cap(c, X86_FEATURE_BTC_NO);
 	}
 
-	pr_notice_once("AMD Zen1 FPDSS bug detected, enabling mitigation.\n");
-	msr_set_bit(MSR_AMD64_FP_CFG, MSR_AMD64_FP_CFG_ZEN1_DENORM_FIX_BIT);
+	if (cpu_has_amd_erratum(c, amd_fpdss)) {
+		pr_notice_once("AMD Zen1 FPDSS bug detected, enabling mitigation.\n");
+		msr_set_bit(MSR_AMD64_FP_CFG, MSR_AMD64_FP_CFG_ZEN1_DENORM_FIX_BIT);
+	}
 }
 
 static bool cpu_has_zenbleed_microcode(void)
