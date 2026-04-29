@@ -1287,7 +1287,7 @@ int rxrpc_input_packet(struct sock *udp_sk, struct sk_buff *skb)
 		 * decryption.
 		 */
 		if (sp->hdr.securityIndex != 0 &&
-		    skb_cloned(skb)) {
+		    (skb_cloned(skb) || skb_is_nonlinear(skb))) {
 			struct sk_buff *nskb = skb_copy(skb, GFP_ATOMIC);
 			if (!nskb) {
 				kfree_skb(skb);
