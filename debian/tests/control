@@ -1,0 +1,14 @@
+Tests: python
+Restrictions: superficial
+Depends: python3
+
+Tests: selftests
+Restrictions: breaks-testbed, needs-root, isolation-machine
+Depends: kexec-tools, python3, gcc, make, libpopt-dev, gcc-multilib [amd64], bc, fuse, libfuse-dev, pkg-config, linux-image-5.10.0-41-alpha-generic [alpha], linux-image-5.10.0-41-alpha-smp [alpha], linux-image-5.10.0-41-amd64-unsigned [amd64], linux-image-5.10.0-41-cloud-amd64-unsigned [amd64], linux-image-5.10.0-41-rt-amd64-unsigned [amd64], linux-image-5.10.0-41-arm64-unsigned [arm64], linux-image-5.10.0-41-cloud-arm64-unsigned [arm64], linux-image-5.10.0-41-rt-arm64-unsigned [arm64], linux-image-5.10.0-41-marvell [armel], linux-image-5.10.0-41-rpi [armel], linux-image-5.10.0-41-armmp [armhf], linux-image-5.10.0-41-armmp-lpae [armhf], linux-image-5.10.0-41-rt-armmp [armhf], linux-image-5.10.0-41-parisc [hppa], linux-image-5.10.0-41-parisc64 [hppa], linux-image-5.10.0-41-686-unsigned [i386], linux-image-5.10.0-41-686-pae-unsigned [i386], linux-image-5.10.0-41-rt-686-pae-unsigned [i386], linux-image-5.10.0-41-itanium [ia64], linux-image-5.10.0-41-mckinley [ia64], linux-image-5.10.0-41-m68k [m68k], linux-image-5.10.0-41-4kc-malta [mips mipsel], linux-image-5.10.0-41-5kc-malta [mips mips64 mips64el mipsel], linux-image-5.10.0-41-octeon [mips mips64 mips64el mipsel], linux-image-5.10.0-41-loongson-3 [mips64el mipsel], linux-image-5.10.0-41-powerpc [powerpc], linux-image-5.10.0-41-powerpc-smp [powerpc], linux-image-5.10.0-41-powerpc64 [powerpc ppc64], linux-image-5.10.0-41-powerpc64le [ppc64el], linux-image-5.10.0-41-riscv64 [riscv64], linux-image-5.10.0-41-s390x [s390x], linux-image-5.10.0-41-sh7751r [sh4], linux-image-5.10.0-41-sh7785lcr [sh4], linux-image-5.10.0-41-sparc64 [sparc64], linux-image-5.10.0-41-sparc64-smp [sparc64]
+Classes: smp
+
+Tests: kbuild
+Architecture: alpha amd64 arm64 armhf hppa i386 ia64 m68k ppc64 ppc64el riscv64 s390x sparc64
+Restrictions: superficial
+Depends: python3, linux-headers-5.10.0-41-alpha-smp [alpha], linux-headers-5.10.0-41-cloud-amd64 [amd64], linux-headers-5.10.0-41-cloud-arm64 [arm64], linux-headers-5.10.0-41-armmp [armhf], linux-headers-5.10.0-41-parisc [hppa], linux-headers-5.10.0-41-686-pae [i386], linux-headers-5.10.0-41-itanium [ia64], linux-headers-5.10.0-41-m68k [m68k], linux-headers-5.10.0-41-powerpc64 [ppc64], linux-headers-5.10.0-41-powerpc64le [ppc64el], linux-headers-5.10.0-41-riscv64 [riscv64], linux-headers-5.10.0-41-s390x [s390x], linux-headers-5.10.0-41-sparc64-smp [sparc64]
+
