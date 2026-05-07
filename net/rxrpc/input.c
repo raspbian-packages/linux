@@ -1286,19 +1286,20 @@ int rxrpc_input_packet(struct sock *udp_sk, struct sk_buff *skb)
 		/* Unshare the packet so that it can be modified for in-place
 		 * decryption.
 		 */
-		if (sp->hdr.securityIndex != 0) {
-			struct sk_buff *nskb = skb_unshare(skb, GFP_ATOMIC);
+		if (sp->hdr.securityIndex != 0 &&
+		    skb_cloned(skb)) {
+			struct sk_buff *nskb = skb_copy(skb, GFP_ATOMIC);
 			if (!nskb) {
+				kfree_skb(skb);
 				rxrpc_eaten_skb(skb, rxrpc_skb_unshared_nomem);
 				goto out;
 			}
 
-			if (nskb != skb) {
-				rxrpc_eaten_skb(skb, rxrpc_skb_received);
-				skb = nskb;
-				rxrpc_new_skb(skb, rxrpc_skb_unshared);
-				sp = rxrpc_skb(skb);
-			}
+			consume_skb(skb);
+			rxrpc_eaten_skb(skb, rxrpc_skb_received);
+			skb = nskb;
+			rxrpc_new_skb(skb, rxrpc_skb_unshared);
+			sp = rxrpc_skb(skb);
 		}
 		break;
 
