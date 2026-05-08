@@ -1,0 +1,48 @@
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri, 23 Oct 2020 12:12:12 +0200
+Subject: [PATCH 015/327] sched, lockdep: Annotate ->pi_lock recursion
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=28f7b05b23ae723b490ddc757cc3cb0533345934
+
+There's a valid ->pi_lock recursion issue where the actual PI code
+tries to wake up the stop task. Make lockdep aware so it doesn't
+complain about this.
+
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ kernel/sched/core.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b716b1c07636..ffa0ff0d256b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2669,6 +2669,7 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
+ 
+ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ {
++	static struct lock_class_key stop_pi_lock;
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+ 	struct task_struct *old_stop = cpu_rq(cpu)->stop;
+ 
+@@ -2684,6 +2685,20 @@ void sched_set_stop_task(int cpu, struct task_struct *stop)
+ 		sched_setscheduler_nocheck(stop, SCHED_FIFO, &param);
+ 
+ 		stop->sched_class = &stop_sched_class;
++
++		/*
++		 * The PI code calls rt_mutex_setprio() with ->pi_lock held to
++		 * adjust the effective priority of a task. As a result,
++		 * rt_mutex_setprio() can trigger (RT) balancing operations,
++		 * which can then trigger wakeups of the stop thread to push
++		 * around the current task.
++		 *
++		 * The stop task itself will never be part of the PI-chain, it
++		 * never blocks, therefore that ->pi_lock recursion is safe.
++		 * Tell lockdep about this by placing the stop->pi_lock in its
++		 * own class.
++		 */
++		lockdep_set_class(&stop->pi_lock, &stop_pi_lock);
+ 	}
+ 
+ 	cpu_rq(cpu)->stop = stop;
