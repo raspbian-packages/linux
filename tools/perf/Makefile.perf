@@ -399,6 +399,11 @@ PYTHON_EXTBUILD_LIB := $(PYTHON_EXTBUILD)lib/
 PYTHON_EXTBUILD_TMP := $(PYTHON_EXTBUILD)tmp/
 export PYTHON_EXTBUILD_LIB PYTHON_EXTBUILD_TMP
 
+# Put Python bytecode in output directory
+ifdef OUTPUT
+export PYTHONPYCACHEPREFIX := $(OUTPUT)/__pycache__
+endif
+
 python-clean := $(call QUIET_CLEAN, python) $(RM) -r $(PYTHON_EXTBUILD) $(OUTPUT)python/perf*.so
 
 # Use the detected configuration
