@@ -66,30 +66,37 @@ ifeq ($(config),1)
   include Makefile.config
 endif
 
+INCLUDES	= -I$(OUTPUT)src
+
 CFLAGS		+= $(INCLUDES) $(LIB_INCLUDES)
 
 export CFLAGS OUTPUT srctree
 
 ifeq ($(BUILD_BPF_SKEL),1)
-src/timerlat.bpf.o: src/timerlat.bpf.c
+$(OUTPUT)src/timerlat.bpf.o: src/timerlat.bpf.c
+	mkdir -p $(@D)
 	$(QUIET_CLANG)$(CLANG) -g -O2 -target bpf -c $(filter %.c,$^) -o $@
 
-src/timerlat.skel.h: src/timerlat.bpf.o
+$(OUTPUT)src/timerlat.skel.h: $(OUTPUT)src/timerlat.bpf.o
+	mkdir -p $(@D)
 	$(QUIET_GENSKEL)$(SYSTEM_BPFTOOL) gen skeleton $< > $@
 
-example/timerlat_bpf_action.o: example/timerlat_bpf_action.c
+$(OUTPUT)example/timerlat_bpf_action.o: example/timerlat_bpf_action.c
+	mkdir -p $(@D)
 	$(QUIET_CLANG)$(CLANG) -g -O2 -target bpf -c $(filter %.c,$^) -o $@
 
-tests/bpf/bpf_action_map.o: tests/bpf/bpf_action_map.c
+$(OUTPUT)tests/bpf/bpf_action_map.o: tests/bpf/bpf_action_map.c
+	mkdir -p $(@D)
 	$(QUIET_CLANG)$(CLANG) -g -O2 -target bpf -c $(filter %.c,$^) -o $@
 else
-src/timerlat.skel.h:
-	$(Q)echo '/* BPF skeleton is disabled */' > src/timerlat.skel.h
+$(OUTPUT)src/timerlat.skel.h:
+	mkdir -p $(@D)
+	$(Q)echo '/* BPF skeleton is disabled */' > $@
 
-example/timerlat_bpf_action.o: example/timerlat_bpf_action.c
+$(OUTPUT)example/timerlat_bpf_action.o: example/timerlat_bpf_action.c
 	$(Q)echo "BPF skeleton support is disabled, skipping example/timerlat_bpf_action.o"
 
-tests/bpf/bpf_action_map.o: tests/bpf/bpf_action_map.c
+$(OUTPUT)tests/bpf/bpf_action_map.o: tests/bpf/bpf_action_map.c
 	$(Q)echo "BPF skeleton support is disabled, skipping tests/bpf/bpf_action_map.o"
 endif
 
@@ -103,7 +110,7 @@ static: $(RTLA_IN)
 rtla.%: fixdep FORCE
 	make -f $(srctree)/tools/build/Makefile.build dir=. $@
 
-$(RTLA_IN): fixdep FORCE src/timerlat.skel.h
+$(RTLA_IN): fixdep FORCE $(OUTPUT)src/timerlat.skel.h
 	make $(build)=rtla
 
 clean: doc_clean fixdep-clean
@@ -111,10 +118,10 @@ clean: doc_clean fixdep-clean
 	$(Q)find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
 	$(Q)rm -f rtla rtla-static fixdep FEATURE-DUMP rtla-*
 	$(Q)rm -rf feature
-	$(Q)rm -f src/timerlat.bpf.o src/timerlat.skel.h example/timerlat_bpf_action.o
+	$(Q)rm -f $(OUTPUT)src/timerlat.bpf.o $(OUTPUT)src/timerlat.skel.h $(OUTPUT)example/timerlat_bpf_action.o
 	$(Q)rm -f $(UNIT_TESTS)
 
-check: $(RTLA) tests/bpf/bpf_action_map.o
+check: $(RTLA) $(OUTPUT)tests/bpf/bpf_action_map.o
 	RTLA=$(RTLA) BPFTOOL=$(SYSTEM_BPFTOOL) prove -o -f -v tests/
-examples: example/timerlat_bpf_action.o
+examples: $(OUTPUT)example/timerlat_bpf_action.o
 .PHONY: FORCE clean check
