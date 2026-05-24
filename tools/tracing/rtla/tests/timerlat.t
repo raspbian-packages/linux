@@ -74,12 +74,12 @@ then
 	# Test BPF action program properly in BPF mode
 	[ -z "$BPFTOOL" ] && BPFTOOL=bpftool
 	check "hist with BPF action program (BPF mode)" \
-		"timerlat hist -T 2 --bpf-action tests/bpf/bpf_action_map.o --on-threshold shell,command='$BPFTOOL map dump name rtla_test_map'" \
+		"timerlat hist -T 2 --bpf-action ${OUTPUT}tests/bpf/bpf_action_map.o --on-threshold shell,command='$BPFTOOL map dump name rtla_test_map'" \
 		2 '"value": 42'
 else
 	# Test BPF action program failure in non-BPF mode
 	check "hist with BPF action program (non-BPF mode)" \
-		"timerlat hist -T 2 --bpf-action tests/bpf/bpf_action_map.o" \
+		"timerlat hist -T 2 --bpf-action ${OUTPUT}tests/bpf/bpf_action_map.o" \
 		1 "BPF actions are not supported in tracefs-only mode"
 fi
 done
