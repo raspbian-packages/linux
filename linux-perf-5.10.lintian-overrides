@@ -1,0 +1,8 @@
+#!/usr/bin/dh-exec
+
+# These executables are needed to handle processes running in compat mode
+[amd64] linux-perf-5.10: binary-from-other-architecture *usr/lib/perf_5.10-core/perf-read-vdsox32*
+
+# Some of these plugins only need symbols from libtraceevent, which
+# loads them and should not have a NEEDED entry
+linux-perf-5.10: shared-library-lacks-prerequisites *usr/lib/traceevent_5.10/plugins/plugin_*.so*
