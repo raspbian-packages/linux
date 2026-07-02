@@ -1,0 +1,4 @@
+#include <kernel-image>
+
+# SPI devices
+drivers/spi/**
