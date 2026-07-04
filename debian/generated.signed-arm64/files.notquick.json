@@ -1,0 +1,40 @@
+{
+  "packages": {
+    "linux-binary-unsigned-7.1.3+deb14-arm64": {
+      "trusted_certs": [],
+      "files": [
+        {
+          "sig_type": "efi",
+          "file": "usr/lib/modules/7.1.3+deb14-arm64/vmlinuz.unsigned"
+        }
+      ]
+    },
+    "linux-binary-unsigned-7.1.3+deb14-cloud-arm64": {
+      "trusted_certs": [],
+      "files": [
+        {
+          "sig_type": "efi",
+          "file": "usr/lib/modules/7.1.3+deb14-cloud-arm64/vmlinuz.unsigned"
+        }
+      ]
+    },
+    "linux-binary-unsigned-7.1.3+deb14-arm64-16k": {
+      "trusted_certs": [],
+      "files": [
+        {
+          "sig_type": "efi",
+          "file": "usr/lib/modules/7.1.3+deb14-arm64-16k/vmlinuz.unsigned"
+        }
+      ]
+    },
+    "linux-binary-unsigned-7.1.3+deb14-rt-arm64": {
+      "trusted_certs": [],
+      "files": [
+        {
+          "sig_type": "efi",
+          "file": "usr/lib/modules/7.1.3+deb14-rt-arm64/vmlinuz.unsigned"
+        }
+      ]
+    }
+  }
+}
