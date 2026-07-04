@@ -1,0 +1,14 @@
+blowfish_generic
+twofish_generic
+serpent_generic
+sha256
+arc4 ?
+cbc ?
+ccm
+ctr
+ecb
+xts
+
+# For cryptsetup
+algif_skcipher
+essiv
