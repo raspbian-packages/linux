@@ -1,0 +1,18 @@
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 8 Jul 2011 20:25:16 +0200
+Subject: [PATCH 51/72] Add localversion for -RT release
+Origin: https://git.kernel.org/cgit/linux/kernel/git/rt/linux-stable-rt.git/commit?id=32fe43a4c1da80177cb0dcab9083a0f9ac34d23e
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ localversion-rt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 localversion-rt
+
+diff --git a/localversion-rt b/localversion-rt
+new file mode 100644
+index 000000000000..045478966e9f
+--- /dev/null
++++ b/localversion-rt
+@@ -0,0 +1 @@
++-rt7
